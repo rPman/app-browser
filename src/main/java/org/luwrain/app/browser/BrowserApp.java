@@ -21,7 +21,8 @@ import org.luwrain.controls.*;
 
 class BrowserApp implements Application, Actions
 {
-static public final String STRINGS_NAME = "luwrain.notepad";
+	static public final String STRINGS_NAME = "luwrain.notepad";
+
 
     private Luwrain luwrain;
     private BrowserArea area;
@@ -60,7 +61,7 @@ static public final String STRINGS_NAME = "luwrain.notepad";
 
     private void createArea()
     {
-	area = new BrowserArea(new DefaultControlEnvironment(luwrain), luwrain.createBrowser());
+    	area = new BrowserArea(new DefaultControlEnvironment(luwrain), luwrain.createBrowser());
     }
 
     @Override public AreaLayout getAreasToShow()
