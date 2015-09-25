@@ -760,7 +760,7 @@ class BrowserArea extends NavigateArea
 		//String link="http://ya.ru";
 		environment.say(PAGE_ANY_PROMPT_ADDRESS);
 
-		MessagesControl.Prompt prompt=new MessagesControl.Prompt(PAGE_ANY_PROMPT_ADDRESS,"rpserver");
+		MessagesControl.Prompt prompt=new MessagesControl.Prompt(PAGE_ANY_PROMPT_ADDRESS,"");
 		msgControl.messages.add(prompt);
 		//try{ synchronized(prompt){prompt.wait();} } catch(InterruptedException e) {e.printStackTrace();}
 		synchronized(prompt){msgControl.doit();}
