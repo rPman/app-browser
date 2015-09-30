@@ -88,217 +88,37 @@ import org.luwrain.browser.ElementList.*;
 * progress
 * multiline - link of download
 */
-class BrowserArea extends NavigateArea
+class BrowserArea extends NavigateArea implements Constants
 {
-    static final String PAGE_ANY_STATE_LOADED="Страница загружена";
-    static final String PAGE_ANY_STATE_CANCELED="Загрузка страницы отменена";
-    static final String PAGE_ANY_SCREENMODE_PAGE="информация о странице";
-    static final String PAGE_ANY_SCREENMODE_DOWNLOAD="загрузка файла ";
-    static final String PAGE_ANY_SCREENMODE_TEXT="просмотр текста ";
-    static final String PAGE_SCREEN_TEXT_URL="ссылка ";
-    static final String PAGE_SCREEN_TEXT_TITLE="заголовок ";
-    static final String PAGE_SCREEN_TEXT_STATE="состояние ";
-    static final String PAGE_SCREEN_TEXT__PROGRESS="процент загрузки ";
-    static final String PAGE_SCREEN_TEXT_SIZE="размер ";
-    static final String PAGE_SCREEN_PROMPT_MESSAGE="Запрос на ввод текста от вебстраницы";
-    static final String PAGE_SCREEN_ALERT_MESSAGE="Сообщение от вебстраницы ";
-    static final String PAGE_SCREEN_CONFIRM_MESSAGE="Запрос подтверждения от вебстраницы ";
-    static final String PAGE_ANY_PROMPT_TEXT_FILTER="Введите строку для поиска текста";
-    static final String PAGE_ANY_PROMPT_ADDRESS="Введите новый интернет адрес";
-    static final String PAGE_ANY_PROMPT_NEW_TEXT="Введите новое значение для элемента";
-    static final String PAGE_SCREEN_ANY_FIRST_ELEMENT="Начало списка элементов";
-    static final String PAGE_SCREEN_ANY_END_ELEMENT="Конец списка элементов";
-    static final String PAGE_SCREEN_ANY_HAVENO_ELEMENT="Элементы не найдены";
-    static final String PAGE_ANY_PROMPT_ACCEPT_DOWNLOAD="Запрос на загрузку файла";
-    static final String PAGE_DOWNLOAD_START="Загрузка файла начата";
-    static final String PAGE_DOWNLOAD_FINISHED="Загрузка файла завершена";
-    static final String PAGE_DOWNLOAD_FAILED="Загрузка файла прервана";
-    static final String PAGE_DOWNLOAD_FIELD_FILESIZE="Размер файла ";
-    static final String PAGE_DOWNLOAD_FIELD_FILETYPE="Тип ";
-    static final String PAGE_DOWNLOAD_FIELD_PROGRESS="Состояние ";
-    static final String PAGE_DOWNLOAD_FIELD_PROGRESS_FINISHED="загружено";
-    static final String PAGE_ANY_PROMPT_TAGFILTER_NAME="Введите имя тега для поиска";
-    static final String PAGE_ANY_PROMPT_TAGFILTER_VALUE="имя атрибута";
-    static final String PAGE_ANY_PROMPT_TAGFILTER_ATTR="значение атрибута";
+    enum ScreenMode {
+	PAGE,
+	TEXT,
+	DOWNLOAD
+    };
 
-    // downloader settings
-    static final String DEFAULT_DOWNLOAD_DIR=".";
-    static final int BUFFER_SIZE=1024*1024;
-
-    // FIXME: get current screen text table width from environment and do it any time but not from constant
-    static final int TEXT_SCREEN_WIDTH=100;
+    private final ScreenPage screenPage=new ScreenPage();
+    private final ScreenText screenText=new ScreenText();
 
     private Luwrain luwrain;
     private ControlEnvironment environment;
     private WebPage page;
     private BrowserEvents browserEvents;
-
-    enum ScreenMode {PAGE,TEXT,DOWNLOAD};
     private ScreenMode screenMode=ScreenMode.PAGE;
+    private ElementList elements=null;
 
-    // selectors
-    SelectorTEXT textSelectorEmpty=null;
-    SelectorTEXT textSelectorFiltered=null;
-    SelectorTAG tagSelectorEmpty=null;
-    SelectorTAG tagSelectorFiltered=null;
-    SelectorCSS cssSelectorEmpty=null;
-    SelectorCSS cssSelectorFiltered=null;
+    private SelectorTEXT textSelectorEmpty=null;
+    private SelectorTEXT textSelectorFiltered=null;
+    private SelectorTAG tagSelectorEmpty=null;
+    private SelectorTAG tagSelectorFiltered=null;
+    private SelectorCSS cssSelectorEmpty=null;
+    private SelectorCSS cssSelectorFiltered=null;
 
-    Selector currentSelectorEmpty=null;
-    Selector currentSelectorFiltered=null;
+    private Selector currentSelectorEmpty=null;
+    private Selector currentSelectorFiltered=null;
 
-    ElementList elements=null;
 
-    class ScreenPage
-    {
-	String[] url=new String[1];
-	int urlLine=0;
-	String[] title=new String[1];
-	int titleLine=1;
-	String state="";
-	int stateLine=2;
-	String progress;
-	int progressLine=3;
-	String size="";
-	int sizeLine=4;
 
-	void changedUrl(String string)
-    	{
-	    url=splitTextForScreen(PAGE_SCREEN_TEXT_URL+string);
-	    titleLine=   0+url.length;
-	    stateLine=   0+url.length+title.length;
-	    progressLine=1+url.length+title.length;
-	    sizeLine=    2+url.length+title.length;
-    	}
 
-	void changedTitle(String string)
-    	{
-	    title=splitTextForScreen(PAGE_SCREEN_TEXT_TITLE+string);
-	    stateLine=   0+url.length+title.length;
-	    progressLine=1+url.length+title.length;
-	    sizeLine=    2+url.length+title.length;
-	}
-
-	void changedState(String string)
-    	{
-	    state=PAGE_SCREEN_TEXT_STATE+string;
-	}
-
-	void changedProgress(double num)
-    	{
-	    progress=PAGE_SCREEN_TEXT__PROGRESS+Integer.toString((int)(num*100))+"%";
-	}
-
-	void changedSize(int num)
-    	{
-	    size=PAGE_SCREEN_TEXT_SIZE+Integer.toString(num);
-	}
-
-	int getLinesCount()
-    	{
-	    return sizeLine+1;
-    	}
-
-	String getStringByLine(int line)
-    	{
-	    if(line>=urlLine&&line<urlLine+url.length)
-	    {
-		int subline=line-urlLine;
-		return url[subline];
-	    } else
-    		if(line>=titleLine&&line<titleLine+title.length)
-    		{
-		    int subline=line-titleLine;
-		    return title[subline];
-    		} else
-		    if(line==stateLine) return state;else
-			if(line==progressLine) return progress;else
-			    if(line==sizeLine) return size;
-	    return "";
-    	}
-    }
-
-    ScreenPage screenPage=new ScreenPage();
-    String[] splitTextForScreen(String string)
-    {
-    	Vector<String> text=new Vector<String>();
-	if(string==null||string.isEmpty()) return text.toArray(new String[(text.size())]);
-	int i=0;
-	while(i<string.length())
-	{
-	    String line;
-	    if(i+TEXT_SCREEN_WIDTH>=string.length())
-	    { // last part of string fit to the screen
-		line=string.substring(i);
-	    } else
-	    { // too long part
-		line=string.substring(i,i+TEXT_SCREEN_WIDTH-1);
-		// check for new line char
-		int nl=line.indexOf('\n');
-		if(nl!=-1)
-		{ // have new line char, cut line to it
-		    line=line.substring(0,nl);
-		    i++; // skip new line
-		} else
-		{ // walk to first stopword char at end of line
-		    int sw=line.lastIndexOf(' ');
-		    if(sw!=-1)
-		    { // have stop char, cut line to it (but include)
-			line=line.substring(0,sw);
-		    }
-		}
-	    }
-	    text.add(line);
-	    i+=line.length();
-	}
-	return text.toArray(new String[(text.size())]);
-    }
-
-    class ScreenText
-    { // contains one first line with type of element, text multiline and multiline link
-	String type="";
-	String[] text=new String[1];
-	int linkLine=2;
-	String[] link=new String[0]; // it for anchor and images link
-
-	void setType(String string)
-    	{
-	    type=string;
-    	}
-
-	void setLink(String string)
-    	{
-	    link=splitTextForScreen(string);
-    	}
-
-	void setText(String string)
-    	{
-	    text=splitTextForScreen(string);
-	    linkLine=1+text.length;
-    	}
-
-	int getLinesCount()
-    	{
-	    return 1+text.length+link.length;
-    	}
-
-	String getStringByLine(int line)
-    	{
-	    // type
-	    if(line==0) return type;
-	    // text
-	    if(line>=1&&line<1+text.length)
-	    {
-		int subline=line-1;
-		return text[subline];
-	    }
-	    // link
-	    int subline=line-1-text.length;
-	    return link[subline];
-    	}
-    }
-
-    ScreenText screenText=new ScreenText();
 
     void fillCurrentElementInfo()
     {
@@ -330,7 +150,7 @@ class BrowserArea extends NavigateArea
 
 	void setLink(String string)
     	{
-	    link=splitTextForScreen(string);
+	    link=Constants.splitTextForScreen(string);
     	}
 
 	int getLinesCount()
