@@ -34,6 +34,8 @@ import org.luwrain.browser.BrowserEvents;
 import org.luwrain.core.*;
 import org.luwrain.core.events.*;
 import org.luwrain.controls.*;
+import org.luwrain.popups.Popups;
+
 import org.luwrain.interaction.browser.WebPage;
 import org.luwrain.browser.ElementList;
 import org.luwrain.browser.ElementList.*;
@@ -126,6 +128,7 @@ class BrowserArea extends NavigateArea
     // FIXME: get current screen text table width from environment and do it any time but not from constant
     static final int TEXT_SCREEN_WIDTH=100;
 
+    private Luwrain luwrain;
     private ControlEnvironment environment;
     private WebPage page;
     private BrowserEvents browserEvents;
@@ -488,12 +491,16 @@ class BrowserArea extends NavigateArea
     
     BrowserArea that;
 
-    BrowserArea(final ControlEnvironment environment, Browser browser)
+    BrowserArea(Luwrain luwrain,
+		final ControlEnvironment environment,
+		Browser browser)
     {
 	super(environment);
 	that=this;
+	this.luwrain = luwrain;
 	this.environment = environment;
 	this.page = (WebPage)browser;
+	NullCheck.notNull(luwrain, "luwrain");
 	NullCheck.notNull(environment, "environment");
 	NullCheck.notNull(browser, "browser");
 	browserEvents=new BrowserEvents()
@@ -521,62 +528,65 @@ class BrowserArea extends NavigateArea
 	    			environment.onAreaNewContent(that);
 
 	    			environment.say(PAGE_ANY_STATE_LOADED);
-				} else
-				{
-	    			environment.say(PAGE_ANY_STATE_CANCELED);
-					screenPage.changedTitle("");
-				}
-    			environment.onAreaNewContent(that);
-			}
-			@Override public void onProgress(Number progress)
-			{
-				screenPage.changedProgress((double)progress);
-    			environment.onAreaNewContent(that);
-			}
-			@Override public void onAlert(final String message)
-			{
-				environment.say(PAGE_SCREEN_ALERT_MESSAGE+message);
-				AlertBrowserEvent event=new AlertBrowserEvent(message);
-				try {event.waitForBeProcessed();} // FIXME: make better error handling
-				catch(InterruptedException e){e.printStackTrace();}
-				/*
-    			MessagesControl.Alert alert=new MessagesControl.Alert(PAGE_SCREEN_ALERT_MESSAGE,message);
-    			msgControl.messages.add(alert);
+		    } else
+		    {
+			environment.say(PAGE_ANY_STATE_CANCELED);
+			screenPage.changedTitle("");
+		    }
+		    environment.onAreaNewContent(that);
+		}
+
+		@Override public void onProgress(Number progress)
+		{
+		    screenPage.changedProgress((double)progress);
+		    environment.onAreaNewContent(that);
+		}
+		@Override public void onAlert(final String message)
+		{
+		    environment.say(PAGE_SCREEN_ALERT_MESSAGE+message);
+		    AlertBrowserEvent event=new AlertBrowserEvent(message);
+		    try {event.waitForBeProcessed();} // FIXME: make better error handling
+		    catch(InterruptedException e){e.printStackTrace();}
+		    /*
+		      MessagesControl.Alert alert=new MessagesControl.Alert(PAGE_SCREEN_ALERT_MESSAGE,message);
+		      msgControl.messages.add(alert);
     			//try{ synchronized(alert){alert.wait();} } catch(InterruptedException e) {e.printStackTrace();}
     			synchronized(alert){msgControl.doit();}
     			alert.remove();
     			*/
-			}
-			@Override public String onPrompt(final String message,final String value)
-			{
-				environment.say(PAGE_SCREEN_PROMPT_MESSAGE+message);
-				PromptBrowserEvent event=new PromptBrowserEvent(message,value);
-				try {event.waitForBeProcessed();} // FIXME: make better error handling
-				catch(InterruptedException e){e.printStackTrace();}
-				/*
-    			MessagesControl.Prompt prompt=new MessagesControl.Prompt(PAGE_SCREEN_PROMPT_MESSAGE,"ya.ru");
-    			msgControl.messages.add(prompt);
-    			//try{ synchronized(prompt){prompt.wait();} } catch(InterruptedException e) {e.printStackTrace();}
-    			synchronized(prompt){msgControl.doit();}
-    			String result=prompt.result;
-    			prompt.remove();
-    			*/
-    			return event.getPrompt();
-			}
-			@Override public void onError(String message)
-			{
-				// FIXME: make browser error handling or hide it
-				Log.warning("browser",message);
-			}
-			@Override public boolean onDownloadStart(String url)
-			{
-				Log.warning("browser","DOWNLOAD: "+url);
-				environment.say(PAGE_ANY_PROMPT_ACCEPT_DOWNLOAD);
-				
-				PromptBrowserEvent event=new PromptBrowserEvent(PAGE_SCREEN_PROMPT_MESSAGE,"");
-				try {event.waitForBeProcessed();} // FIXME: make better error handling
-				catch(InterruptedException e){e.printStackTrace();}
-				/*
+		}
+
+		@Override public String onPrompt(final String message,final String value)
+		{
+		    environment.say(PAGE_SCREEN_PROMPT_MESSAGE+message);
+		    PromptBrowserEvent event=new PromptBrowserEvent(message,value);
+		    try {event.waitForBeProcessed();} // FIXME: make better error handling
+		    catch(InterruptedException e){e.printStackTrace();}
+		    /*
+		      MessagesControl.Prompt prompt=new MessagesControl.Prompt(PAGE_SCREEN_PROMPT_MESSAGE,"ya.ru");
+		      msgControl.messages.add(prompt);
+		      //try{ synchronized(prompt){prompt.wait();} } catch(InterruptedException e) {e.printStackTrace();}
+		      synchronized(prompt){msgControl.doit();}
+		      String result=prompt.result;
+		      prompt.remove();
+		    */
+		    return event.getPrompt();
+		}
+
+		@Override public void onError(String message)
+		{
+		    // FIXME: make browser error handling or hide it
+		    Log.warning("browser",message);
+		}
+		@Override public boolean onDownloadStart(String url)
+		{
+		    Log.warning("browser","DOWNLOAD: "+url);
+		    environment.say(PAGE_ANY_PROMPT_ACCEPT_DOWNLOAD);
+
+		    PromptBrowserEvent event=new PromptBrowserEvent(PAGE_SCREEN_PROMPT_MESSAGE,"");
+		    try {event.waitForBeProcessed();} // FIXME: make better error handling
+		    catch(InterruptedException e){e.printStackTrace();}
+		    /*
     			MessagesControl.Prompt prompt=new MessagesControl.Prompt(PAGE_SCREEN_PROMPT_MESSAGE,"");
     			msgControl.messages.add(prompt);
     			//try{ synchronized(prompt){prompt.wait();} } catch(InterruptedException e) {e.printStackTrace();}
@@ -594,28 +604,33 @@ class BrowserArea extends NavigateArea
     				return true;
     			}
 				return false;
-			}
-			@Override public Boolean onConfirm(String message)
-			{
-				environment.say(PAGE_SCREEN_CONFIRM_MESSAGE+message);
-				ConfirmBrowserEvent event=new ConfirmBrowserEvent(message);
-				try {event.waitForBeProcessed();} // FIXME: make better error handling
-				catch(InterruptedException e){e.printStackTrace();}
-				return event.isAccepted();
-			}
-		};
-		this.page.init(browserEvents);
+		}
+
+		@Override public Boolean onConfirm(String message)
+		{
+		    environment.say(PAGE_SCREEN_CONFIRM_MESSAGE+message);
+		    ConfirmBrowserEvent event=new ConfirmBrowserEvent(message);
+		    try {event.waitForBeProcessed();} // FIXME: make better error handling
+		    catch(InterruptedException e){e.printStackTrace();}
+		    return event.isAccepted();
+		}
+	    };
+	this.page.init(browserEvents);
     	elements=page.elementList();
-	}
+    }
 
     @Override public int getLineCount()
     {
     	switch(screenMode)
     	{
-    		case PAGE: return screenPage.getLinesCount();
-    		case TEXT: return screenText.getLinesCount();
-    		case DOWNLOAD: return screenDownload.getLinesCount();
-    		default: return 0;
+	case PAGE: 
+	    return screenPage.getLinesCount();
+	case TEXT: 
+	    return screenText.getLinesCount();
+	case 
+	DOWNLOAD: return screenDownload.getLinesCount();
+	default:
+ return 0;
     	}
     }
 
@@ -623,10 +638,14 @@ class BrowserArea extends NavigateArea
     {
     	switch(screenMode)
     	{
-    		case PAGE: return screenPage.getStringByLine(index);
-    		case TEXT: return screenText.getStringByLine(index);
-    		case DOWNLOAD: return screenDownload.getStringByLine(index);
-    		default: return "";
+	case PAGE:
+	    return screenPage.getStringByLine(index);
+	case TEXT:
+	    return screenText.getStringByLine(index);
+	case DOWNLOAD:
+	    return screenDownload.getStringByLine(index);
+	default:
+	    return "";
     	}
     }
 
@@ -635,62 +654,100 @@ class BrowserArea extends NavigateArea
     	String translatedModeName;
     	switch(screenMode)
     	{
-    		case PAGE:translatedModeName=PAGE_ANY_SCREENMODE_PAGE;break;
-    		case TEXT:translatedModeName=PAGE_ANY_SCREENMODE_TEXT;break;
-    		case DOWNLOAD:translatedModeName=PAGE_ANY_SCREENMODE_DOWNLOAD;break;
-    		default: translatedModeName=screenMode.name();break;
+	case PAGE:
+	    translatedModeName=PAGE_ANY_SCREENMODE_PAGE;break;
+	case TEXT:
+	    translatedModeName=PAGE_ANY_SCREENMODE_TEXT;break;
+	case DOWNLOAD:
+	    translatedModeName=PAGE_ANY_SCREENMODE_DOWNLOAD;break;
+	default:
+	    translatedModeName=screenMode.name();break;
     	}
     	return page.getBrowserTitle()+" "+translatedModeName;
     }
-    
-    public boolean onKeyboardEvent(KeyboardEvent event)
-    {
-		//Log.debug("webbrowser","alt:"+event.withAlt()+", ctrl"+event.withControl()+", shift:"+event.withShift());
-    	switch(event.getCharacter())
-    	{
-    		// Ctrl+F or '/' call text search
-    		case 'f':if(!event.withControlOnly()) return true; 
-    		case '/':
-    			{onChangeTextFilter();return true;}
-    		default: break;
-    	}
-    	switch (event.getCommand())
-    	{
-    		case KeyboardEvent.ESCAPE: {onBreakCommand();return true;}
-    		case KeyboardEvent.F5: {onChangeTagFilters();return true;}
-    		case KeyboardEvent.F6: {onChangeCurrentPageLink();return true;}
-    		case KeyboardEvent.F7: {onChangeScreenModeToText();return true;}
-    		case KeyboardEvent.F8: {onChangeScreenModeToPage();return true;}
-    		case KeyboardEvent.F9: {onChangeScreenModeToDownload();return true;}
-    		case KeyboardEvent.F11:{onChangeWebViewVisibility();return true;}
 
+    @Override public boolean onKeyboardEvent(KeyboardEvent event)
+    {
+	NullCheck.notNull(event, "event");
+	if (event.isCommand())
+	    switch (event.getCommand())
+	    {
+	    case KeyboardEvent.ESCAPE:
+		onBreakCommand();
+		return true;
+	    case KeyboardEvent.F5:
+		onChangeTagFilters();
+		return true;
+	    case KeyboardEvent.F6: 
+		onChangeCurrentPageLink();
+		return true;
+	    case KeyboardEvent.F7: 
+		onChangeScreenModeToText();
+		return true;
+	    case KeyboardEvent.F8: 
+		onChangeScreenModeToPage();
+		return true;
+	    case KeyboardEvent.F9: 
+		onChangeScreenModeToDownload();
+		return true;
+	    case KeyboardEvent.F11:
+		onChangeWebViewVisibility();
+		return true;
     		// navigation
-    		case KeyboardEvent.ARROW_LEFT:
-    		case KeyboardEvent.ALTERNATIVE_ARROW_LEFT:
-    			if(event.withShiftOnly()) {onElementNavigateLeft();return true;}
-   			break;
-    		case KeyboardEvent.ARROW_RIGHT:
-    		case KeyboardEvent.ALTERNATIVE_ARROW_RIGHT:
-    			if(event.withShiftOnly()) {onElementNavigateRight();return true;}
+	    case KeyboardEvent.ARROW_LEFT:
+	    case KeyboardEvent.ALTERNATIVE_ARROW_LEFT:
+		if(event.withShiftOnly()) 
+		{
+		    onElementNavigateLeft();
+		    return true;
+		}
+		break;
+	    case KeyboardEvent.ARROW_RIGHT:
+	    case KeyboardEvent.ALTERNATIVE_ARROW_RIGHT:
+		if(event.withShiftOnly()) 
+		{
+		    onElementNavigateRight();
+		    return true;
+		}
     		break;
     		// filtered navigation
-    		case KeyboardEvent.TAB:
-   			if(event.withShiftOnly()){onSearchResultNavigationLeft();return true;}
-   			else if(!event.withAlt()&&!event.withControl()&&!event.withShift()) {onSearchResultNavigationRight();return true;}
+	    case KeyboardEvent.TAB:
+		if(event.withShiftOnly())
+		{
+		    onSearchResultNavigationLeft();
+		    return true;
+		} else 
+		    if(!event.withAlt()&&!event.withControl()&&!event.withShift()) 
+		    {
+			onSearchResultNavigationRight();
+			return true;
+		    }
+		// actions
+	    case KeyboardEvent.ENTER:
+		onDefaultAction();
+		return true;
+	    default:
+		return super.onKeyboardEvent(event);
+	    }
 
-   			// actions
-    		case KeyboardEvent.ENTER:{onDefaultAction();return true;}
-    		default: break;
+    	switch(event.getCharacter())
+    	{
+	    // Ctrl+F or '/' call text search
+	case 'f':
+	    if(!event.withControlOnly()) 
+		return true; 
+	case '/':
+	    onChangeTextFilter();
+	    return true;
     	}
     	return super.onKeyboardEvent(event);
     }
 
-    //
-    void onBreakCommand()
-	{
+    private void onBreakCommand()
+    {
     	switch(screenMode)
     	{
-    		case DOWNLOAD:  
+	case DOWNLOAD:  
     		case PAGE:
     			page.stop();
    			break;  
@@ -819,35 +876,20 @@ class BrowserArea extends NavigateArea
 		screenMode=ScreenMode.DOWNLOAD;
 		screenDownload.refreshInfo();
 	}
-    void onChangeCurrentPageLink()
-	{
-		//String link="http://rpserver/a.html";
-		//String link="http://ya.ru";
-		environment.say(PAGE_ANY_PROMPT_ADDRESS);
 
-		PromptBrowserEvent event=new PromptBrowserEvent(PAGE_ANY_PROMPT_ADDRESS,"");
-		try {event.waitForBeProcessed();} // FIXME: make better error handling
-		catch(InterruptedException e){e.printStackTrace();}
-		String link=event.getPrompt();
-		/*
-		MessagesControl.Prompt prompt=new MessagesControl.Prompt(PAGE_ANY_PROMPT_ADDRESS,"");
-		msgControl.messages.add(prompt);
-		//try{ synchronized(prompt){prompt.wait();} } catch(InterruptedException e) {e.printStackTrace();}
-		synchronized(prompt){msgControl.doit();}
-		String link=prompt.result;
-		prompt.remove();
-		*/
-		
-		if(link==null) return;
-		if(!link.matches("^(http|https|ftp)://.*$")) link="http://"+link;
-		
-		page.load(link);
-		screenPage.changedUrl(link);
-		
-		screenMode=ScreenMode.PAGE;
-		
-		environment.onAreaNewContent(that);
-	}
+    private void onChangeCurrentPageLink()
+    {
+	String link = Popups.simple(luwrain, "Открыть страницу", "Введите адрес новой страницы:", "http://");
+	if(link==null) 
+	    return;
+	if(!link.matches("^(http|https|ftp)://.*$"))
+	    link="http://"+link;
+	page.load(link);
+	screenPage.changedUrl(link);
+	screenMode=ScreenMode.PAGE;
+	environment.onAreaNewContent(that);
+    }
+
     void onChangeWebViewVisibility()
 	{
 		page.setVisibility(!page.getVisibility());
