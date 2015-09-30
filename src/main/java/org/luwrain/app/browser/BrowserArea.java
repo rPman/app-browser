@@ -25,7 +25,7 @@ import java.net.URL;
 import java.util.Date;
 import java.util.Vector;
 
-import javax.swing.SwingUtilities;
+
 
 import javafx.concurrent.Worker.State;
 
@@ -112,13 +112,30 @@ class BrowserArea extends NavigateArea implements Constants
     private SelectorTAG tagSelectorFiltered=null;
     private SelectorCSS cssSelectorEmpty=null;
     private SelectorCSS cssSelectorFiltered=null;
-
     private Selector currentSelectorEmpty=null;
     private Selector currentSelectorFiltered=null;
 
+private final FileDownloadThread fileDownloadThread=new FileDownloadThread();
+    private final ScreenDownload screenDownload=new ScreenDownload(fileDownloadThread);
 
+    BrowserArea that;
 
-
+    BrowserArea(Luwrain luwrain,
+		final ControlEnvironment environment,
+		Browser browser)
+    {
+	super(environment);
+	that=this;
+	this.luwrain = luwrain;
+	this.environment = environment;
+	this.page = (WebPage)browser;
+	NullCheck.notNull(luwrain, "luwrain");
+	NullCheck.notNull(environment, "environment");
+	NullCheck.notNull(browser, "browser");
+	browserEvents = new Events();
+	this.page.init(browserEvents);
+    	elements=page.elementList();
+    }
 
     void fillCurrentElementInfo()
     {
@@ -139,306 +156,6 @@ class BrowserArea extends NavigateArea implements Constants
     	}
     }
 
-    class ScreenDownload
-    { // contains first line - file name, file size, progress and last multiline - download link
-    	String filename="";
-    	String filetype=null;
-    	Integer filesize=null;
-    	Integer progress=null;
-
-	String[] link=new String[1];
-
-	void setLink(String string)
-    	{
-	    link=Constants.splitTextForScreen(string);
-    	}
-
-	int getLinesCount()
-    	{
-	    return 4+link.length;
-    	}
-
-	String getStringByLine(int line)
-    	{
-	    if(line==0) return filename;
-	    if(line==1) return filetype==null?null:PAGE_DOWNLOAD_FIELD_FILETYPE+filetype;
-	    if(line==2) return filesize==null?null:PAGE_DOWNLOAD_FIELD_FILESIZE+filesize;
-	    if(line==3) return progress==null?null:PAGE_DOWNLOAD_FIELD_PROGRESS+(progress==100?PAGE_DOWNLOAD_FIELD_PROGRESS_FINISHED:progress+"%");
-	    if(line>=4&&line<4+link.length)
-	    {
-		int subline=line-4;
-		return link[subline];
-	    }
-	    return null;
-    	}
-
-	void breakExecution()
-    	{
-	    if(fileDownloadThread.isAlive())
-	    {
-		fileDownloadThread.interrupt();
-	    }
-    	}
-        void refreshInfo()
-        {
-	    if(screenMode==ScreenMode.DOWNLOAD)
-		environment.onAreaNewContent(that);
-        }
-    }
-
-    ScreenDownload screenDownload=new ScreenDownload();
-
-    class FileDownloadThread extends Thread
-    {
-        String downloadLink=null;
-
-        public void run() 
-        {
-	    SwingUtilities.invokeLater(new Runnable() { @Override public void run()
-		    {
-        		screenDownload.setLink(downloadLink);
-        		screenDownload.refreshInfo();
-		    }});
-
-	    HttpURLConnection httpConn=null;
-
-	    try
-	    {
-		if(downloadLink==null) return; // fixme: make dev error handling
-		URL url = new URL(downloadLink);
-		httpConn = (HttpURLConnection) url.openConnection();
-		int responseCode = httpConn.getResponseCode();
-
-		// always check HTTP response code first
-		if (responseCode == HttpURLConnection.HTTP_OK)
-		{
-		    String fileName = "";
-		    String disposition = httpConn.getHeaderField("Content-Disposition");
-		    String contentType = httpConn.getContentType();
-		    int contentLength = httpConn.getContentLength();
-
-		    if (disposition != null)
-		    {
-			// extracts file name from header field
-			int index = disposition.indexOf("filename=");
-			if (index > 0)
-			{
-			    fileName = disposition.substring(index + 10,disposition.length() - 1);
-			}
-		    } else {
-			// extracts file name from URL
-			// FIXME: make better filename extraction from url
-			fileName = downloadLink.substring(downloadLink.lastIndexOf("/") + 1,downloadLink.length());
-		    }
-
-		    //System.out.println("Content-Type = " + contentType);
-		    //System.out.println("Content-Disposition = " + disposition);
-		    //System.out.println("Content-Length = " + contentLength);
-		    //System.out.println("fileName = " + fileName);
-
-		    final String fileType_=contentType;
-		    final String fileName_=fileName;
-		    final int fileSize_=contentLength;
-		    SwingUtilities.invokeLater(new Runnable() { @Override public void run()
-			    {
-				screenDownload.filename=fileName_;
-				screenDownload.filesize=fileSize_;
-				screenDownload.filetype=fileType_;
-				screenDownload.refreshInfo();
-			    }});
-	
-		    // opens input stream from the HTTP connection
-		    InputStream inputStream;
-		    inputStream=httpConn.getInputStream();
-		    String saveFilePath = DEFAULT_DOWNLOAD_DIR+File.separator + fileName;
-
-		    // opens an output stream to save into file
-		    FileOutputStream outputStream = new FileOutputStream(saveFilePath);
-
-		    int bytesRead = -1;
-		    int bytesAll=0;
-		            byte[] buffer = new byte[BUFFER_SIZE];
-		            Date prev=new Date();
-		            while ((bytesRead = inputStream.read(buffer)) != -1)
-		            {
-		                bytesAll+=bytesRead;
-		                outputStream.write(buffer, 0, bytesRead);
-		                // show progress, not more often then 1 times per second
-		                Date now=new Date();
-		                if(now.getTime()-prev.getTime()>=1000)
-		                { // show progress
-				    final int downloadedSize=bytesAll;
-				    SwingUtilities.invokeLater(new Runnable() { @Override public void run()
-					    {
-		                		screenDownload.progress=100*downloadedSize/screenDownload.filesize;
-		                		screenDownload.refreshInfo();
-					    }});
-		                }
-		            }
-
-		            outputStream.close();
-		            inputStream.close();
-		            // download finished
-			    SwingUtilities.invokeLater(new Runnable() { @Override public void run()
-				    {
-					screenDownload.progress=100;
-					screenDownload.refreshInfo();
-			        	environment.say(PAGE_DOWNLOAD_FINISHED);
-				    }});
-			    //System.out.println("File downloaded");
-		} else
-		{
-		    //System.out.println("No file to download. Server replied HTTP code: " + responseCode);
-		    throw new Exception();
-		}
-	    } catch(Exception e)
-	    {
-		// download failed
-		SwingUtilities.invokeLater(new Runnable() { @Override public void run()
-		        {
-			    environment.say(PAGE_DOWNLOAD_FAILED);
-		        }});
-		e.printStackTrace();
-	    }
-	    finally
-	    {
-		if(httpConn!=null) httpConn.disconnect();
-	    }
-        }
-    }
-
-    FileDownloadThread fileDownloadThread=new FileDownloadThread();
-    
-    BrowserArea that;
-
-    BrowserArea(Luwrain luwrain,
-		final ControlEnvironment environment,
-		Browser browser)
-    {
-	super(environment);
-	that=this;
-	this.luwrain = luwrain;
-	this.environment = environment;
-	this.page = (WebPage)browser;
-	NullCheck.notNull(luwrain, "luwrain");
-	NullCheck.notNull(environment, "environment");
-	NullCheck.notNull(browser, "browser");
-	browserEvents=new BrowserEvents()
-	    {
-		@Override public void onChangeState(State state)
-		{
-		    //screenPage.changedUrl("test");
-		    //screenPage.changedTitle("title");
-		    screenPage.changedState(state.name());
-		    if(state==State.SUCCEEDED)
-		    {
-			screenPage.changedTitle(page.getTitle());
-	    			screenPage.changedUrl(page.getUrl());
-
-				page.RescanDOM();
-	    			
-				textSelectorEmpty=page.selectorTEXT(true,null);
-	    			if(!textSelectorEmpty.first(elements))
-	    			{
-				    environment.say(PAGE_SCREEN_ANY_HAVENO_ELEMENT);
-	    			}
-	    			currentSelectorEmpty=textSelectorEmpty;
-
-	    			screenMode=ScreenMode.PAGE;
-	    			environment.onAreaNewContent(that);
-
-	    			environment.say(PAGE_ANY_STATE_LOADED);
-		    } else
-		    {
-			environment.say(PAGE_ANY_STATE_CANCELED);
-			screenPage.changedTitle("");
-		    }
-		    environment.onAreaNewContent(that);
-		}
-
-		@Override public void onProgress(Number progress)
-		{
-		    screenPage.changedProgress((double)progress);
-		    environment.onAreaNewContent(that);
-		}
-		@Override public void onAlert(final String message)
-		{
-		    environment.say(PAGE_SCREEN_ALERT_MESSAGE+message);
-		    AlertBrowserEvent event=new AlertBrowserEvent(message);
-		    try {event.waitForBeProcessed();} // FIXME: make better error handling
-		    catch(InterruptedException e){e.printStackTrace();}
-		    /*
-		      MessagesControl.Alert alert=new MessagesControl.Alert(PAGE_SCREEN_ALERT_MESSAGE,message);
-		      msgControl.messages.add(alert);
-    			//try{ synchronized(alert){alert.wait();} } catch(InterruptedException e) {e.printStackTrace();}
-    			synchronized(alert){msgControl.doit();}
-    			alert.remove();
-    			*/
-		}
-
-		@Override public String onPrompt(final String message,final String value)
-		{
-		    environment.say(PAGE_SCREEN_PROMPT_MESSAGE+message);
-		    PromptBrowserEvent event=new PromptBrowserEvent(message,value);
-		    try {event.waitForBeProcessed();} // FIXME: make better error handling
-		    catch(InterruptedException e){e.printStackTrace();}
-		    /*
-		      MessagesControl.Prompt prompt=new MessagesControl.Prompt(PAGE_SCREEN_PROMPT_MESSAGE,"ya.ru");
-		      msgControl.messages.add(prompt);
-		      //try{ synchronized(prompt){prompt.wait();} } catch(InterruptedException e) {e.printStackTrace();}
-		      synchronized(prompt){msgControl.doit();}
-		      String result=prompt.result;
-		      prompt.remove();
-		    */
-		    return event.getPrompt();
-		}
-
-		@Override public void onError(String message)
-		{
-		    // FIXME: make browser error handling or hide it
-		    Log.warning("browser",message);
-		}
-		@Override public boolean onDownloadStart(String url)
-		{
-		    Log.warning("browser","DOWNLOAD: "+url);
-		    environment.say(PAGE_ANY_PROMPT_ACCEPT_DOWNLOAD);
-
-		    PromptBrowserEvent event=new PromptBrowserEvent(PAGE_SCREEN_PROMPT_MESSAGE,"");
-		    try {event.waitForBeProcessed();} // FIXME: make better error handling
-		    catch(InterruptedException e){e.printStackTrace();}
-		    /*
-    			MessagesControl.Prompt prompt=new MessagesControl.Prompt(PAGE_SCREEN_PROMPT_MESSAGE,"");
-    			msgControl.messages.add(prompt);
-    			//try{ synchronized(prompt){prompt.wait();} } catch(InterruptedException e) {e.printStackTrace();}
-    			synchronized(prompt){msgControl.doit();}
-    			String result=prompt.result;
-    			prompt.remove();
-    			*/
-    			
-    			if(event.getPrompt()!=null&&!event.getPrompt().isEmpty())
-    			{ // cancel previous downloading and start new
-    				if(fileDownloadThread.isAlive()) fileDownloadThread.interrupt();
-    				fileDownloadThread.downloadLink=url;
-    				fileDownloadThread.start();
-    				environment.say(PAGE_DOWNLOAD_START);
-    				return true;
-    			}
-				return false;
-		}
-
-		@Override public Boolean onConfirm(String message)
-		{
-		    environment.say(PAGE_SCREEN_CONFIRM_MESSAGE+message);
-		    ConfirmBrowserEvent event=new ConfirmBrowserEvent(message);
-		    try {event.waitForBeProcessed();} // FIXME: make better error handling
-		    catch(InterruptedException e){e.printStackTrace();}
-		    return event.isAccepted();
-		}
-	    };
-	this.page.init(browserEvents);
-    	elements=page.elementList();
-    }
-
     @Override public int getLineCount()
     {
     	switch(screenMode)
@@ -450,7 +167,7 @@ class BrowserArea extends NavigateArea implements Constants
 	case 
 	DOWNLOAD: return screenDownload.getLinesCount();
 	default:
- return 0;
+	    return 0;
     	}
     }
 
