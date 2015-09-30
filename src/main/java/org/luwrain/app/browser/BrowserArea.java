@@ -101,6 +101,7 @@ class BrowserArea extends NavigateArea
 	static final String PAGE_SCREEN_TEXT_SIZE="размер ";
 	static final String PAGE_SCREEN_PROMPT_MESSAGE="Запрос на ввод текста от вебстраницы";
 	static final String PAGE_SCREEN_ALERT_MESSAGE="Сообщение от вебстраницы ";
+	static final String PAGE_SCREEN_CONFIRM_MESSAGE="Запрос подтверждения от вебстраницы ";
 	static final String PAGE_ANY_PROMPT_TEXT_FILTER="Введите строку для поиска текста";
 	static final String PAGE_ANY_PROMPT_ADDRESS="Введите новый интернет адрес";
 	static final String PAGE_ANY_PROMPT_NEW_TEXT="Введите новое значение для элемента";
@@ -145,8 +146,6 @@ class BrowserArea extends NavigateArea
     Selector currentSelectorFiltered=null;
     
     ElementList elements=null;
-    
-    MessagesControl msgControl=new MessagesControl();
     
     class ScreenPage
     {
@@ -520,48 +519,72 @@ class BrowserArea extends NavigateArea
 			@Override public void onAlert(final String message)
 			{
 				environment.say(PAGE_SCREEN_ALERT_MESSAGE+message);
+				AlertBrowserEvent event=new AlertBrowserEvent(message);
+				try {event.waitForBeProcessed();} // FIXME: make better error handling
+				catch(InterruptedException e){e.printStackTrace();}
+				/*
     			MessagesControl.Alert alert=new MessagesControl.Alert(PAGE_SCREEN_ALERT_MESSAGE,message);
     			msgControl.messages.add(alert);
     			//try{ synchronized(alert){alert.wait();} } catch(InterruptedException e) {e.printStackTrace();}
     			synchronized(alert){msgControl.doit();}
     			alert.remove();
+    			*/
 			}
 			@Override public String onPrompt(final String message,final String value)
 			{
 				environment.say(PAGE_SCREEN_PROMPT_MESSAGE+message);
-				
+				PromptBrowserEvent event=new PromptBrowserEvent(message,value);
+				try {event.waitForBeProcessed();} // FIXME: make better error handling
+				catch(InterruptedException e){e.printStackTrace();}
+				/*
     			MessagesControl.Prompt prompt=new MessagesControl.Prompt(PAGE_SCREEN_PROMPT_MESSAGE,"ya.ru");
     			msgControl.messages.add(prompt);
     			//try{ synchronized(prompt){prompt.wait();} } catch(InterruptedException e) {e.printStackTrace();}
     			synchronized(prompt){msgControl.doit();}
     			String result=prompt.result;
     			prompt.remove();
-    			return result;
+    			*/
+    			return event.getPrompt();
 			}
 			@Override public void onError(String message)
 			{
+				// FIXME: make browser error handling or hide it
 				Log.warning("browser",message);
 			}
 			@Override public boolean onDownloadStart(String url)
 			{
 				Log.warning("browser","DOWNLOAD: "+url);
 				environment.say(PAGE_ANY_PROMPT_ACCEPT_DOWNLOAD);
+				
+				PromptBrowserEvent event=new PromptBrowserEvent(PAGE_SCREEN_PROMPT_MESSAGE,"");
+				try {event.waitForBeProcessed();} // FIXME: make better error handling
+				catch(InterruptedException e){e.printStackTrace();}
+				/*
     			MessagesControl.Prompt prompt=new MessagesControl.Prompt(PAGE_SCREEN_PROMPT_MESSAGE,"");
     			msgControl.messages.add(prompt);
     			//try{ synchronized(prompt){prompt.wait();} } catch(InterruptedException e) {e.printStackTrace();}
     			synchronized(prompt){msgControl.doit();}
     			String result=prompt.result;
     			prompt.remove();
+    			*/
     			
-    			if(result!=null)
+    			if(event.getPrompt()!=null&&!event.getPrompt().isEmpty())
     			{ // cancel previous downloading and start new
     				if(fileDownloadThread.isAlive()) fileDownloadThread.interrupt();
     				fileDownloadThread.downloadLink=url;
     				fileDownloadThread.start();
     				environment.say(PAGE_DOWNLOAD_START);
+    				return true;
     			}
-    			
-				return result!=null;
+				return false;
+			}
+			@Override public Boolean onConfirm(String message)
+			{
+				environment.say(PAGE_SCREEN_CONFIRM_MESSAGE+message);
+				ConfirmBrowserEvent event=new ConfirmBrowserEvent(message);
+				try {event.waitForBeProcessed();} // FIXME: make better error handling
+				catch(InterruptedException e){e.printStackTrace();}
+				return event.isAccepted();
 			}
 		};
 		this.page.init(browserEvents);
@@ -674,12 +697,18 @@ class BrowserArea extends NavigateArea
 	{
 		environment.say(PAGE_ANY_PROMPT_TEXT_FILTER);
 
+		PromptBrowserEvent event=new PromptBrowserEvent(PAGE_ANY_PROMPT_TEXT_FILTER,"");
+		try {event.waitForBeProcessed();} // FIXME: make better error handling
+		catch(InterruptedException e){e.printStackTrace();}
+		String filter=event.getPrompt();
+		/*
 		MessagesControl.Prompt prompt=new MessagesControl.Prompt(PAGE_ANY_PROMPT_TEXT_FILTER,"");
 		msgControl.messages.add(prompt);
 		//try{ synchronized(prompt){prompt.wait();} } catch(InterruptedException e) {e.printStackTrace();}
 		synchronized(prompt){msgControl.doit();}
 		String filter=prompt.result;
 		prompt.remove();
+		*/
 		
 		if(filter==null) return;
 		if(filter.isEmpty()) filter=null;
@@ -701,6 +730,11 @@ class BrowserArea extends NavigateArea
     void onChangeTagFilters()
     {
 		environment.say(PAGE_ANY_PROMPT_TAGFILTER_NAME);
+		PromptBrowserEvent event=new PromptBrowserEvent(PAGE_ANY_PROMPT_TAGFILTER_NAME,"");
+		try {event.waitForBeProcessed();} // FIXME: make better error handling
+		catch(InterruptedException e){e.printStackTrace();}
+		String filter=event.getPrompt();
+		/*
 		MessagesControl.Prompt prompt;
 		prompt=new MessagesControl.Prompt(PAGE_ANY_PROMPT_TAGFILTER_NAME,"");
 		msgControl.messages.add(prompt);
@@ -708,10 +742,17 @@ class BrowserArea extends NavigateArea
 		synchronized(prompt){msgControl.doit();}
 		String filter=prompt.result;
 		prompt.remove();
+		*/
 		
 		if(filter==null) return;
 		if(filter.isEmpty()) filter=null;
 
+		environment.say(PAGE_ANY_PROMPT_TAGFILTER_ATTR);
+		event=new PromptBrowserEvent(PAGE_ANY_PROMPT_TAGFILTER_ATTR,"");
+		try {event.waitForBeProcessed();} // FIXME: make better error handling
+		catch(InterruptedException e){e.printStackTrace();}
+		String attrName=event.getPrompt();
+		/*
 		environment.say(PAGE_ANY_PROMPT_TAGFILTER_ATTR);
 		prompt=new MessagesControl.Prompt(PAGE_ANY_PROMPT_TAGFILTER_ATTR,"");
 		msgControl.messages.add(prompt);
@@ -719,17 +760,24 @@ class BrowserArea extends NavigateArea
 		synchronized(prompt){msgControl.doit();}
 		String attrName=prompt.result;
 		prompt.remove();
+		*/
 		
 		if(attrName==null) return;
 		if(attrName.isEmpty()) attrName=null;
 
 		environment.say(PAGE_ANY_PROMPT_TAGFILTER_VALUE);
+		event=new PromptBrowserEvent(PAGE_ANY_PROMPT_TAGFILTER_VALUE,"");
+		try {event.waitForBeProcessed();} // FIXME: make better error handling
+		catch(InterruptedException e){e.printStackTrace();}
+		String attrValue=event.getPrompt();
+		/*
 		prompt=new MessagesControl.Prompt(PAGE_ANY_PROMPT_TAGFILTER_VALUE,"");
 		msgControl.messages.add(prompt);
 		//try{ synchronized(prompt){prompt.wait();} } catch(InterruptedException e) {e.printStackTrace();}
 		synchronized(prompt){msgControl.doit();}
 		String attrValue=prompt.result;
 		prompt.remove();
+		*/
 		
 		if(attrValue==null) return;
 		if(attrValue.isEmpty()) attrValue=null;
@@ -760,12 +808,18 @@ class BrowserArea extends NavigateArea
 		//String link="http://ya.ru";
 		environment.say(PAGE_ANY_PROMPT_ADDRESS);
 
+		PromptBrowserEvent event=new PromptBrowserEvent(PAGE_ANY_PROMPT_ADDRESS,"");
+		try {event.waitForBeProcessed();} // FIXME: make better error handling
+		catch(InterruptedException e){e.printStackTrace();}
+		String link=event.getPrompt();
+		/*
 		MessagesControl.Prompt prompt=new MessagesControl.Prompt(PAGE_ANY_PROMPT_ADDRESS,"");
 		msgControl.messages.add(prompt);
 		//try{ synchronized(prompt){prompt.wait();} } catch(InterruptedException e) {e.printStackTrace();}
 		synchronized(prompt){msgControl.doit();}
 		String link=prompt.result;
 		prompt.remove();
+		*/
 		
 		if(link==null) return;
 		if(!link.matches("^(http|https|ftp)://.*$")) link="http://"+link;
@@ -834,12 +888,18 @@ class BrowserArea extends NavigateArea
 			String oldvalue=elements.getText();
 			environment.say(PAGE_ANY_PROMPT_NEW_TEXT);
 			// prompt new value
+			PromptBrowserEvent event=new PromptBrowserEvent(PAGE_ANY_PROMPT_NEW_TEXT,oldvalue);
+			try {event.waitForBeProcessed();} // FIXME: make better error handling
+			catch(InterruptedException e){e.printStackTrace();}
+			String newvalue=event.getPrompt();
+			/*
 			MessagesControl.Prompt prompt=new MessagesControl.Prompt(PAGE_ANY_PROMPT_NEW_TEXT,oldvalue);
 			msgControl.messages.add(prompt);
 			//try{ synchronized(prompt){prompt.wait();} } catch(InterruptedException e) {e.printStackTrace();}
 			synchronized(prompt){msgControl.doit();}
 			String newvalue=prompt.result;
 			prompt.remove();
+			*/
 			// change to new value
 			elements.setText(newvalue);
 			// refresh screen info
