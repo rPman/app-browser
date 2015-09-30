@@ -61,7 +61,7 @@ class BrowserApp implements Application, Actions
 
     private void createArea()
     {
-    	area = new BrowserArea(new DefaultControlEnvironment(luwrain), luwrain.createBrowser());
+    	area = new BrowserArea(luwrain, new DefaultControlEnvironment(luwrain), luwrain.createBrowser());
     }
 
     @Override public AreaLayout getAreasToShow()
