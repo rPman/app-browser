@@ -377,19 +377,8 @@ private final FileDownloadThread fileDownloadThread=new FileDownloadThread();
     void onChangeTextFilter()
 	{
 		environment.say(PAGE_ANY_PROMPT_TEXT_FILTER);
-
-		PromptBrowserEvent event=new PromptBrowserEvent(PAGE_ANY_PROMPT_TEXT_FILTER,"");
-		try {event.waitForBeProcessed();} // FIXME: make better error handling
-		catch(InterruptedException e){e.printStackTrace();}
-		String filter=event.getPrompt();
-		/*
-		MessagesControl.Prompt prompt=new MessagesControl.Prompt(PAGE_ANY_PROMPT_TEXT_FILTER,"");
-		msgControl.messages.add(prompt);
-		//try{ synchronized(prompt){prompt.wait();} } catch(InterruptedException e) {e.printStackTrace();}
-		synchronized(prompt){msgControl.doit();}
-		String filter=prompt.result;
-		prompt.remove();
-		*/
+		//FIXME: Ask for new filter;
+		String filter = "";
 		
 		if(filter==null) return;
 		if(filter.isEmpty()) filter=null;
@@ -411,54 +400,22 @@ private final FileDownloadThread fileDownloadThread=new FileDownloadThread();
     void onChangeTagFilters()
     {
 		environment.say(PAGE_ANY_PROMPT_TAGFILTER_NAME);
-		PromptBrowserEvent event=new PromptBrowserEvent(PAGE_ANY_PROMPT_TAGFILTER_NAME,"");
-		try {event.waitForBeProcessed();} // FIXME: make better error handling
-		catch(InterruptedException e){e.printStackTrace();}
-		String filter=event.getPrompt();
-		/*
-		MessagesControl.Prompt prompt;
-		prompt=new MessagesControl.Prompt(PAGE_ANY_PROMPT_TAGFILTER_NAME,"");
-		msgControl.messages.add(prompt);
-		//try{ synchronized(prompt){prompt.wait();} } catch(InterruptedException e) {e.printStackTrace();}
-		synchronized(prompt){msgControl.doit();}
-		String filter=prompt.result;
-		prompt.remove();
-		*/
-		
+		//FIXME:Ask for new filter;
+		String filter = "";
 		if(filter==null) return;
 		if(filter.isEmpty()) filter=null;
 
 		environment.say(PAGE_ANY_PROMPT_TAGFILTER_ATTR);
-		event=new PromptBrowserEvent(PAGE_ANY_PROMPT_TAGFILTER_ATTR,"");
-		try {event.waitForBeProcessed();} // FIXME: make better error handling
-		catch(InterruptedException e){e.printStackTrace();}
-		String attrName=event.getPrompt();
-		/*
-		environment.say(PAGE_ANY_PROMPT_TAGFILTER_ATTR);
-		prompt=new MessagesControl.Prompt(PAGE_ANY_PROMPT_TAGFILTER_ATTR,"");
-		msgControl.messages.add(prompt);
-		//try{ synchronized(prompt){prompt.wait();} } catch(InterruptedException e) {e.printStackTrace();}
-		synchronized(prompt){msgControl.doit();}
-		String attrName=prompt.result;
-		prompt.remove();
-		*/
+		//FIXME:Ask for new attr name;
+		String attrName = "";
+		//FIXME:Ask for new attr;		*/
 		
 		if(attrName==null) return;
 		if(attrName.isEmpty()) attrName=null;
 
 		environment.say(PAGE_ANY_PROMPT_TAGFILTER_VALUE);
-		event=new PromptBrowserEvent(PAGE_ANY_PROMPT_TAGFILTER_VALUE,"");
-		try {event.waitForBeProcessed();} // FIXME: make better error handling
-		catch(InterruptedException e){e.printStackTrace();}
-		String attrValue=event.getPrompt();
-		/*
-		prompt=new MessagesControl.Prompt(PAGE_ANY_PROMPT_TAGFILTER_VALUE,"");
-		msgControl.messages.add(prompt);
-		//try{ synchronized(prompt){prompt.wait();} } catch(InterruptedException e) {e.printStackTrace();}
-		synchronized(prompt){msgControl.doit();}
-		String attrValue=prompt.result;
-		prompt.remove();
-		*/
+		//FIXME:Ask for new attr value;
+		String attrValue = "";
 		
 		if(attrValue==null) return;
 		if(attrValue.isEmpty()) attrValue=null;
@@ -553,19 +510,8 @@ private final FileDownloadThread fileDownloadThread=new FileDownloadThread();
 		{ // edit content
 			String oldvalue=elements.getText();
 			environment.say(PAGE_ANY_PROMPT_NEW_TEXT);
-			// prompt new value
-			PromptBrowserEvent event=new PromptBrowserEvent(PAGE_ANY_PROMPT_NEW_TEXT,oldvalue);
-			try {event.waitForBeProcessed();} // FIXME: make better error handling
-			catch(InterruptedException e){e.printStackTrace();}
-			String newvalue=event.getPrompt();
-			/*
-			MessagesControl.Prompt prompt=new MessagesControl.Prompt(PAGE_ANY_PROMPT_NEW_TEXT,oldvalue);
-			msgControl.messages.add(prompt);
-			//try{ synchronized(prompt){prompt.wait();} } catch(InterruptedException e) {e.printStackTrace();}
-			synchronized(prompt){msgControl.doit();}
-			String newvalue=prompt.result;
-			prompt.remove();
-			*/
+			//FIXME:Ask for new value;
+			String newvalue="";
 			// change to new value
 			elements.setText(newvalue);
 			// refresh screen info
@@ -613,76 +559,28 @@ private final FileDownloadThread fileDownloadThread=new FileDownloadThread();
 
     private void onAlert(final String message)
     {
-	environment.say(PAGE_SCREEN_ALERT_MESSAGE+message);
-	AlertBrowserEvent event=new AlertBrowserEvent(message);
-	try {event.waitForBeProcessed();} // FIXME: make better error handling
-	catch(InterruptedException e){e.printStackTrace();}
-	/*
-	  MessagesControl.Alert alert=new MessagesControl.Alert(PAGE_SCREEN_ALERT_MESSAGE,message);
-	  msgControl.messages.add(alert);
-	  //try{ synchronized(alert){alert.wait();} } catch(InterruptedException e) {e.printStackTrace();}
-	  synchronized(alert){msgControl.doit();}
-	  alert.remove();
-	*/
+	//FIXME:
     }
 
 private String onPrompt(final String message,final String value)
     {
-	//	environment.say(PAGE_SCREEN_PROMPT_MESSAGE+message);
-	PromptBrowserEvent event=new PromptBrowserEvent(message,value);
-	try {event.waitForBeProcessed();} // FIXME: make better error handling
-	catch(InterruptedException e){e.printStackTrace();}
-	/*
-	  MessagesControl.Prompt prompt=new MessagesControl.Prompt(PAGE_SCREEN_PROMPT_MESSAGE,"ya.ru");
-	  msgControl.messages.add(prompt);
-	  //try{ synchronized(prompt){prompt.wait();} } catch(InterruptedException e) {e.printStackTrace();}
-	  synchronized(prompt){msgControl.doit();}
-	  String result=prompt.result;
-	  prompt.remove();
-	*/
-	return event.getPrompt();
+	//FIXME:
+	return null;
     }
 
 private void onError(String message)
     {
 	// FIXME: make browser error handling or hide it
-	Log.warning("browser",message);
     }
 
 private boolean onDownloadStart(String url)
     {
-/*
-	Log.warning("browser","DOWNLOAD: "+url);
-	//	environment.say(PAGE_ANY_PROMPT_ACCEPT_DOWNLOAD);
-	PromptBrowserEvent event=new PromptBrowserEvent(PAGE_SCREEN_PROMPT_MESSAGE,"");
-	try {event.waitForBeProcessed();} // FIXME: make better error handling
-	catch(InterruptedException e){e.printStackTrace();}
-	/*
-	  MessagesControl.Prompt prompt=new MessagesControl.Prompt(PAGE_SCREEN_PROMPT_MESSAGE,"");
-	  msgControl.messages.add(prompt);
-	  //try{ synchronized(prompt){prompt.wait();} } catch(InterruptedException e) {e.printStackTrace();}
-	  synchronized(prompt){msgControl.doit();}
-	  String result=prompt.result;
-	  prompt.remove();
-	//
-	if(event.getPrompt()!=null&&!event.getPrompt().isEmpty())
-	{ // cancel previous downloading and start new
-	    if(fileDownloadThread.isAlive()) fileDownloadThread.interrupt();
-	    fileDownloadThread.downloadLink=url;
-	    fileDownloadThread.start();
-	    environment.say(PAGE_DOWNLOAD_START);
-	    return true;
-	}
-*/
-	return false;
+	return true;
     }
 
     private  Boolean onConfirm(String message)
     {
-	//	environment.say(PAGE_SCREEN_CONFIRM_MESSAGE+message);
-	ConfirmBrowserEvent event=new ConfirmBrowserEvent(message);
-	try {event.waitForBeProcessed();} // FIXME: make better error handling
-	catch(InterruptedException e){e.printStackTrace();}
-	return event.isAccepted();
+	//FIXME:
+	return false;
     }
 }
