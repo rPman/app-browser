@@ -101,6 +101,7 @@ class BrowserArea extends NavigateArea implements Constants
 
     private Luwrain luwrain;
     private ControlEnvironment environment;
+    private Actions actions;
     private WebPage page;
     private BrowserEvents browserEvents;
     private ScreenMode screenMode=ScreenMode.PAGE;
@@ -121,18 +122,21 @@ private final FileDownloadThread fileDownloadThread=new FileDownloadThread();
     BrowserArea that;
 
     BrowserArea(Luwrain luwrain,
+		Actions actions,
 		final ControlEnvironment environment,
 		Browser browser)
     {
 	super(environment);
 	that=this;
 	this.luwrain = luwrain;
+	this.actions = actions;
 	this.environment = environment;
 	this.page = (WebPage)browser;
 	NullCheck.notNull(luwrain, "luwrain");
+	NullCheck.notNull(actions, "actions");
 	NullCheck.notNull(environment, "environment");
 	NullCheck.notNull(browser, "browser");
-	browserEvents = new Events();
+	browserEvents = new Events(luwrain, this);
 	this.page.init(browserEvents);
     	elements=page.elementList();
     }
@@ -278,6 +282,72 @@ private final FileDownloadThread fileDownloadThread=new FileDownloadThread();
 	    return true;
     	}
     	return super.onKeyboardEvent(event);
+    }
+
+    @Override public boolean onEnvironmentEvent(EnvironmentEvent event)
+    {
+	NullCheck.notNull(event, "event");
+	switch(event.getCode())
+	{
+	case EnvironmentEvent.CLOSE:
+	    actions.closeApp();
+	    return true;
+	case EnvironmentEvent.THREAD_SYNC:
+	    if (onThreadSyncEvent(event))
+		return true;
+	    return super.onEnvironmentEvent(event);
+	default:
+	    return super.onEnvironmentEvent(event);
+	}
+    }
+
+    private boolean onThreadSyncEvent(EnvironmentEvent event)
+    {
+	if (event instanceof PageChangeStateEvent)
+	{
+	    final PageChangeStateEvent changeState = (PageChangeStateEvent)event;
+	    onPageChangeState(changeState.state());
+	    return true;
+	}
+	if (event instanceof ProgressEvent)
+	{
+	    final ProgressEvent progress = (ProgressEvent)event;
+	    onProgress(progress.value());
+	    return true;
+	}
+	if (event instanceof AlertEvent)
+	{
+	    final AlertEvent alert = (AlertEvent)event;
+	    onAlert(alert.message());
+	    return true;
+	}
+	if (event instanceof PromptEvent)
+	{
+	    final PromptEvent prompt = (PromptEvent)event;
+	    final String answer = onPrompt(prompt.message(), prompt.value());
+	    prompt.setAnswer (answer);
+	    return true;
+	}
+	if (event instanceof ErrorEvent)
+	{
+	    final ErrorEvent error = (ErrorEvent)event;
+	    onError(error.message());
+	    return true;
+	}
+	if (event instanceof DownloadEvent)
+	{
+	    final DownloadEvent download = (DownloadEvent)event;
+	    onDownloadStart(download.url());
+	    return true;
+	}
+	if (event instanceof ConfirmEvent)
+	{
+	    final ConfirmEvent confirm = (ConfirmEvent)event;
+	    final boolean answer = onConfirm(confirm.message());
+	    confirm.setAnswer(answer);
+	    return true;
+	}
+	return false;
     }
 
     private void onBreakCommand()
@@ -507,4 +577,112 @@ private final FileDownloadThread fileDownloadThread=new FileDownloadThread();
 		}
 		return;
 	}
+
+    private void onPageChangeState(State state)
+    {
+	screenPage.changedUrl("test");
+	screenPage.changedTitle("title");
+	screenPage.changedState(state.name());
+	if(state==State.SUCCEEDED)
+	{
+	    screenPage.changedTitle(page.getTitle());
+	    screenPage.changedUrl(page.getUrl());
+	    page.RescanDOM();
+	    textSelectorEmpty=page.selectorTEXT(true,null);
+	    if(!textSelectorEmpty.first(elements))
+	    {
+		environment.say(PAGE_SCREEN_ANY_HAVENO_ELEMENT);
+	    }
+	    currentSelectorEmpty=textSelectorEmpty;
+	    screenMode=ScreenMode.PAGE;
+	    environment.onAreaNewContent(that);
+	    environment.say(PAGE_ANY_STATE_LOADED);
+	} else
+	{
+	    environment.say(PAGE_ANY_STATE_CANCELED);
+	    screenPage.changedTitle("");
+	}
+	environment.onAreaNewContent(that);
+    }
+
+    private void onProgress(Number progress)
+    {
+	screenPage.changedProgress((double)progress);
+	environment.onAreaNewContent(that);
+    }
+
+    private void onAlert(final String message)
+    {
+	environment.say(PAGE_SCREEN_ALERT_MESSAGE+message);
+	AlertBrowserEvent event=new AlertBrowserEvent(message);
+	try {event.waitForBeProcessed();} // FIXME: make better error handling
+	catch(InterruptedException e){e.printStackTrace();}
+	/*
+	  MessagesControl.Alert alert=new MessagesControl.Alert(PAGE_SCREEN_ALERT_MESSAGE,message);
+	  msgControl.messages.add(alert);
+	  //try{ synchronized(alert){alert.wait();} } catch(InterruptedException e) {e.printStackTrace();}
+	  synchronized(alert){msgControl.doit();}
+	  alert.remove();
+	*/
+    }
+
+private String onPrompt(final String message,final String value)
+    {
+	//	environment.say(PAGE_SCREEN_PROMPT_MESSAGE+message);
+	PromptBrowserEvent event=new PromptBrowserEvent(message,value);
+	try {event.waitForBeProcessed();} // FIXME: make better error handling
+	catch(InterruptedException e){e.printStackTrace();}
+	/*
+	  MessagesControl.Prompt prompt=new MessagesControl.Prompt(PAGE_SCREEN_PROMPT_MESSAGE,"ya.ru");
+	  msgControl.messages.add(prompt);
+	  //try{ synchronized(prompt){prompt.wait();} } catch(InterruptedException e) {e.printStackTrace();}
+	  synchronized(prompt){msgControl.doit();}
+	  String result=prompt.result;
+	  prompt.remove();
+	*/
+	return event.getPrompt();
+    }
+
+private void onError(String message)
+    {
+	// FIXME: make browser error handling or hide it
+	Log.warning("browser",message);
+    }
+
+private boolean onDownloadStart(String url)
+    {
+/*
+	Log.warning("browser","DOWNLOAD: "+url);
+	//	environment.say(PAGE_ANY_PROMPT_ACCEPT_DOWNLOAD);
+	PromptBrowserEvent event=new PromptBrowserEvent(PAGE_SCREEN_PROMPT_MESSAGE,"");
+	try {event.waitForBeProcessed();} // FIXME: make better error handling
+	catch(InterruptedException e){e.printStackTrace();}
+	/*
+	  MessagesControl.Prompt prompt=new MessagesControl.Prompt(PAGE_SCREEN_PROMPT_MESSAGE,"");
+	  msgControl.messages.add(prompt);
+	  //try{ synchronized(prompt){prompt.wait();} } catch(InterruptedException e) {e.printStackTrace();}
+	  synchronized(prompt){msgControl.doit();}
+	  String result=prompt.result;
+	  prompt.remove();
+	//
+	if(event.getPrompt()!=null&&!event.getPrompt().isEmpty())
+	{ // cancel previous downloading and start new
+	    if(fileDownloadThread.isAlive()) fileDownloadThread.interrupt();
+	    fileDownloadThread.downloadLink=url;
+	    fileDownloadThread.start();
+	    environment.say(PAGE_DOWNLOAD_START);
+	    return true;
+	}
+*/
+	return false;
+    }
+
+    private  Boolean onConfirm(String message)
+    {
+	//	environment.say(PAGE_SCREEN_CONFIRM_MESSAGE+message);
+	ConfirmBrowserEvent event=new ConfirmBrowserEvent(message);
+	try {event.waitForBeProcessed();} // FIXME: make better error handling
+	catch(InterruptedException e){e.printStackTrace();}
+	return event.isAccepted();
+    }
 }
