@@ -101,6 +101,7 @@ class BrowserArea extends NavigateArea implements Constants
 
     private Luwrain luwrain;
     private ControlEnvironment environment;
+    private Actions actions;
     private WebPage page;
     private BrowserEvents browserEvents;
     private ScreenMode screenMode=ScreenMode.PAGE;
@@ -118,26 +119,23 @@ class BrowserArea extends NavigateArea implements Constants
 private final FileDownloadThread fileDownloadThread=new FileDownloadThread();
     private final ScreenDownload screenDownload=new ScreenDownload(fileDownloadThread);
 
-    BrowserArea that;
-
-    BrowserArea(Luwrain luwrain,
-		final ControlEnvironment environment,
+    BrowserArea(Luwrain luwrain, Actions actions,
 		Browser browser)
     {
-	super(environment);
-	that=this;
+	super(new DefaultControlEnvironment(luwrain));
 	this.luwrain = luwrain;
-	this.environment = environment;
+	this.actions = actions;
+	this.environment = new DefaultControlEnvironment(luwrain);
 	this.page = (WebPage)browser;
 	NullCheck.notNull(luwrain, "luwrain");
-	NullCheck.notNull(environment, "environment");
+	NullCheck.notNull(actions, "actions");
 	NullCheck.notNull(browser, "browser");
-	browserEvents = new Events();
+	browserEvents = new Events(luwrain, this);
 	this.page.init(browserEvents);
     	elements=page.elementList();
     }
 
-    void fillCurrentElementInfo()
+    private void fillCurrentElementInfo()
     {
     	if(currentSelectorEmpty==null)
     	{
@@ -280,139 +278,168 @@ private final FileDownloadThread fileDownloadThread=new FileDownloadThread();
     	return super.onKeyboardEvent(event);
     }
 
+    @Override public boolean onEnvironmentEvent(EnvironmentEvent event)
+    {
+	NullCheck.notNull(event, "event");
+	switch(event.getCode())
+	{
+	case EnvironmentEvent.CLOSE:
+	    actions.closeApp();
+	    return true;
+	case EnvironmentEvent.THREAD_SYNC:
+	    if (onThreadSyncEvent(event))
+		return true;
+	    return super.onEnvironmentEvent(event);
+	default:
+	    return super.onEnvironmentEvent(event);
+	}
+    }
+
+    private boolean onThreadSyncEvent(EnvironmentEvent event)
+    {
+	if (event instanceof PageChangeStateEvent)
+	{
+	    final PageChangeStateEvent changeState = (PageChangeStateEvent)event;
+	    onPageChangeState(changeState.state());
+	    return true;
+	}
+	if (event instanceof ProgressEvent)
+	{
+	    final ProgressEvent progress = (ProgressEvent)event;
+	    onProgress(progress.value());
+	    return true;
+	}
+	if (event instanceof AlertEvent)
+	{
+	    final AlertEvent alert = (AlertEvent)event;
+	    onAlert(alert.message());
+	    return true;
+	}
+	if (event instanceof PromptEvent)
+	{
+	    final PromptEvent prompt = (PromptEvent)event;
+	    final String answer = onPrompt(prompt.message(), prompt.value());
+	    prompt.setAnswer (answer);
+	    return true;
+	}
+	if (event instanceof ErrorEvent)
+	{
+	    final ErrorEvent error = (ErrorEvent)event;
+	    onError(error.message());
+	    return true;
+	}
+	if (event instanceof DownloadEvent)
+	{
+	    final DownloadEvent download = (DownloadEvent)event;
+	    onDownloadStart(download.url());
+	    return true;
+	}
+	if (event instanceof ConfirmEvent)
+	{
+	    final ConfirmEvent confirm = (ConfirmEvent)event;
+	    final boolean answer = onConfirm(confirm.message());
+	    confirm.setAnswer(answer);
+	    return true;
+	}
+	return false;
+    }
+
     private void onBreakCommand()
     {
     	switch(screenMode)
     	{
 	case DOWNLOAD:  
-    		case PAGE:
-    			page.stop();
-   			break;  
-    		case TEXT:
-    			screenDownload.breakExecution();
-   			break;  
+	case PAGE:
+	    page.stop();
+	    break;  
+	case TEXT:
+	    screenDownload.breakExecution();
+	    break;  
     	}
-	}
-    void onChangeScreenModeToText()
-    {
-		screenMode=ScreenMode.TEXT;
-		fillCurrentElementInfo();
-		environment.onAreaNewContent(that);
     }
+
+    private void onChangeScreenModeToText()
+    {
+	screenMode=ScreenMode.TEXT;
+	fillCurrentElementInfo();
+	environment.onAreaNewContent(this);
+    }
+
     void onChangeScreenModeToPage()
-	{
-		screenMode=ScreenMode.PAGE;
-		environment.onAreaNewContent(that);
-	}
-    void onChangeTextFilter()
-	{
-		environment.say(PAGE_ANY_PROMPT_TEXT_FILTER);
-
-		PromptBrowserEvent event=new PromptBrowserEvent(PAGE_ANY_PROMPT_TEXT_FILTER,"");
-		try {event.waitForBeProcessed();} // FIXME: make better error handling
-		catch(InterruptedException e){e.printStackTrace();}
-		String filter=event.getPrompt();
-		/*
-		MessagesControl.Prompt prompt=new MessagesControl.Prompt(PAGE_ANY_PROMPT_TEXT_FILTER,"");
-		msgControl.messages.add(prompt);
-		//try{ synchronized(prompt){prompt.wait();} } catch(InterruptedException e) {e.printStackTrace();}
-		synchronized(prompt){msgControl.doit();}
-		String filter=prompt.result;
-		prompt.remove();
-		*/
-		
-		if(filter==null) return;
-		if(filter.isEmpty()) filter=null;
-		// make new selector
-		textSelectorFiltered=page.selectorTEXT(true,filter);
-		currentSelectorFiltered=textSelectorFiltered;
-		currentSelectorEmpty=textSelectorEmpty; // current empty selector also seto to text
-		if(!textSelectorFiltered.first(elements))
-		{ // not found
-			environment.say(PAGE_SCREEN_ANY_HAVENO_ELEMENT);
-		} else
-		{ // element found
-			// change screen mode to TEXT
-			screenMode=ScreenMode.TEXT;
-			fillCurrentElementInfo();
-			environment.onAreaNewContent(that);
-		}
-	}
-    void onChangeTagFilters()
     {
-		environment.say(PAGE_ANY_PROMPT_TAGFILTER_NAME);
-		PromptBrowserEvent event=new PromptBrowserEvent(PAGE_ANY_PROMPT_TAGFILTER_NAME,"");
-		try {event.waitForBeProcessed();} // FIXME: make better error handling
-		catch(InterruptedException e){e.printStackTrace();}
-		String filter=event.getPrompt();
-		/*
-		MessagesControl.Prompt prompt;
-		prompt=new MessagesControl.Prompt(PAGE_ANY_PROMPT_TAGFILTER_NAME,"");
-		msgControl.messages.add(prompt);
-		//try{ synchronized(prompt){prompt.wait();} } catch(InterruptedException e) {e.printStackTrace();}
-		synchronized(prompt){msgControl.doit();}
-		String filter=prompt.result;
-		prompt.remove();
-		*/
-		
-		if(filter==null) return;
-		if(filter.isEmpty()) filter=null;
-
-		environment.say(PAGE_ANY_PROMPT_TAGFILTER_ATTR);
-		event=new PromptBrowserEvent(PAGE_ANY_PROMPT_TAGFILTER_ATTR,"");
-		try {event.waitForBeProcessed();} // FIXME: make better error handling
-		catch(InterruptedException e){e.printStackTrace();}
-		String attrName=event.getPrompt();
-		/*
-		environment.say(PAGE_ANY_PROMPT_TAGFILTER_ATTR);
-		prompt=new MessagesControl.Prompt(PAGE_ANY_PROMPT_TAGFILTER_ATTR,"");
-		msgControl.messages.add(prompt);
-		//try{ synchronized(prompt){prompt.wait();} } catch(InterruptedException e) {e.printStackTrace();}
-		synchronized(prompt){msgControl.doit();}
-		String attrName=prompt.result;
-		prompt.remove();
-		*/
-		
-		if(attrName==null) return;
-		if(attrName.isEmpty()) attrName=null;
-
-		environment.say(PAGE_ANY_PROMPT_TAGFILTER_VALUE);
-		event=new PromptBrowserEvent(PAGE_ANY_PROMPT_TAGFILTER_VALUE,"");
-		try {event.waitForBeProcessed();} // FIXME: make better error handling
-		catch(InterruptedException e){e.printStackTrace();}
-		String attrValue=event.getPrompt();
-		/*
-		prompt=new MessagesControl.Prompt(PAGE_ANY_PROMPT_TAGFILTER_VALUE,"");
-		msgControl.messages.add(prompt);
-		//try{ synchronized(prompt){prompt.wait();} } catch(InterruptedException e) {e.printStackTrace();}
-		synchronized(prompt){msgControl.doit();}
-		String attrValue=prompt.result;
-		prompt.remove();
-		*/
-		
-		if(attrValue==null) return;
-		if(attrValue.isEmpty()) attrValue=null;
-
-		
-		// make new selector
-		tagSelectorFiltered=page.selectorTAG(true,filter,attrName,attrValue);
-		currentSelectorFiltered=tagSelectorFiltered;
-		if(!textSelectorFiltered.first(elements))
-		{ // not found
-			environment.say(PAGE_SCREEN_ANY_HAVENO_ELEMENT);
-		} else
-		{ // element found
-			// change screen mode to TEXT
-			screenMode=ScreenMode.TEXT;
-			fillCurrentElementInfo();
-			environment.onAreaNewContent(that);
-		}
+	screenMode=ScreenMode.PAGE;
+	environment.onAreaNewContent(this);
     }
-    void onChangeScreenModeToDownload()
-    { // control pressed
-		screenMode=ScreenMode.DOWNLOAD;
-		screenDownload.refreshInfo();
+
+    private void onChangeTextFilter()
+    {
+	environment.say(PAGE_ANY_PROMPT_TEXT_FILTER);
+	//FIXME: Ask for new filter;
+	String filter = "";
+	if(filter==null)
+	    return;
+	if(filter.isEmpty())
+	    filter=null;
+	// make new selector
+	textSelectorFiltered=page.selectorTEXT(true,filter);
+	currentSelectorFiltered=textSelectorFiltered;
+	currentSelectorEmpty=textSelectorEmpty; // current empty selector also seto to text
+	if(!textSelectorFiltered.first(elements))
+	{ // not found
+	    environment.say(PAGE_SCREEN_ANY_HAVENO_ELEMENT);
+	} else
+	{ // element found
+	    // change screen mode to TEXT
+	    screenMode=ScreenMode.TEXT;
+	    fillCurrentElementInfo();
+	    environment.onAreaNewContent(this);
 	}
+    }
+
+    private void onChangeTagFilters()
+    {
+	environment.say(PAGE_ANY_PROMPT_TAGFILTER_NAME);
+	//FIXME:Ask for new filter;
+	String filter = "";
+	if(filter==null)
+	    return;
+	if(filter.isEmpty())
+	    filter=null;
+	environment.say(PAGE_ANY_PROMPT_TAGFILTER_ATTR);
+	//FIXME:Ask for new attr name;
+	String attrName = "";
+	//FIXME:Ask for new attr;		*/
+	if(attrName==null)
+	    return;
+	if(attrName.isEmpty()) 
+	    attrName=null;
+	environment.say(PAGE_ANY_PROMPT_TAGFILTER_VALUE);
+	//FIXME:Ask for new attr value;
+	String attrValue = "";
+	if(attrValue==null)
+	    return;
+	if(attrValue.isEmpty())
+	    attrValue=null;
+	// make new selector
+	tagSelectorFiltered=page.selectorTAG(true,filter,attrName,attrValue);
+	currentSelectorFiltered=tagSelectorFiltered;
+	if(!textSelectorFiltered.first(elements))
+	{ // not found
+	    environment.say(PAGE_SCREEN_ANY_HAVENO_ELEMENT);
+	} else
+	{ // element found
+	    // change screen mode to TEXT
+	    screenMode=ScreenMode.TEXT;
+	    fillCurrentElementInfo();
+	    environment.onAreaNewContent(this);
+	}
+    }
+
+    private void onChangeScreenModeToDownload()
+    { // control pressed
+	screenMode=ScreenMode.DOWNLOAD;
+	screenDownload.refreshInfo();
+    }
 
     private void onChangeCurrentPageLink()
     {
@@ -424,87 +451,142 @@ private final FileDownloadThread fileDownloadThread=new FileDownloadThread();
 	page.load(link);
 	screenPage.changedUrl(link);
 	screenMode=ScreenMode.PAGE;
-	environment.onAreaNewContent(that);
+	environment.onAreaNewContent(this);
     }
 
-    void onChangeWebViewVisibility()
-	{
-		page.setVisibility(!page.getVisibility());
-	}
-
-    void onElementNavigateLeft()
-    { // prev
-		if(currentSelectorEmpty==null) return; // dev bug, if it happend
-		if(!currentSelectorEmpty.prev(elements))
-		{
-			environment.say(PAGE_SCREEN_ANY_FIRST_ELEMENT);
-			return;
-		}
-		fillCurrentElementInfo();
-		environment.onAreaNewContent(that);
-	}
-    void onElementNavigateRight()
-    { // next
-		if(currentSelectorEmpty==null) return; // dev bug, if it happend
-		if(!currentSelectorEmpty.next(elements))
-		{
-			environment.say(PAGE_SCREEN_ANY_END_ELEMENT);
-			return;
-		}
-		fillCurrentElementInfo();
-		environment.onAreaNewContent(that);
-	}
-    void onSearchResultNavigationLeft()
-    { // prev
-		if(currentSelectorFiltered==null) return; // dev bug, if it happend
-		if(!currentSelectorFiltered.prev(elements))
-		{
-			environment.say(PAGE_SCREEN_ANY_FIRST_ELEMENT);
-			return;
-		}
-		fillCurrentElementInfo();
-		environment.onAreaNewContent(that);
-		return;
-	}
-    void onSearchResultNavigationRight()
-    { // next
-		if(currentSelectorFiltered==null) return; // dev bug, if it happend
-		if(!currentSelectorFiltered.next(elements))
-		{
-			environment.say(PAGE_SCREEN_ANY_END_ELEMENT);
-			return;
-		}
-		fillCurrentElementInfo();
-		environment.onAreaNewContent(that);
-	}
-    void onDefaultAction()
+    private void onChangeWebViewVisibility()
     {
-		if(elements.isEditable())
-		{ // edit content
-			String oldvalue=elements.getText();
-			environment.say(PAGE_ANY_PROMPT_NEW_TEXT);
-			// prompt new value
-			PromptBrowserEvent event=new PromptBrowserEvent(PAGE_ANY_PROMPT_NEW_TEXT,oldvalue);
-			try {event.waitForBeProcessed();} // FIXME: make better error handling
-			catch(InterruptedException e){e.printStackTrace();}
-			String newvalue=event.getPrompt();
-			/*
-			MessagesControl.Prompt prompt=new MessagesControl.Prompt(PAGE_ANY_PROMPT_NEW_TEXT,oldvalue);
-			msgControl.messages.add(prompt);
-			//try{ synchronized(prompt){prompt.wait();} } catch(InterruptedException e) {e.printStackTrace();}
-			synchronized(prompt){msgControl.doit();}
-			String newvalue=prompt.result;
-			prompt.remove();
-			*/
-			// change to new value
-			elements.setText(newvalue);
-			// refresh screen info
-			fillCurrentElementInfo();
-			environment.onAreaNewContent(that);
-		} else
-		{ // emulate click
-			elements.clickEmulate();
-		}
-		return;
+	page.setVisibility(!page.getVisibility());
+    }
+
+    private void onElementNavigateLeft()
+    { // prev
+	if(currentSelectorEmpty==null)
+	    return; // dev bug, if it happend
+	if(!currentSelectorEmpty.prev(elements))
+	{
+	    environment.say(PAGE_SCREEN_ANY_FIRST_ELEMENT);
+	    return;
 	}
+	fillCurrentElementInfo();
+	environment.onAreaNewContent(this);
+    }
+
+    private void onElementNavigateRight()
+    { // next
+	if(currentSelectorEmpty==null) 
+	    return; // dev bug, if it happend
+	if(!currentSelectorEmpty.next(elements))
+	{
+	    environment.say(PAGE_SCREEN_ANY_END_ELEMENT);
+	    return;
+	}
+	fillCurrentElementInfo();
+	environment.onAreaNewContent(this);
+    }
+
+    private void onSearchResultNavigationLeft()
+    { // prev
+	if(currentSelectorFiltered==null) 
+	    return; // dev bug, if it happend
+	if(!currentSelectorFiltered.prev(elements))
+	{
+	    environment.say(PAGE_SCREEN_ANY_FIRST_ELEMENT);
+	    return;
+	}
+	fillCurrentElementInfo();
+	environment.onAreaNewContent(this);
+	return;
+    }
+
+    private void onSearchResultNavigationRight()
+    { // next
+	if(currentSelectorFiltered==null)
+	    return; // dev bug, if it happend
+	if(!currentSelectorFiltered.next(elements))
+	{
+	    environment.say(PAGE_SCREEN_ANY_END_ELEMENT);
+	    return;
+	}
+	fillCurrentElementInfo();
+	environment.onAreaNewContent(this);
+    }
+
+    private void onDefaultAction()
+    {
+	if(elements.isEditable())
+	{ // edit content
+	    final String oldValue=elements.getText();
+	    final String newValue = Popups.simple(luwrain, "Новый текст элемента", "Введите новый текст элемента:", oldValue);
+	    if (newValue == null)
+		return;
+	    elements.setText(newValue);
+	    fillCurrentElementInfo();
+	    environment.onAreaNewContent(this);
+	    return;
+	}
+	elements.clickEmulate();
+    }
+
+    private void onPageChangeState(State state)
+    {
+	Log.debug("browser", "PageChangeStateEvent received");
+	screenPage.changedUrl("test");
+	screenPage.changedTitle("title");
+	screenPage.changedState(state.name());
+	if(state==State.SUCCEEDED)
+	{
+	    screenPage.changedTitle(page.getTitle());
+	    screenPage.changedUrl(page.getUrl());
+	    page.RescanDOM();
+	    textSelectorEmpty=page.selectorTEXT(true,null);
+	    if(!textSelectorEmpty.first(elements))
+	    {
+		environment.say(PAGE_SCREEN_ANY_HAVENO_ELEMENT);
+	    }
+	    currentSelectorEmpty=textSelectorEmpty;
+	    screenMode=ScreenMode.PAGE;
+	    environment.onAreaNewContent(this);
+	    environment.say(PAGE_ANY_STATE_LOADED);
+	} else
+	{
+	    environment.say(PAGE_ANY_STATE_CANCELED);
+	    screenPage.changedTitle("");
+	}
+	environment.onAreaNewContent(this);
+    }
+
+    private void onProgress(Number progress)
+    {
+	screenPage.changedProgress((double)progress);
+	environment.onAreaNewContent(this);
+    }
+
+    private void onAlert(final String message)
+    {
+	if (message != null && !message.trim().isEmpty())
+	    luwrain.message(message, Luwrain.MESSAGE_ERROR);
+    }
+
+private String onPrompt(final String message,final String value)
+    {
+	return Popups.simple(luwrain, message, "Введите значение:", value);
+    }
+
+private void onError(String message)
+    {
+	if (message != null && !message.trim().isEmpty())
+	    luwrain.message (message, Luwrain.MESSAGE_ERROR);
+    }
+
+private boolean onDownloadStart(String url)
+    {
+	return true;
+    }
+
+    private  Boolean onConfirm(String message)
+    {
+	//FIXME:
+	return true;
+    }
 }
