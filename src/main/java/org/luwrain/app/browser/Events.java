@@ -16,10 +16,13 @@ class Events implements BrowserEvents
     {
 	NullCheck.notNull(luwrain, "luwrain");
 	NullCheck.notNull(area, "area");
+	this.luwrain = luwrain;
+	this.area = area;
     }
 
     @Override public void onChangeState(State state)
     {
+	Log.debug("browser", "PageChangeStateEvent sent");
 	luwrain.enqueueEvent(new PageChangeStateEvent(area, state));
     }
 

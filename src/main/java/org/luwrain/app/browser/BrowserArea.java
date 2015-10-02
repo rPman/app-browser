@@ -119,29 +119,23 @@ class BrowserArea extends NavigateArea implements Constants
 private final FileDownloadThread fileDownloadThread=new FileDownloadThread();
     private final ScreenDownload screenDownload=new ScreenDownload(fileDownloadThread);
 
-    BrowserArea that;
-
-    BrowserArea(Luwrain luwrain,
-		Actions actions,
-		final ControlEnvironment environment,
+    BrowserArea(Luwrain luwrain, Actions actions,
 		Browser browser)
     {
-	super(environment);
-	that=this;
+	super(new DefaultControlEnvironment(luwrain));
 	this.luwrain = luwrain;
 	this.actions = actions;
-	this.environment = environment;
+	this.environment = new DefaultControlEnvironment(luwrain);
 	this.page = (WebPage)browser;
 	NullCheck.notNull(luwrain, "luwrain");
 	NullCheck.notNull(actions, "actions");
-	NullCheck.notNull(environment, "environment");
 	NullCheck.notNull(browser, "browser");
 	browserEvents = new Events(luwrain, this);
 	this.page.init(browserEvents);
     	elements=page.elementList();
     }
 
-    void fillCurrentElementInfo()
+    private void fillCurrentElementInfo()
     {
     	if(currentSelectorEmpty==null)
     	{
@@ -355,91 +349,97 @@ private final FileDownloadThread fileDownloadThread=new FileDownloadThread();
     	switch(screenMode)
     	{
 	case DOWNLOAD:  
-    		case PAGE:
-    			page.stop();
-   			break;  
-    		case TEXT:
-    			screenDownload.breakExecution();
-   			break;  
+	case PAGE:
+	    page.stop();
+	    break;  
+	case TEXT:
+	    screenDownload.breakExecution();
+	    break;  
     	}
-	}
-    void onChangeScreenModeToText()
-    {
-		screenMode=ScreenMode.TEXT;
-		fillCurrentElementInfo();
-		environment.onAreaNewContent(that);
     }
+
+    private void onChangeScreenModeToText()
+    {
+	screenMode=ScreenMode.TEXT;
+	fillCurrentElementInfo();
+	environment.onAreaNewContent(this);
+    }
+
     void onChangeScreenModeToPage()
-	{
-		screenMode=ScreenMode.PAGE;
-		environment.onAreaNewContent(that);
-	}
-    void onChangeTextFilter()
-	{
-		environment.say(PAGE_ANY_PROMPT_TEXT_FILTER);
-		//FIXME: Ask for new filter;
-		String filter = "";
-		
-		if(filter==null) return;
-		if(filter.isEmpty()) filter=null;
-		// make new selector
-		textSelectorFiltered=page.selectorTEXT(true,filter);
-		currentSelectorFiltered=textSelectorFiltered;
-		currentSelectorEmpty=textSelectorEmpty; // current empty selector also seto to text
-		if(!textSelectorFiltered.first(elements))
-		{ // not found
-			environment.say(PAGE_SCREEN_ANY_HAVENO_ELEMENT);
-		} else
-		{ // element found
-			// change screen mode to TEXT
-			screenMode=ScreenMode.TEXT;
-			fillCurrentElementInfo();
-			environment.onAreaNewContent(that);
-		}
-	}
-    void onChangeTagFilters()
     {
-		environment.say(PAGE_ANY_PROMPT_TAGFILTER_NAME);
-		//FIXME:Ask for new filter;
-		String filter = "";
-		if(filter==null) return;
-		if(filter.isEmpty()) filter=null;
-
-		environment.say(PAGE_ANY_PROMPT_TAGFILTER_ATTR);
-		//FIXME:Ask for new attr name;
-		String attrName = "";
-		//FIXME:Ask for new attr;		*/
-		
-		if(attrName==null) return;
-		if(attrName.isEmpty()) attrName=null;
-
-		environment.say(PAGE_ANY_PROMPT_TAGFILTER_VALUE);
-		//FIXME:Ask for new attr value;
-		String attrValue = "";
-		
-		if(attrValue==null) return;
-		if(attrValue.isEmpty()) attrValue=null;
-
-		
-		// make new selector
-		tagSelectorFiltered=page.selectorTAG(true,filter,attrName,attrValue);
-		currentSelectorFiltered=tagSelectorFiltered;
-		if(!textSelectorFiltered.first(elements))
-		{ // not found
-			environment.say(PAGE_SCREEN_ANY_HAVENO_ELEMENT);
-		} else
-		{ // element found
-			// change screen mode to TEXT
-			screenMode=ScreenMode.TEXT;
-			fillCurrentElementInfo();
-			environment.onAreaNewContent(that);
-		}
+	screenMode=ScreenMode.PAGE;
+	environment.onAreaNewContent(this);
     }
-    void onChangeScreenModeToDownload()
-    { // control pressed
-		screenMode=ScreenMode.DOWNLOAD;
-		screenDownload.refreshInfo();
+
+    private void onChangeTextFilter()
+    {
+	environment.say(PAGE_ANY_PROMPT_TEXT_FILTER);
+	//FIXME: Ask for new filter;
+	String filter = "";
+	if(filter==null)
+	    return;
+	if(filter.isEmpty())
+	    filter=null;
+	// make new selector
+	textSelectorFiltered=page.selectorTEXT(true,filter);
+	currentSelectorFiltered=textSelectorFiltered;
+	currentSelectorEmpty=textSelectorEmpty; // current empty selector also seto to text
+	if(!textSelectorFiltered.first(elements))
+	{ // not found
+	    environment.say(PAGE_SCREEN_ANY_HAVENO_ELEMENT);
+	} else
+	{ // element found
+	    // change screen mode to TEXT
+	    screenMode=ScreenMode.TEXT;
+	    fillCurrentElementInfo();
+	    environment.onAreaNewContent(this);
 	}
+    }
+
+    private void onChangeTagFilters()
+    {
+	environment.say(PAGE_ANY_PROMPT_TAGFILTER_NAME);
+	//FIXME:Ask for new filter;
+	String filter = "";
+	if(filter==null)
+	    return;
+	if(filter.isEmpty())
+	    filter=null;
+	environment.say(PAGE_ANY_PROMPT_TAGFILTER_ATTR);
+	//FIXME:Ask for new attr name;
+	String attrName = "";
+	//FIXME:Ask for new attr;		*/
+	if(attrName==null)
+	    return;
+	if(attrName.isEmpty()) 
+	    attrName=null;
+	environment.say(PAGE_ANY_PROMPT_TAGFILTER_VALUE);
+	//FIXME:Ask for new attr value;
+	String attrValue = "";
+	if(attrValue==null)
+	    return;
+	if(attrValue.isEmpty())
+	    attrValue=null;
+	// make new selector
+	tagSelectorFiltered=page.selectorTAG(true,filter,attrName,attrValue);
+	currentSelectorFiltered=tagSelectorFiltered;
+	if(!textSelectorFiltered.first(elements))
+	{ // not found
+	    environment.say(PAGE_SCREEN_ANY_HAVENO_ELEMENT);
+	} else
+	{ // element found
+	    // change screen mode to TEXT
+	    screenMode=ScreenMode.TEXT;
+	    fillCurrentElementInfo();
+	    environment.onAreaNewContent(this);
+	}
+    }
+
+    private void onChangeScreenModeToDownload()
+    { // control pressed
+	screenMode=ScreenMode.DOWNLOAD;
+	screenDownload.refreshInfo();
+    }
 
     private void onChangeCurrentPageLink()
     {
@@ -451,81 +451,86 @@ private final FileDownloadThread fileDownloadThread=new FileDownloadThread();
 	page.load(link);
 	screenPage.changedUrl(link);
 	screenMode=ScreenMode.PAGE;
-	environment.onAreaNewContent(that);
+	environment.onAreaNewContent(this);
     }
 
-    void onChangeWebViewVisibility()
-	{
-		page.setVisibility(!page.getVisibility());
-	}
-
-    void onElementNavigateLeft()
-    { // prev
-		if(currentSelectorEmpty==null) return; // dev bug, if it happend
-		if(!currentSelectorEmpty.prev(elements))
-		{
-			environment.say(PAGE_SCREEN_ANY_FIRST_ELEMENT);
-			return;
-		}
-		fillCurrentElementInfo();
-		environment.onAreaNewContent(that);
-	}
-    void onElementNavigateRight()
-    { // next
-		if(currentSelectorEmpty==null) return; // dev bug, if it happend
-		if(!currentSelectorEmpty.next(elements))
-		{
-			environment.say(PAGE_SCREEN_ANY_END_ELEMENT);
-			return;
-		}
-		fillCurrentElementInfo();
-		environment.onAreaNewContent(that);
-	}
-    void onSearchResultNavigationLeft()
-    { // prev
-		if(currentSelectorFiltered==null) return; // dev bug, if it happend
-		if(!currentSelectorFiltered.prev(elements))
-		{
-			environment.say(PAGE_SCREEN_ANY_FIRST_ELEMENT);
-			return;
-		}
-		fillCurrentElementInfo();
-		environment.onAreaNewContent(that);
-		return;
-	}
-    void onSearchResultNavigationRight()
-    { // next
-		if(currentSelectorFiltered==null) return; // dev bug, if it happend
-		if(!currentSelectorFiltered.next(elements))
-		{
-			environment.say(PAGE_SCREEN_ANY_END_ELEMENT);
-			return;
-		}
-		fillCurrentElementInfo();
-		environment.onAreaNewContent(that);
-	}
-    void onDefaultAction()
+    private void onChangeWebViewVisibility()
     {
-		if(elements.isEditable())
-		{ // edit content
-			String oldvalue=elements.getText();
-			environment.say(PAGE_ANY_PROMPT_NEW_TEXT);
-			//FIXME:Ask for new value;
-			String newvalue="";
-			// change to new value
-			elements.setText(newvalue);
-			// refresh screen info
-			fillCurrentElementInfo();
-			environment.onAreaNewContent(that);
-		} else
-		{ // emulate click
-			elements.clickEmulate();
-		}
-		return;
+	page.setVisibility(!page.getVisibility());
+    }
+
+    private void onElementNavigateLeft()
+    { // prev
+	if(currentSelectorEmpty==null)
+	    return; // dev bug, if it happend
+	if(!currentSelectorEmpty.prev(elements))
+	{
+	    environment.say(PAGE_SCREEN_ANY_FIRST_ELEMENT);
+	    return;
 	}
+	fillCurrentElementInfo();
+	environment.onAreaNewContent(this);
+    }
+
+    private void onElementNavigateRight()
+    { // next
+	if(currentSelectorEmpty==null) 
+	    return; // dev bug, if it happend
+	if(!currentSelectorEmpty.next(elements))
+	{
+	    environment.say(PAGE_SCREEN_ANY_END_ELEMENT);
+	    return;
+	}
+	fillCurrentElementInfo();
+	environment.onAreaNewContent(this);
+    }
+
+    private void onSearchResultNavigationLeft()
+    { // prev
+	if(currentSelectorFiltered==null) 
+	    return; // dev bug, if it happend
+	if(!currentSelectorFiltered.prev(elements))
+	{
+	    environment.say(PAGE_SCREEN_ANY_FIRST_ELEMENT);
+	    return;
+	}
+	fillCurrentElementInfo();
+	environment.onAreaNewContent(this);
+	return;
+    }
+
+    private void onSearchResultNavigationRight()
+    { // next
+	if(currentSelectorFiltered==null)
+	    return; // dev bug, if it happend
+	if(!currentSelectorFiltered.next(elements))
+	{
+	    environment.say(PAGE_SCREEN_ANY_END_ELEMENT);
+	    return;
+	}
+	fillCurrentElementInfo();
+	environment.onAreaNewContent(this);
+    }
+
+    private void onDefaultAction()
+    {
+	if(elements.isEditable())
+	{ // edit content
+	    final String oldValue=elements.getText();
+	    final String newValue = Popups.simple(luwrain, "Новый текст элемента", "Введите новый текст элемента:", oldValue);
+	    if (newValue == null)
+		return;
+	    elements.setText(newValue);
+	    fillCurrentElementInfo();
+	    environment.onAreaNewContent(this);
+	    return;
+	}
+	elements.clickEmulate();
+    }
 
     private void onPageChangeState(State state)
     {
+	Log.debug("browser", "PageChangeStateEvent received");
 	screenPage.changedUrl("test");
 	screenPage.changedTitle("title");
 	screenPage.changedState(state.name());
@@ -541,36 +546,37 @@ private final FileDownloadThread fileDownloadThread=new FileDownloadThread();
 	    }
 	    currentSelectorEmpty=textSelectorEmpty;
 	    screenMode=ScreenMode.PAGE;
-	    environment.onAreaNewContent(that);
+	    environment.onAreaNewContent(this);
 	    environment.say(PAGE_ANY_STATE_LOADED);
 	} else
 	{
 	    environment.say(PAGE_ANY_STATE_CANCELED);
 	    screenPage.changedTitle("");
 	}
-	environment.onAreaNewContent(that);
+	environment.onAreaNewContent(this);
     }
 
     private void onProgress(Number progress)
     {
 	screenPage.changedProgress((double)progress);
-	environment.onAreaNewContent(that);
+	environment.onAreaNewContent(this);
     }
 
     private void onAlert(final String message)
     {
-	//FIXME:
+	if (message != null && !message.trim().isEmpty())
+	    luwrain.message(message, Luwrain.MESSAGE_ERROR);
     }
 
 private String onPrompt(final String message,final String value)
     {
-	//FIXME:
-	return null;
+	return Popups.simple(luwrain, message, "Введите значение:", value);
     }
 
 private void onError(String message)
     {
-	// FIXME: make browser error handling or hide it
+	if (message != null && !message.trim().isEmpty())
+	    luwrain.message (message, Luwrain.MESSAGE_ERROR);
     }
 
 private boolean onDownloadStart(String url)
@@ -581,6 +587,6 @@ private boolean onDownloadStart(String url)
     private  Boolean onConfirm(String message)
     {
 	//FIXME:
-	return false;
+	return true;
     }
 }
