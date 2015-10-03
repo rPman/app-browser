@@ -22,58 +22,67 @@ class Events implements BrowserEvents
 
     @Override public void onChangeState(State state)
     {
-	Log.debug("browser", "PageChangeStateEvent sent");
-	luwrain.enqueueEvent(new PageChangeStateEvent(area, state));
+		luwrain.enqueueEvent(new PageChangeStateEvent(area, state));
     }
 
     @Override public void onProgress(Number progress)
     {
-	luwrain.enqueueEvent(new ProgressEvent(area, progress));
+    	luwrain.enqueueEvent(new ProgressEvent(area, progress));
     }
 
     @Override public void onAlert(String message)
     {
-	luwrain.enqueueEvent(new AlertEvent(area, message));
+    	AlertEvent event=new AlertEvent(area, message);
+    	luwrain.enqueueEvent(event);
+    	try {
+    		//event.waitForBeProcessed();
+    	}
+    	catch(Exception e)
+    	{
+    		e.printStackTrace();
+    	}
     }
 
     @Override public String onPrompt(String message, String value)
     {
-	final PromptEvent event = new PromptEvent(area, message, value);
-	luwrain.enqueueEvent(event);
-	try {
-	    event.waitForBeProcessed();
-	}
-	catch(InterruptedException e)
-	{
-	    e.printStackTrace();
-	    return "";
-	}
-	return event.answer();
+    	final PromptEvent event = new PromptEvent(area, message, value);
+    	luwrain.enqueueEvent(event);
+    	Log.debug("browser", "onPrompt sent, awaiting...");
+    	try {
+    		event.waitForBeProcessed();
+    	}
+    	catch(Exception e)
+    	{
+    		e.printStackTrace();
+    		return "";
+    	}
+    	Log.debug("browser", "onPrompt receive answer");
+    	return event.answer();
     }
 
     @Override public void onError(String message)
     {
-	luwrain.enqueueEvent(new ErrorEvent(area, message));
+    	luwrain.enqueueEvent(new ErrorEvent(area, message));
     }
 
     @Override public boolean onDownloadStart(String url)
     {
-	luwrain.enqueueEvent(new DownloadEvent(area, url));
-	return true;
+    	luwrain.enqueueEvent(new DownloadEvent(area, url));
+    	return true;
     }
 
     @Override public Boolean onConfirm(String message)
     {
-	final ConfirmEvent event = new ConfirmEvent(area, message);
-	luwrain.enqueueEvent(event);
-	try {
-	    event.waitForBeProcessed();
-	}
-	catch(InterruptedException e)
-	{
-	    e.printStackTrace();
-	    return false;
-	}
-	return event.answer();
+		final ConfirmEvent event = new ConfirmEvent(area, message);
+		luwrain.enqueueEvent(event);
+		try {
+		    event.waitForBeProcessed();
+		}
+		catch(InterruptedException e)
+		{
+		    e.printStackTrace();
+		    return false;
+		}
+		return event.answer();
     }
 };

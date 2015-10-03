@@ -34,7 +34,7 @@ import org.luwrain.browser.BrowserEvents;
 import org.luwrain.core.*;
 import org.luwrain.core.events.*;
 import org.luwrain.controls.*;
-import org.luwrain.popups.Popups;
+import org.luwrain.popups.*;
 
 import org.luwrain.interaction.browser.WebPage;
 import org.luwrain.browser.ElementList;
@@ -115,8 +115,10 @@ class BrowserArea extends NavigateArea implements Constants
     private SelectorCSS cssSelectorFiltered=null;
     private Selector currentSelectorEmpty=null;
     private Selector currentSelectorFiltered=null;
+    
+	String nextPromptresult=null;
 
-private final FileDownloadThread fileDownloadThread=new FileDownloadThread();
+    private final FileDownloadThread fileDownloadThread=new FileDownloadThread();
     private final ScreenDownload screenDownload=new ScreenDownload(fileDownloadThread);
 
     BrowserArea(Luwrain luwrain, Actions actions,
@@ -160,10 +162,11 @@ private final FileDownloadThread fileDownloadThread=new FileDownloadThread();
     	{
 	case PAGE: 
 	    return screenPage.getLinesCount();
-	case TEXT: 
-	    return screenText.getLinesCount();
+	case TEXT:
+		return elements.getSplitedCount();
+	    //return screenText.getLinesCount();
 	case 
-	DOWNLOAD: return screenDownload.getLinesCount();
+		DOWNLOAD: return screenDownload.getLinesCount();
 	default:
 	    return 0;
     	}
@@ -176,7 +179,11 @@ private final FileDownloadThread fileDownloadThread=new FileDownloadThread();
 	case PAGE:
 	    return screenPage.getStringByLine(index);
 	case TEXT:
-	    return screenText.getStringByLine(index);
+	{
+		SplitedLine split=elements.getSplitedLineByIndex(index);
+		return split.type+" "+split.text;
+	    //return screenText.getStringByLine(index);
+	}
 	case DOWNLOAD:
 	    return screenDownload.getStringByLine(index);
 	default:
@@ -203,66 +210,72 @@ private final FileDownloadThread fileDownloadThread=new FileDownloadThread();
 
     @Override public boolean onKeyboardEvent(KeyboardEvent event)
     {
-	NullCheck.notNull(event, "event");
-	if (event.isCommand())
+    	if(textSelectorEmpty!=null)
+    	{
+    		boolean res=textSelectorEmpty.to(elements,getHotPointY());
+    		Log.debug("web","event:"+event.getClass().getSimpleName()+", to:"+res+", hot:"+getHotPointY()+", pos:"+elements.getPos());
+    	}
+
+    	NullCheck.notNull(event, "event");
+    	if (event.isCommand())
 	    switch (event.getCommand())
 	    {
-	    case KeyboardEvent.ESCAPE:
-		onBreakCommand();
-		return true;
-	    case KeyboardEvent.F5:
-		onChangeTagFilters();
-		return true;
-	    case KeyboardEvent.F6: 
-		onChangeCurrentPageLink();
-		return true;
-	    case KeyboardEvent.F7: 
-		onChangeScreenModeToText();
-		return true;
-	    case KeyboardEvent.F8: 
-		onChangeScreenModeToPage();
-		return true;
-	    case KeyboardEvent.F9: 
-		onChangeScreenModeToDownload();
-		return true;
-	    case KeyboardEvent.F11:
-		onChangeWebViewVisibility();
-		return true;
-    		// navigation
-	    case KeyboardEvent.ARROW_LEFT:
-	    case KeyboardEvent.ALTERNATIVE_ARROW_LEFT:
-		if(event.withShiftOnly()) 
-		{
-		    onElementNavigateLeft();
-		    return true;
-		}
-		break;
-	    case KeyboardEvent.ARROW_RIGHT:
-	    case KeyboardEvent.ALTERNATIVE_ARROW_RIGHT:
-		if(event.withShiftOnly()) 
-		{
-		    onElementNavigateRight();
-		    return true;
-		}
-    		break;
-    		// filtered navigation
-	    case KeyboardEvent.TAB:
-		if(event.withShiftOnly())
-		{
-		    onSearchResultNavigationLeft();
-		    return true;
-		} else 
-		    if(!event.withAlt()&&!event.withControl()&&!event.withShift()) 
-		    {
-			onSearchResultNavigationRight();
+		    case KeyboardEvent.ESCAPE:
+			onBreakCommand();
 			return true;
-		    }
-		// actions
-	    case KeyboardEvent.ENTER:
-		onDefaultAction();
-		return true;
-	    default:
-		return super.onKeyboardEvent(event);
+		    case KeyboardEvent.F5:
+			onChangeTagFilters();
+			return true;
+		    case KeyboardEvent.F6: 
+			onChangeCurrentPageLink();
+			return true;
+		    case KeyboardEvent.F7: 
+			onChangeScreenModeToText();
+			return true;
+		    case KeyboardEvent.F8: 
+			onChangeScreenModeToPage();
+			return true;
+		    case KeyboardEvent.F9: 
+	    	onChangeDefaultEventResult();
+			return true;
+		    case KeyboardEvent.F11:
+			onChangeWebViewVisibility();
+			return true;
+	    		// navigation
+		    case KeyboardEvent.ARROW_LEFT:
+		    case KeyboardEvent.ALTERNATIVE_ARROW_LEFT:
+			if(event.withShiftOnly()) 
+			{
+			    onElementNavigateLeft();
+			    return true;
+			}
+			break;
+		    case KeyboardEvent.ARROW_RIGHT:
+		    case KeyboardEvent.ALTERNATIVE_ARROW_RIGHT:
+			if(event.withShiftOnly()) 
+			{
+			    onElementNavigateRight();
+			    return true;
+			}
+	    		break;
+	    		// filtered navigation
+		    case KeyboardEvent.TAB:
+			if(event.withShiftOnly())
+			{
+			    onSearchResultNavigationLeft();
+			    return true;
+			} else 
+			    if(!event.withAlt()&&!event.withControl()&&!event.withShift()) 
+			    {
+				onSearchResultNavigationRight();
+				return true;
+			    }
+			// actions
+		    case KeyboardEvent.ENTER:
+			onDefaultAction();
+			return true;
+		    default:
+			return super.onKeyboardEvent(event);
 	    }
 
     	switch(event.getCharacter())
@@ -280,80 +293,82 @@ private final FileDownloadThread fileDownloadThread=new FileDownloadThread();
 
     @Override public boolean onEnvironmentEvent(EnvironmentEvent event)
     {
-	NullCheck.notNull(event, "event");
-	switch(event.getCode())
-	{
-	case EnvironmentEvent.CLOSE:
-	    actions.closeApp();
-	    return true;
-	case EnvironmentEvent.THREAD_SYNC:
-	    if (onThreadSyncEvent(event))
-		return true;
-	    return super.onEnvironmentEvent(event);
-	default:
-	    return super.onEnvironmentEvent(event);
-	}
+    	NullCheck.notNull(event, "event");
+		switch(event.getCode())
+		{
+			case EnvironmentEvent.CLOSE:
+			    actions.closeApp();
+			    return true;
+			case EnvironmentEvent.THREAD_SYNC:
+			    if (onThreadSyncEvent(event))
+				return true;
+			    return super.onEnvironmentEvent(event);
+			default:
+			    return super.onEnvironmentEvent(event);
+		}
     }
 
     private boolean onThreadSyncEvent(EnvironmentEvent event)
     {
-	if (event instanceof PageChangeStateEvent)
-	{
-	    final PageChangeStateEvent changeState = (PageChangeStateEvent)event;
-	    onPageChangeState(changeState.state());
-	    return true;
-	}
-	if (event instanceof ProgressEvent)
-	{
-	    final ProgressEvent progress = (ProgressEvent)event;
-	    onProgress(progress.value());
-	    return true;
-	}
-	if (event instanceof AlertEvent)
-	{
-	    final AlertEvent alert = (AlertEvent)event;
-	    onAlert(alert.message());
-	    return true;
-	}
-	if (event instanceof PromptEvent)
-	{
-	    final PromptEvent prompt = (PromptEvent)event;
-	    final String answer = onPrompt(prompt.message(), prompt.value());
-	    prompt.setAnswer (answer);
-	    return true;
-	}
-	if (event instanceof ErrorEvent)
-	{
-	    final ErrorEvent error = (ErrorEvent)event;
-	    onError(error.message());
-	    return true;
-	}
-	if (event instanceof DownloadEvent)
-	{
-	    final DownloadEvent download = (DownloadEvent)event;
-	    onDownloadStart(download.url());
-	    return true;
-	}
-	if (event instanceof ConfirmEvent)
-	{
-	    final ConfirmEvent confirm = (ConfirmEvent)event;
-	    final boolean answer = onConfirm(confirm.message());
-	    confirm.setAnswer(answer);
-	    return true;
-	}
-	return false;
+		if (event instanceof PageChangeStateEvent)
+		{
+		    final PageChangeStateEvent changeState = (PageChangeStateEvent)event;
+		    onPageChangeState(changeState.state());
+		    return true;
+		}
+		if (event instanceof ProgressEvent)
+		{
+		    final ProgressEvent progress = (ProgressEvent)event;
+		    onProgress(progress.value());
+		    return true;
+		}
+		if (event instanceof AlertEvent)
+		{
+			Log.debug("web","t:"+Thread.currentThread().getId()+" ALERT event inside area");
+		    final AlertEvent alert = (AlertEvent)event;
+		    onAlert(alert.message());
+		    return true;
+		}
+		if (event instanceof PromptEvent)
+		{
+			Log.debug("web","t:"+Thread.currentThread().getId()+" PROMPT event inside area");
+		    final PromptEvent prompt = (PromptEvent)event;
+		    final String answer = onPrompt(prompt.message(), prompt.value());
+		    prompt.setAnswer (answer);
+		    return true;
+		}
+		if (event instanceof ErrorEvent)
+		{
+		    final ErrorEvent error = (ErrorEvent)event;
+		    onError(error.message());
+		    return true;
+		}
+		if (event instanceof DownloadEvent)
+		{
+		    final DownloadEvent download = (DownloadEvent)event;
+		    onDownloadStart(download.url());
+		    return true;
+		}
+		if (event instanceof ConfirmEvent)
+		{
+		    final ConfirmEvent confirm = (ConfirmEvent)event;
+		    final boolean answer = onConfirm(confirm.message());
+		    confirm.setAnswer(answer);
+		    return true;
+		}
+		return false;
     }
 
     private void onBreakCommand()
     {
     	switch(screenMode)
     	{
-	case DOWNLOAD:  
-	case PAGE:
-	    page.stop();
-	    break;  
-	case TEXT:
-	    screenDownload.breakExecution();
+		case DOWNLOAD:  
+		case PAGE:
+			page.stop();
+		break;  
+		case TEXT:
+			screenDownload.breakExecution();
 	    break;  
     	}
     }
@@ -375,7 +390,7 @@ private final FileDownloadThread fileDownloadThread=new FileDownloadThread();
     {
 	environment.say(PAGE_ANY_PROMPT_TEXT_FILTER);
 	//FIXME: Ask for new filter;
-	String filter = "";
+	String filter = Popups.simple(luwrain, POPUP_TITLE_CHANGE_TEXT_FILTER, PAGE_ANY_PROMPT_TEXT_FILTER, "");
 	if(filter==null)
 	    return;
 	if(filter.isEmpty())
@@ -400,14 +415,14 @@ private final FileDownloadThread fileDownloadThread=new FileDownloadThread();
     {
 	environment.say(PAGE_ANY_PROMPT_TAGFILTER_NAME);
 	//FIXME:Ask for new filter;
-	String filter = "";
+	String filter = Popups.simple(luwrain, POPUP_TITLE_CHANGE_TAG_FILTER, PAGE_ANY_PROMPT_TAGFILTER_NAME, "");
 	if(filter==null)
 	    return;
 	if(filter.isEmpty())
 	    filter=null;
 	environment.say(PAGE_ANY_PROMPT_TAGFILTER_ATTR);
 	//FIXME:Ask for new attr name;
-	String attrName = "";
+	String attrName = Popups.simple(luwrain, POPUP_TITLE_CHANGE_TAG_FILTER, PAGE_ANY_PROMPT_TAGFILTER_ATTR, "");
 	//FIXME:Ask for new attr;		*/
 	if(attrName==null)
 	    return;
@@ -415,7 +430,7 @@ private final FileDownloadThread fileDownloadThread=new FileDownloadThread();
 	    attrName=null;
 	environment.say(PAGE_ANY_PROMPT_TAGFILTER_VALUE);
 	//FIXME:Ask for new attr value;
-	String attrValue = "";
+	String attrValue = Popups.simple(luwrain, POPUP_TITLE_CHANGE_TAG_FILTER, PAGE_ANY_PROMPT_TAGFILTER_VALUE, "");
 	if(attrValue==null)
 	    return;
 	if(attrValue.isEmpty())
@@ -440,10 +455,15 @@ private final FileDownloadThread fileDownloadThread=new FileDownloadThread();
 	screenMode=ScreenMode.DOWNLOAD;
 	screenDownload.refreshInfo();
     }
+    
+    private void onChangeDefaultEventResult()
+    {
+    	nextPromptresult = Popups.simple(luwrain, "События вебсценариев", "Укажите ответ на следующее событие вебсценариев prompt/confirm", "");
+    }
 
     private void onChangeCurrentPageLink()
     {
-	String link = Popups.simple(luwrain, "Открыть страницу", "Введите адрес новой страницы:", "http://");
+	String link = Popups.simple(luwrain, "Открыть страницу", PAGE_ANY_PROMPT_ADDRESS, "");
 	if(link==null) 
 	    return;
 	if(!link.matches("^(http|https|ftp)://.*$"))
@@ -517,7 +537,7 @@ private final FileDownloadThread fileDownloadThread=new FileDownloadThread();
 	if(elements.isEditable())
 	{ // edit content
 	    final String oldValue=elements.getText();
-	    final String newValue = Popups.simple(luwrain, "Новый текст элемента", "Введите новый текст элемента:", oldValue);
+	    final String newValue = Popups.simple(luwrain, POPUP_TITLE_CHANGE_ELEMENT_EDIT, PAGE_ANY_PROMPT_NEW_TEXT, oldValue);
 	    if (newValue == null)
 		return;
 	    elements.setText(newValue);
@@ -536,13 +556,22 @@ private final FileDownloadThread fileDownloadThread=new FileDownloadThread();
 	screenPage.changedState(state.name());
 	if(state==State.SUCCEEDED)
 	{
-	    screenPage.changedTitle(page.getTitle());
+		screenPage.changedTitle(page.getTitle());
 	    screenPage.changedUrl(page.getUrl());
+	    Date d1=new Date(); // debug rescan speed 
 	    page.RescanDOM();
+	    Date d2=new Date();
 	    textSelectorEmpty=page.selectorTEXT(true,null);
+	    elements.splitAllElementsTextToLines(TEXT_SCREEN_WIDTH,textSelectorEmpty);
+	    Date d3=new Date();
+	    Log.debug("web","Rescan "+(d2.getTime()-d1.getTime())+"ms, page element count:"+elements.getSplitedLines().length+", text splits:"+elements.getSplitedCount()+" "+(d3.getTime()-d2.getTime())+"ms");
+	    
 	    if(!textSelectorEmpty.first(elements))
 	    {
-		environment.say(PAGE_SCREEN_ANY_HAVENO_ELEMENT);
+	    	environment.say(PAGE_SCREEN_ANY_HAVENO_ELEMENT);
+	    } else
+	    {
+	    	// empty page, have no eny text
 	    }
 	    currentSelectorEmpty=textSelectorEmpty;
 	    screenMode=ScreenMode.PAGE;
@@ -564,29 +593,42 @@ private final FileDownloadThread fileDownloadThread=new FileDownloadThread();
 
     private void onAlert(final String message)
     {
-	if (message != null && !message.trim().isEmpty())
-	    luwrain.message(message, Luwrain.MESSAGE_ERROR);
+		if (message == null || message.trim().isEmpty()) return;
+		luwrain.message(PAGE_SCREEN_ALERT_MESSAGE+message, Luwrain.MESSAGE_OK);
     }
 
-private String onPrompt(final String message,final String value)
+    private String onPrompt(final String message,final String value)
     {
-	return Popups.simple(luwrain, message, "Введите значение:", value);
+		//YesNoPopup popup = new YesNoPopup(luwrain, POPUP_TITLE_WEB_MESSAGE,PAGE_SCREEN_ALERT_MESSAGE+message, false);
+		//luwrain.popup(popup);
+    	//return Popups.simple(luwrain, POPUP_TITLE_WEB_MESSAGE, PAGE_SCREEN_PROMPT_MESSAGE+message, value);
+		if (message == null || message.trim().isEmpty()) return null;
+		luwrain.message(PAGE_SCREEN_PROMPT_MESSAGE+message, Luwrain.MESSAGE_OK);
+		String result=nextPromptresult;
+    	nextPromptresult=null;
+    	return result;
     }
 
-private void onError(String message)
+    private void onError(String message)
     {
-	if (message != null && !message.trim().isEmpty())
-	    luwrain.message (message, Luwrain.MESSAGE_ERROR);
+		if (message == null || message.trim().isEmpty()) return;
+   		luwrain.message (message, Luwrain.MESSAGE_ERROR);
     }
 
-private boolean onDownloadStart(String url)
+    private boolean onDownloadStart(String url)
     {
 	return true;
     }
 
     private  Boolean onConfirm(String message)
     {
-	//FIXME:
-	return true;
+		//YesNoPopup popup = new YesNoPopup(luwrain, POPUP_TITLE_WEB_MESSAGE,PAGE_SCREEN_CONFIRM_MESSAGE+message, false);
+		//luwrain.popup(popup);
+		//if (popup.closing.cancelled()) return null;
+		//return popup.result();
+   		luwrain.message (PAGE_SCREEN_CONFIRM_MESSAGE+message, Luwrain.MESSAGE_OK);
+		boolean result=nextPromptresult!=null&&(nextPromptresult.equals("y")||nextPromptresult.equals("Y"));
+    	nextPromptresult=null;
+    	return result;
     }
 }
