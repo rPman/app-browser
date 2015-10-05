@@ -35,7 +35,7 @@ import org.luwrain.core.*;
 import org.luwrain.core.events.*;
 import org.luwrain.controls.*;
 import org.luwrain.popups.*;
-
+import org.luwrain.interaction.browser.WebElementList;
 import org.luwrain.interaction.browser.WebPage;
 import org.luwrain.browser.ElementList;
 import org.luwrain.browser.ElementList.*;
@@ -124,17 +124,19 @@ class BrowserArea extends NavigateArea implements Constants
     BrowserArea(Luwrain luwrain, Actions actions,
 		Browser browser)
     {
-	super(new DefaultControlEnvironment(luwrain));
-	this.luwrain = luwrain;
-	this.actions = actions;
-	this.environment = new DefaultControlEnvironment(luwrain);
-	this.page = (WebPage)browser;
-	NullCheck.notNull(luwrain, "luwrain");
-	NullCheck.notNull(actions, "actions");
-	NullCheck.notNull(browser, "browser");
-	browserEvents = new Events(luwrain, this);
-	this.page.init(browserEvents);
-    	elements=page.elementList();
+		super(new DefaultControlEnvironment(luwrain));
+		this.luwrain = luwrain;
+		this.actions = actions;
+		this.environment = new DefaultControlEnvironment(luwrain);
+		this.page = (WebPage)browser;
+		NullCheck.notNull(luwrain, "luwrain");
+		NullCheck.notNull(actions, "actions");
+		NullCheck.notNull(browser, "browser");
+		browserEvents = new Events(luwrain, this);
+		this.page.init(browserEvents);
+	    	elements=page.elementList();
+
+	    //String[] res=WebElementList.splitTextForScreen(10,"test\ntest");
     }
 
     private void fillCurrentElementInfo()
@@ -162,10 +164,11 @@ class BrowserArea extends NavigateArea implements Constants
     	{
 	case PAGE: 
 	    return screenPage.getLinesCount();
-	case TEXT: 
-	    return screenText.getLinesCount();
+	case TEXT:
+		return elements.getSplitedCount();
+	    //return screenText.getLinesCount();
 	case 
-	DOWNLOAD: return screenDownload.getLinesCount();
+		DOWNLOAD: return screenDownload.getLinesCount();
 	default:
 	    return 0;
     	}
@@ -178,7 +181,11 @@ class BrowserArea extends NavigateArea implements Constants
 	case PAGE:
 	    return screenPage.getStringByLine(index);
 	case TEXT:
-	    return screenText.getStringByLine(index);
+	{
+		SplitedLine split=elements.getSplitedLineByIndex(index);
+		return split.type+" "+split.text;
+	    //return screenText.getStringByLine(index);
+	}
 	case DOWNLOAD:
 	    return screenDownload.getStringByLine(index);
 	default:
@@ -205,66 +212,66 @@ class BrowserArea extends NavigateArea implements Constants
 
     @Override public boolean onKeyboardEvent(KeyboardEvent event)
     {
-	NullCheck.notNull(event, "event");
-	if (event.isCommand())
+    	NullCheck.notNull(event, "event");
+    	if (event.isCommand())
 	    switch (event.getCommand())
 	    {
-	    case KeyboardEvent.ESCAPE:
-		onBreakCommand();
-		return true;
-	    case KeyboardEvent.F5:
-		onChangeTagFilters();
-		return true;
-	    case KeyboardEvent.F6: 
-		onChangeCurrentPageLink();
-		return true;
-	    case KeyboardEvent.F7: 
-		onChangeScreenModeToText();
-		return true;
-	    case KeyboardEvent.F8: 
-		onChangeScreenModeToPage();
-		return true;
-	    case KeyboardEvent.F9: 
-    	onChangeDefaultEventResult();
-		return true;
-	    case KeyboardEvent.F11:
-		onChangeWebViewVisibility();
-		return true;
-    		// navigation
-	    case KeyboardEvent.ARROW_LEFT:
-	    case KeyboardEvent.ALTERNATIVE_ARROW_LEFT:
-		if(event.withShiftOnly()) 
-		{
-		    onElementNavigateLeft();
-		    return true;
-		}
-		break;
-	    case KeyboardEvent.ARROW_RIGHT:
-	    case KeyboardEvent.ALTERNATIVE_ARROW_RIGHT:
-		if(event.withShiftOnly()) 
-		{
-		    onElementNavigateRight();
-		    return true;
-		}
-    		break;
-    		// filtered navigation
-	    case KeyboardEvent.TAB:
-		if(event.withShiftOnly())
-		{
-		    onSearchResultNavigationLeft();
-		    return true;
-		} else 
-		    if(!event.withAlt()&&!event.withControl()&&!event.withShift()) 
-		    {
-			onSearchResultNavigationRight();
+		    case KeyboardEvent.ESCAPE:
+			onBreakCommand();
 			return true;
-		    }
-		// actions
-	    case KeyboardEvent.ENTER:
-		onDefaultAction();
-		return true;
-	    default:
-		return super.onKeyboardEvent(event);
+		    case KeyboardEvent.F5:
+			onChangeTagFilters();
+			return true;
+		    case KeyboardEvent.F6: 
+			onChangeCurrentPageLink();
+			return true;
+		    case KeyboardEvent.F7: 
+			onChangeScreenModeToText();
+			return true;
+		    case KeyboardEvent.F8: 
+			onChangeScreenModeToPage();
+			return true;
+		    case KeyboardEvent.F9: 
+	    	onChangeDefaultEventResult();
+			return true;
+		    case KeyboardEvent.F11:
+			onChangeWebViewVisibility();
+			return true;
+	    		// navigation
+		    case KeyboardEvent.ARROW_LEFT:
+		    case KeyboardEvent.ALTERNATIVE_ARROW_LEFT:
+			if(event.withShiftOnly()) 
+			{
+			    onElementNavigateLeft();
+			    return true;
+			}
+			break;
+		    case KeyboardEvent.ARROW_RIGHT:
+		    case KeyboardEvent.ALTERNATIVE_ARROW_RIGHT:
+			if(event.withShiftOnly()) 
+			{
+			    onElementNavigateRight();
+			    return true;
+			}
+	    		break;
+	    		// filtered navigation
+		    case KeyboardEvent.TAB:
+			if(event.withShiftOnly())
+			{
+			    onSearchResultNavigationLeft();
+			    return true;
+			} else 
+			    if(!event.withAlt()&&!event.withControl()&&!event.withShift()) 
+			    {
+				onSearchResultNavigationRight();
+				return true;
+			    }
+			// actions
+		    case KeyboardEvent.ENTER:
+			onDefaultAction();
+			return true;
+		    default:
+			return super.onKeyboardEvent(event);
 	    }
 
     	switch(event.getCharacter())
@@ -282,70 +289,70 @@ class BrowserArea extends NavigateArea implements Constants
 
     @Override public boolean onEnvironmentEvent(EnvironmentEvent event)
     {
-	NullCheck.notNull(event, "event");
-	switch(event.getCode())
-	{
-	case EnvironmentEvent.CLOSE:
-	    actions.closeApp();
-	    return true;
-	case EnvironmentEvent.THREAD_SYNC:
-	    if (onThreadSyncEvent(event))
-		return true;
-	    return super.onEnvironmentEvent(event);
-	default:
-	    return super.onEnvironmentEvent(event);
-	}
+    	NullCheck.notNull(event, "event");
+		switch(event.getCode())
+		{
+			case EnvironmentEvent.CLOSE:
+			    actions.closeApp();
+			    return true;
+			case EnvironmentEvent.THREAD_SYNC:
+			    if (onThreadSyncEvent(event))
+				return true;
+			    return super.onEnvironmentEvent(event);
+			default:
+			    return super.onEnvironmentEvent(event);
+		}
     }
 
     private boolean onThreadSyncEvent(EnvironmentEvent event)
     {
-	if (event instanceof PageChangeStateEvent)
-	{
-	    final PageChangeStateEvent changeState = (PageChangeStateEvent)event;
-	    onPageChangeState(changeState.state());
-	    return true;
-	}
-	if (event instanceof ProgressEvent)
-	{
-	    final ProgressEvent progress = (ProgressEvent)event;
-	    onProgress(progress.value());
-	    return true;
-	}
-	if (event instanceof AlertEvent)
-	{
-		Log.debug("web","t:"+Thread.currentThread().getId()+" ALERT event inside area");
-	    final AlertEvent alert = (AlertEvent)event;
-	    onAlert(alert.message());
-	    return true;
-	}
-	if (event instanceof PromptEvent)
-	{
-		Log.debug("web","t:"+Thread.currentThread().getId()+" PROMPT event inside area");
-	    final PromptEvent prompt = (PromptEvent)event;
-	    final String answer = onPrompt(prompt.message(), prompt.value());
-	    prompt.setAnswer (answer);
-	    return true;
-	}
-	if (event instanceof ErrorEvent)
-	{
-	    final ErrorEvent error = (ErrorEvent)event;
-	    onError(error.message());
-	    return true;
-	}
-	if (event instanceof DownloadEvent)
-	{
-	    final DownloadEvent download = (DownloadEvent)event;
-	    onDownloadStart(download.url());
-	    return true;
-	}
-	if (event instanceof ConfirmEvent)
-	{
-	    final ConfirmEvent confirm = (ConfirmEvent)event;
-	    final boolean answer = onConfirm(confirm.message());
-	    confirm.setAnswer(answer);
-	    return true;
-	}
-	return false;
+		if (event instanceof PageChangeStateEvent)
+		{
+		    final PageChangeStateEvent changeState = (PageChangeStateEvent)event;
+		    onPageChangeState(changeState.state());
+		    return true;
+		}
+		if (event instanceof ProgressEvent)
+		{
+		    final ProgressEvent progress = (ProgressEvent)event;
+		    onProgress(progress.value());
+		    return true;
+		}
+		if (event instanceof AlertEvent)
+		{
+			Log.debug("web","t:"+Thread.currentThread().getId()+" ALERT event inside area");
+		    final AlertEvent alert = (AlertEvent)event;
+		    onAlert(alert.message());
+		    return true;
+		}
+		if (event instanceof PromptEvent)
+		{
+			Log.debug("web","t:"+Thread.currentThread().getId()+" PROMPT event inside area");
+		    final PromptEvent prompt = (PromptEvent)event;
+		    final String answer = onPrompt(prompt.message(), prompt.value());
+		    prompt.setAnswer (answer);
+		    return true;
+		}
+		if (event instanceof ErrorEvent)
+		{
+		    final ErrorEvent error = (ErrorEvent)event;
+		    onError(error.message());
+		    return true;
+		}
+		if (event instanceof DownloadEvent)
+		{
+		    final DownloadEvent download = (DownloadEvent)event;
+		    onDownloadStart(download.url());
+		    return true;
+		}
+		if (event instanceof ConfirmEvent)
+		{
+		    final ConfirmEvent confirm = (ConfirmEvent)event;
+		    final boolean answer = onConfirm(confirm.message());
+		    confirm.setAnswer(answer);
+		    return true;
+		}
+		return false;
     }
 
     private void onBreakCommand()
@@ -377,27 +384,28 @@ class BrowserArea extends NavigateArea implements Constants
 
     private void onChangeTextFilter()
     {
-	environment.say(PAGE_ANY_PROMPT_TEXT_FILTER);
-	//FIXME: Ask for new filter;
-	String filter = Popups.simple(luwrain, POPUP_TITLE_CHANGE_TEXT_FILTER, PAGE_ANY_PROMPT_TEXT_FILTER, "");
-	if(filter==null)
-	    return;
-	if(filter.isEmpty())
-	    filter=null;
-	// make new selector
-	textSelectorFiltered=page.selectorTEXT(true,filter);
-	currentSelectorFiltered=textSelectorFiltered;
-	currentSelectorEmpty=textSelectorEmpty; // current empty selector also seto to text
-	if(!textSelectorFiltered.first(elements))
-	{ // not found
-	    environment.say(PAGE_SCREEN_ANY_HAVENO_ELEMENT);
-	} else
-	{ // element found
-	    // change screen mode to TEXT
-	    screenMode=ScreenMode.TEXT;
-	    fillCurrentElementInfo();
-	    environment.onAreaNewContent(this);
-	}
+		environment.say(PAGE_ANY_PROMPT_TEXT_FILTER);
+		//FIXME: Ask for new filter;
+		String filter = Popups.simple(luwrain, POPUP_TITLE_CHANGE_TEXT_FILTER, PAGE_ANY_PROMPT_TEXT_FILTER, "");
+		if(filter==null)
+		    return;
+		if(filter.isEmpty())
+		    filter=null;
+		// make new selector
+		textSelectorFiltered=page.selectorTEXT(true,filter);
+		currentSelectorFiltered=textSelectorFiltered;
+		currentSelectorEmpty=textSelectorEmpty; // current empty selector also seto to text
+		if(!textSelectorFiltered.first(elements))
+		{ // not found
+		    environment.say(PAGE_SCREEN_ANY_HAVENO_ELEMENT);
+		} else
+		{ // element found
+		    // change screen mode to TEXT
+		    screenMode=ScreenMode.TEXT;
+		    moveHotPointYToElement();
+		    fillCurrentElementInfo();
+		    environment.onAreaNewContent(this);
+		}
     }
 
     private void onChangeTagFilters()
@@ -452,7 +460,7 @@ class BrowserArea extends NavigateArea implements Constants
 
     private void onChangeCurrentPageLink()
     {
-	String link = Popups.simple(luwrain, "Открыть страницу", PAGE_ANY_PROMPT_ADDRESS, "");
+	String link = Popups.simple(luwrain, "Открыть страницу", PAGE_ANY_PROMPT_ADDRESS, "rpserver");
 	if(link==null) 
 	    return;
 	if(!link.matches("^(http|https|ftp)://.*$"))
@@ -483,29 +491,30 @@ class BrowserArea extends NavigateArea implements Constants
 
     private void onElementNavigateRight()
     { // next
-	if(currentSelectorEmpty==null) 
-	    return; // dev bug, if it happend
-	if(!currentSelectorEmpty.next(elements))
-	{
-	    environment.say(PAGE_SCREEN_ANY_END_ELEMENT);
-	    return;
-	}
-	fillCurrentElementInfo();
-	environment.onAreaNewContent(this);
+		if(currentSelectorEmpty==null) 
+		    return; // dev bug, if it happend
+		if(!currentSelectorEmpty.next(elements))
+		{
+			environment.say(PAGE_SCREEN_ANY_END_ELEMENT);
+		    return;
+		}
+		fillCurrentElementInfo();
+		environment.onAreaNewContent(this);
     }
 
     private void onSearchResultNavigationLeft()
     { // prev
-	if(currentSelectorFiltered==null) 
-	    return; // dev bug, if it happend
-	if(!currentSelectorFiltered.prev(elements))
-	{
-	    environment.say(PAGE_SCREEN_ANY_FIRST_ELEMENT);
-	    return;
-	}
-	fillCurrentElementInfo();
-	environment.onAreaNewContent(this);
-	return;
+		if(currentSelectorFiltered==null) 
+		    return; // dev bug, if it happend
+		if(!currentSelectorFiltered.prev(elements))
+		{
+		    environment.say(PAGE_SCREEN_ANY_FIRST_ELEMENT);
+		    //return;
+		}
+		moveHotPointYToElement();
+		fillCurrentElementInfo();
+		environment.onAreaNewContent(this);
+		return;
     }
 
     private void onSearchResultNavigationRight()
@@ -515,26 +524,41 @@ class BrowserArea extends NavigateArea implements Constants
 	if(!currentSelectorFiltered.next(elements))
 	{
 	    environment.say(PAGE_SCREEN_ANY_END_ELEMENT);
-	    return;
+	    //return;
 	}
+	moveHotPointYToElement();
 	fillCurrentElementInfo();
 	environment.onAreaNewContent(this);
+    }
+    
+    private void moveHotPointYToElement()
+    {
+    	int pos=elements.getPos();
+    	SplitedLine[] sls=elements.getSplitedLineByPos(pos);
+    	int snum=sls[0].index;
+    	setHotPointY(snum);
+    	setHotPointX(0);
     }
 
     private void onDefaultAction()
     {
-	if(elements.isEditable())
-	{ // edit content
-	    final String oldValue=elements.getText();
-	    final String newValue = Popups.simple(luwrain, POPUP_TITLE_CHANGE_ELEMENT_EDIT, PAGE_ANY_PROMPT_NEW_TEXT, oldValue);
-	    if (newValue == null)
-		return;
-	    elements.setText(newValue);
-	    fillCurrentElementInfo();
-	    environment.onAreaNewContent(this);
-	    return;
-	}
-	elements.clickEmulate();
+    	if(textSelectorEmpty==null) return;
+    	SplitedLine sl=elements.getSplitedLineByIndex(getHotPointY());
+    	boolean res=textSelectorEmpty.to(elements,sl.pos);
+   		Log.debug("web","to:"+res+", hot:"+getHotPointY()+", pos:"+sl.pos);
+
+   		if(elements.isEditable())
+		{ // edit content
+		    final String oldValue=elements.getText();
+		    final String newValue = Popups.simple(luwrain, POPUP_TITLE_CHANGE_ELEMENT_EDIT, PAGE_ANY_PROMPT_NEW_TEXT, oldValue);
+		    if (newValue == null)
+			return;
+		    elements.setText(newValue);
+		    fillCurrentElementInfo();
+		    environment.onAreaNewContent(this);
+		    return;
+		}
+		elements.clickEmulate();
     }
 
     private void onPageChangeState(State state)
@@ -547,26 +571,20 @@ class BrowserArea extends NavigateArea implements Constants
 	{
 		screenPage.changedTitle(page.getTitle());
 	    screenPage.changedUrl(page.getUrl());
-	    Date d1=new Date();
+	    Date d1=new Date(); // debug rescan speed 
 	    page.RescanDOM();
 	    Date d2=new Date();
-	    SelectorTEXT st=page.selectorTEXT(true,null);
-	    ElementList wel=page.elementList();
-	    st.first(wel);
-	    int len=0,cnt=0,style=0;
-	    do
-	    {
-	    	cnt++;
-	    	len+=wel.getComputedText().length();
-	    	//String stl=wel.getComputedStyleAll();if(stl!=null) stl+=stl.length();
-	    } while(st.next(wel));
-	    Date d3=new Date();
-	    Log.debug("web","Rescan, page element count:"+cnt+", text len:"+len+", speed:"+(d2.getTime()-d1.getTime())+", text scan:"+(d3.getTime()-d2.getTime()));
-	    
 	    textSelectorEmpty=page.selectorTEXT(true,null);
+	    elements.splitAllElementsTextToLines(TEXT_SCREEN_WIDTH,textSelectorEmpty);
+	    Date d3=new Date();
+	    Log.debug("web","Rescan "+(d2.getTime()-d1.getTime())+"ms, page element count:"+elements.getSplitedLines().length+", text splits:"+elements.getSplitedCount()+" "+(d3.getTime()-d2.getTime())+"ms");
+	    
 	    if(!textSelectorEmpty.first(elements))
 	    {
-		environment.say(PAGE_SCREEN_ANY_HAVENO_ELEMENT);
+	    	environment.say(PAGE_SCREEN_ANY_HAVENO_ELEMENT);
+	    } else
+	    {
+	    	// empty page, have no eny text
 	    }
 	    currentSelectorEmpty=textSelectorEmpty;
 	    screenMode=ScreenMode.PAGE;
