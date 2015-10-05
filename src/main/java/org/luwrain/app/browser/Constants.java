@@ -35,6 +35,11 @@ interface Constants
     static final String PAGE_ANY_PROMPT_TAGFILTER_NAME="Введите имя тега для поиска";
     static final String PAGE_ANY_PROMPT_TAGFILTER_VALUE="имя атрибута";
     static final String PAGE_ANY_PROMPT_TAGFILTER_ATTR="значение атрибута";
+    static final String POPUP_TITLE_NEW_PAGE="Открытие новой страницы";
+    static final String POPUP_TITLE_CHANGE_ELEMENT_EDIT="Изменение элемента на вебстранице";
+    static final String POPUP_TITLE_CHANGE_TEXT_FILTER="Поиск элемента по тексту";
+    static final String POPUP_TITLE_CHANGE_TAG_FILTER="Поиск элемента по имени тега и его атруибуту";
+    static final String POPUP_TITLE_WEB_MESSAGE="Сообщение от вебсценария";
 
     // downloader settings
     static final String DEFAULT_DOWNLOAD_DIR=".";

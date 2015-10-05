@@ -34,7 +34,7 @@ import org.luwrain.browser.BrowserEvents;
 import org.luwrain.core.*;
 import org.luwrain.core.events.*;
 import org.luwrain.controls.*;
-import org.luwrain.popups.Popups;
+import org.luwrain.popups.*;
 
 import org.luwrain.interaction.browser.WebPage;
 import org.luwrain.browser.ElementList;
@@ -115,8 +115,10 @@ class BrowserArea extends NavigateArea implements Constants
     private SelectorCSS cssSelectorFiltered=null;
     private Selector currentSelectorEmpty=null;
     private Selector currentSelectorFiltered=null;
+    
+	String nextPromptresult=null;
 
-private final FileDownloadThread fileDownloadThread=new FileDownloadThread();
+    private final FileDownloadThread fileDownloadThread=new FileDownloadThread();
     private final ScreenDownload screenDownload=new ScreenDownload(fileDownloadThread);
 
     BrowserArea(Luwrain luwrain, Actions actions,
@@ -223,7 +225,7 @@ private final FileDownloadThread fileDownloadThread=new FileDownloadThread();
 		onChangeScreenModeToPage();
 		return true;
 	    case KeyboardEvent.F9: 
-		onChangeScreenModeToDownload();
+    	onChangeDefaultEventResult();
 		return true;
 	    case KeyboardEvent.F11:
 		onChangeWebViewVisibility();
@@ -311,12 +313,14 @@ private final FileDownloadThread fileDownloadThread=new FileDownloadThread();
 	}
 	if (event instanceof AlertEvent)
 	{
+		Log.debug("web","t:"+Thread.currentThread().getId()+" ALERT event inside area");
 	    final AlertEvent alert = (AlertEvent)event;
 	    onAlert(alert.message());
 	    return true;
 	}
 	if (event instanceof PromptEvent)
 	{
+		Log.debug("web","t:"+Thread.currentThread().getId()+" PROMPT event inside area");
 	    final PromptEvent prompt = (PromptEvent)event;
 	    final String answer = onPrompt(prompt.message(), prompt.value());
 	    prompt.setAnswer (answer);
@@ -348,12 +352,12 @@ private final FileDownloadThread fileDownloadThread=new FileDownloadThread();
     {
     	switch(screenMode)
     	{
-	case DOWNLOAD:  
-	case PAGE:
-	    page.stop();
-	    break;  
-	case TEXT:
-	    screenDownload.breakExecution();
+		case DOWNLOAD:  
+		case PAGE:
+			page.stop();
+		break;  
+		case TEXT:
+			screenDownload.breakExecution();
 	    break;  
     	}
     }
@@ -375,7 +379,7 @@ private final FileDownloadThread fileDownloadThread=new FileDownloadThread();
     {
 	environment.say(PAGE_ANY_PROMPT_TEXT_FILTER);
 	//FIXME: Ask for new filter;
-	String filter = "";
+	String filter = Popups.simple(luwrain, POPUP_TITLE_CHANGE_TEXT_FILTER, PAGE_ANY_PROMPT_TEXT_FILTER, "");
 	if(filter==null)
 	    return;
 	if(filter.isEmpty())
@@ -400,14 +404,14 @@ private final FileDownloadThread fileDownloadThread=new FileDownloadThread();
     {
 	environment.say(PAGE_ANY_PROMPT_TAGFILTER_NAME);
 	//FIXME:Ask for new filter;
-	String filter = "";
+	String filter = Popups.simple(luwrain, POPUP_TITLE_CHANGE_TAG_FILTER, PAGE_ANY_PROMPT_TAGFILTER_NAME, "");
 	if(filter==null)
 	    return;
 	if(filter.isEmpty())
 	    filter=null;
 	environment.say(PAGE_ANY_PROMPT_TAGFILTER_ATTR);
 	//FIXME:Ask for new attr name;
-	String attrName = "";
+	String attrName = Popups.simple(luwrain, POPUP_TITLE_CHANGE_TAG_FILTER, PAGE_ANY_PROMPT_TAGFILTER_ATTR, "");
 	//FIXME:Ask for new attr;		*/
 	if(attrName==null)
 	    return;
@@ -415,7 +419,7 @@ private final FileDownloadThread fileDownloadThread=new FileDownloadThread();
 	    attrName=null;
 	environment.say(PAGE_ANY_PROMPT_TAGFILTER_VALUE);
 	//FIXME:Ask for new attr value;
-	String attrValue = "";
+	String attrValue = Popups.simple(luwrain, POPUP_TITLE_CHANGE_TAG_FILTER, PAGE_ANY_PROMPT_TAGFILTER_VALUE, "");
 	if(attrValue==null)
 	    return;
 	if(attrValue.isEmpty())
@@ -440,10 +444,15 @@ private final FileDownloadThread fileDownloadThread=new FileDownloadThread();
 	screenMode=ScreenMode.DOWNLOAD;
 	screenDownload.refreshInfo();
     }
+    
+    private void onChangeDefaultEventResult()
+    {
+    	nextPromptresult = Popups.simple(luwrain, "События вебсценариев", "Укажите ответ на следующее событие вебсценариев prompt/confirm", "");
+    }
 
     private void onChangeCurrentPageLink()
     {
-	String link = Popups.simple(luwrain, "Открыть страницу", "Введите адрес новой страницы:", "http://");
+	String link = Popups.simple(luwrain, "Открыть страницу", PAGE_ANY_PROMPT_ADDRESS, "");
 	if(link==null) 
 	    return;
 	if(!link.matches("^(http|https|ftp)://.*$"))
@@ -517,7 +526,7 @@ private final FileDownloadThread fileDownloadThread=new FileDownloadThread();
 	if(elements.isEditable())
 	{ // edit content
 	    final String oldValue=elements.getText();
-	    final String newValue = Popups.simple(luwrain, "Новый текст элемента", "Введите новый текст элемента:", oldValue);
+	    final String newValue = Popups.simple(luwrain, POPUP_TITLE_CHANGE_ELEMENT_EDIT, PAGE_ANY_PROMPT_NEW_TEXT, oldValue);
 	    if (newValue == null)
 		return;
 	    elements.setText(newValue);
@@ -536,9 +545,24 @@ private final FileDownloadThread fileDownloadThread=new FileDownloadThread();
 	screenPage.changedState(state.name());
 	if(state==State.SUCCEEDED)
 	{
-	    screenPage.changedTitle(page.getTitle());
+		screenPage.changedTitle(page.getTitle());
 	    screenPage.changedUrl(page.getUrl());
+	    Date d1=new Date();
 	    page.RescanDOM();
+	    Date d2=new Date();
+	    SelectorTEXT st=page.selectorTEXT(true,null);
+	    ElementList wel=page.elementList();
+	    st.first(wel);
+	    int len=0,cnt=0,style=0;
+	    do
+	    {
+	    	cnt++;
+	    	len+=wel.getComputedText().length();
+	    	//String stl=wel.getComputedStyleAll();if(stl!=null) stl+=stl.length();
+	    } while(st.next(wel));
+	    Date d3=new Date();
+	    Log.debug("web","Rescan, page element count:"+cnt+", text len:"+len+", speed:"+(d2.getTime()-d1.getTime())+", text scan:"+(d3.getTime()-d2.getTime()));
+	    
 	    textSelectorEmpty=page.selectorTEXT(true,null);
 	    if(!textSelectorEmpty.first(elements))
 	    {
@@ -564,29 +588,42 @@ private final FileDownloadThread fileDownloadThread=new FileDownloadThread();
 
     private void onAlert(final String message)
     {
-	if (message != null && !message.trim().isEmpty())
-	    luwrain.message(message, Luwrain.MESSAGE_ERROR);
+		if (message == null || message.trim().isEmpty()) return;
+		luwrain.message(PAGE_SCREEN_ALERT_MESSAGE+message, Luwrain.MESSAGE_OK);
     }
 
-private String onPrompt(final String message,final String value)
+    private String onPrompt(final String message,final String value)
     {
-	return Popups.simple(luwrain, message, "Введите значение:", value);
+		//YesNoPopup popup = new YesNoPopup(luwrain, POPUP_TITLE_WEB_MESSAGE,PAGE_SCREEN_ALERT_MESSAGE+message, false);
+		//luwrain.popup(popup);
+    	//return Popups.simple(luwrain, POPUP_TITLE_WEB_MESSAGE, PAGE_SCREEN_PROMPT_MESSAGE+message, value);
+		if (message == null || message.trim().isEmpty()) return null;
+		luwrain.message(PAGE_SCREEN_PROMPT_MESSAGE+message, Luwrain.MESSAGE_OK);
+		String result=nextPromptresult;
+    	nextPromptresult=null;
+    	return result;
     }
 
-private void onError(String message)
+    private void onError(String message)
     {
-	if (message != null && !message.trim().isEmpty())
-	    luwrain.message (message, Luwrain.MESSAGE_ERROR);
+		if (message == null || message.trim().isEmpty()) return;
+   		luwrain.message (message, Luwrain.MESSAGE_ERROR);
     }
 
-private boolean onDownloadStart(String url)
+    private boolean onDownloadStart(String url)
     {
 	return true;
     }
 
     private  Boolean onConfirm(String message)
     {
-	//FIXME:
-	return true;
+		//YesNoPopup popup = new YesNoPopup(luwrain, POPUP_TITLE_WEB_MESSAGE,PAGE_SCREEN_CONFIRM_MESSAGE+message, false);
+		//luwrain.popup(popup);
+		//if (popup.closing.cancelled()) return null;
+		//return popup.result();
+   		luwrain.message (PAGE_SCREEN_CONFIRM_MESSAGE+message, Luwrain.MESSAGE_OK);
+		boolean result=nextPromptresult!=null&&(nextPromptresult.equals("y")||nextPromptresult.equals("Y"));
+    	nextPromptresult=null;
+    	return result;
     }
 }
