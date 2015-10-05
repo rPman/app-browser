@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Date;
+import java.util.Objects;
 import java.util.Vector;
 
 
@@ -460,7 +461,7 @@ class BrowserArea extends NavigateArea implements Constants
 
     private void onChangeCurrentPageLink()
     {
-	String link = Popups.simple(luwrain, "Открыть страницу", PAGE_ANY_PROMPT_ADDRESS, "rpserver");
+	String link = Popups.simple(luwrain, "Открыть страницу", PAGE_ANY_PROMPT_ADDRESS, "ya.ru");
 	if(link==null) 
 	    return;
 	if(!link.matches("^(http|https|ftp)://.*$"))
@@ -549,7 +550,7 @@ class BrowserArea extends NavigateArea implements Constants
 
    		if(elements.isEditable())
 		{ // edit content
-		    final String oldValue=elements.getText();
+		    final String oldValue=Constants.defaultIfNull(elements.getText(),"");
 		    final String newValue = Popups.simple(luwrain, POPUP_TITLE_CHANGE_ELEMENT_EDIT, PAGE_ANY_PROMPT_NEW_TEXT, oldValue);
 		    if (newValue == null)
 			return;

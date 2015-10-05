@@ -74,7 +74,8 @@ return text.toArray(new String[(text.size())]);
 		    int sw=line.lastIndexOf(' ');
 		    if(sw!=-1)
 		    { // have stop char, cut line to it (but include)
-			line=line.substring(0,sw);
+		    	line=line.substring(0,sw);
+		    	i++;
 		    }
 		}
 	    }
@@ -84,7 +85,10 @@ return text.toArray(new String[(text.size())]);
 	return text.toArray(new String[(text.size())]);
     }
 
-
+    static public <T> T defaultIfNull(T value,T ifnull)
+    {
+    	if(value!=null) return value;else return ifnull;
+    }
 
 
 
