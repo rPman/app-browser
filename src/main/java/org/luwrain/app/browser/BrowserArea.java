@@ -36,7 +36,7 @@ import org.luwrain.core.*;
 import org.luwrain.core.events.*;
 import org.luwrain.controls.*;
 import org.luwrain.popups.*;
-import org.luwrain.interaction.browser.WebElementList;
+//import org.luwrain.interaction.browser.ElementListImpl;
 import org.luwrain.interaction.browser.WebPage;
 import org.luwrain.browser.ElementList;
 import org.luwrain.browser.ElementList.*;
@@ -166,7 +166,7 @@ class BrowserArea extends NavigateArea implements Constants
 	case PAGE: 
 	    return screenPage.getLinesCount();
 	case TEXT:
-		return elements.getSplitedCount();
+		return elements.getSplittedCount();
 	    //return screenText.getLinesCount();
 	case 
 		DOWNLOAD: return screenDownload.getLinesCount();
@@ -183,7 +183,7 @@ class BrowserArea extends NavigateArea implements Constants
 	    return screenPage.getStringByLine(index);
 	case TEXT:
 	{
-		SplitedLine split=elements.getSplitedLineByIndex(index);
+		SplittedLine split=elements.getSplittedLineByIndex(index);
 		return split.type+" "+split.text;
 	    //return screenText.getStringByLine(index);
 	}
@@ -535,7 +535,7 @@ class BrowserArea extends NavigateArea implements Constants
     private void moveHotPointYToElement()
     {
     	int pos=elements.getPos();
-    	SplitedLine[] sls=elements.getSplitedLineByPos(pos);
+    	SplittedLine[] sls=elements.getSplittedLineByPos(pos);
     	int snum=sls[0].index;
     	setHotPointY(snum);
     	setHotPointX(0);
@@ -544,7 +544,7 @@ class BrowserArea extends NavigateArea implements Constants
     private void onDefaultAction()
     {
     	if(textSelectorEmpty==null) return;
-    	SplitedLine sl=elements.getSplitedLineByIndex(getHotPointY());
+    	SplittedLine sl=elements.getSplittedLineByIndex(getHotPointY());
     	boolean res=textSelectorEmpty.to(elements,sl.pos);
    		Log.debug("web","to:"+res+", hot:"+getHotPointY()+", pos:"+sl.pos);
 
@@ -578,7 +578,7 @@ class BrowserArea extends NavigateArea implements Constants
 	    textSelectorEmpty=page.selectorTEXT(true,null);
 	    elements.splitAllElementsTextToLines(TEXT_SCREEN_WIDTH,textSelectorEmpty);
 	    Date d3=new Date();
-	    Log.debug("web","Rescan "+(d2.getTime()-d1.getTime())+"ms, page element count:"+elements.getSplitedLines().length+", text splits:"+elements.getSplitedCount()+" "+(d3.getTime()-d2.getTime())+"ms");
+	    Log.debug("web","Rescan "+(d2.getTime()-d1.getTime())+"ms, page element count:"+elements.getSplittedLines().length+", text splits:"+elements.getSplittedCount()+" "+(d3.getTime()-d2.getTime())+"ms");
 	    
 	    if(!textSelectorEmpty.first(elements))
 	    {
