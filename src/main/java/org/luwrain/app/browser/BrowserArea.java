@@ -75,7 +75,7 @@ class BrowserArea extends NavigateArea
 	    final String type=elements.getType();
 	    final String text=elements.getText();
 	    final String link=elements.getLink();
-	    luwrain.say(type+" "+text);
+	    luwrain.say(elementTypeTranslation(type) + " "+text);
     }
 
     @Override public int getLineCount()
@@ -274,21 +274,38 @@ return res >= 1?res:1;
 
     private void onPageChangeState(State state)
     {
-	if(state==State.SUCCEEDED)
+	if (state == State.SCHEDULED)
+	    return;
+	if (state == State.RUNNING)
 	{
+	    luwrain.message("Загрузка страницы");
+	    return;
+	}
+	if(state == State.SUCCEEDED)
+	{
+	    final int width = luwrain.getAreaVisibleWidth(this);
 	    page.RescanDOM();
 	    textSelectorEmpty=page.selectorTEXT(true,null);
-	    final int width = luwrain.getAreaVisibleWidth(this);
 	    splittedLineProc.splitAllElementsTextToLines(width > MIN_WIDTH?width:width, textSelectorEmpty, elements);
 	    if(!textSelectorEmpty.first(elements))
 	    	environment.hint(Hints.NO_CONTENT); 
 	    currentSelector = textSelectorEmpty;
 	    environment.onAreaNewContent(this);
-	    luwrain.message("Старница Страница загружена", Luwrain.MESSAGE_DONE);
 	    luwrain.onAreaNewContent(this);
+	    luwrain.message("Страница загружена", Luwrain.MESSAGE_DONE);
 	    return;
 	}
-	luwrain.message("Неуспешное изменение статуса");
+	if (state == State.READY)
+	{
+	    //	    luwrain.message("Страница загружена", Luwrain.MESSAGE_DONE);
+	    return;
+	}
+	if (state == State.FAILED)
+	{
+	    luwrain.message("Страница не может быть загружена", Luwrain.MESSAGE_ERROR);
+	    return;
+	}
+	System.out.println("browser:unhandled page state changing:" + state);
     }
 
     private void onProgress(Number progress)
@@ -324,5 +341,16 @@ return res >= 1?res:1;
     {
    		luwrain.message ("Подтверждение: " +message, Luwrain.MESSAGE_OK);
 		return false;
+    }
+
+    private String elementTypeTranslation(String type)
+    {
+	switch(type.toLowerCase().trim())
+	{
+	case "link":
+	    return "Ссылка";
+	default:
+	    return type;
+	}
     }
 }

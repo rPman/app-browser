@@ -2,47 +2,45 @@
 package org.luwrain.app.browser;
 
 import java.util.*;
-
 import org.luwrain.browser.*;
 
 class SplittedLineProc
 {
-	static public class SplittedLine
+    static class SplittedLine
+    {
+	String type;
+	String text;
+	int pos; // element position in domidx
+	int index; // line index in global line count
+
+	SplittedLine(String type,String text,int pos,int index)
 	{
-		public String type;
-		public String text;
-		public int pos; // element position in domidx
-		public int index; // line index in global line count
+	    this.type=type;
+	    this.text=text;
+	    this.pos=pos;
+	    this.index=index;
+	}
+    };
 
-		public SplittedLine(String type,String text,int pos,int index)
-		{
-			this.type=type;
-			this.text=text;
-			this.pos=pos;
-			this.index=index;
-		}
-	};
+    private SplittedLine[][] splittedLines=new SplittedLine[0][];
+    private int splittedCount=0;
 
-
-	private SplittedLine[][] splittedLines=new SplittedLine[0][];
-	private int splittedCount=0;
-
-    public SplittedLine[][] getSplittedLines()
+    SplittedLine[][] getSplittedLines()
     {
 	return splittedLines;
     }
 
-    public int getSplittedCount()
+    int getSplittedCount()
     {
 	return splittedCount;
     }
 
-    public SplittedLine getSplittedLineByIndex(int index)
+    SplittedLine getSplittedLineByIndex(int index)
     {
 	int i=0;
 	for(SplittedLine[] split:splittedLines)
 	{
-	    if(i+split.length>index)
+	    if(i+split.length > index)
 		return split[index-i]; 
 	    i+=split.length;
 	}
@@ -61,18 +59,18 @@ class SplittedLineProc
     /* scan all elements via selector and call getText for each of them and split into lines, store in cache, accessed via getCachedText
      * it change current position to end
      */
-    public void splitAllElementsTextToLines(int width,ElementList.Selector selector, ElementList el)
+    void splitAllElementsTextToLines(int width,ElementList.Selector selector, ElementList el)
     {
-	final Vector<SplittedLine[]> result=new Vector<SplittedLine[]>();
+	final LinkedList<SplittedLine[]> result=new LinkedList<SplittedLine[]>();
 	splittedCount=0;
 	int index=0;
 	if(selector.first(el))
 	{
 	    do {
-		String type = el.getType();
-		String text = el.getText();
-		String[] lines = SplittedLineProc.splitTextForScreen(width,text);
-		final Vector<SplittedLine> splitted=new Vector<SplittedLine>();
+		final String type = el.getType();
+		final String text = el.getText();
+		final String[] lines = SplittedLineProc.splitTextForScreen(width,text);
+		final LinkedList<SplittedLine> splitted=new LinkedList<SplittedLine>();
 				for(String line:lines) 
 				    splitted.add(new SplittedLine(type,line, el.getPos(),index++));
 				result.add(splitted.toArray(new SplittedLine[splitted.size()]));
@@ -101,7 +99,7 @@ class SplittedLineProc
 		splittedCount += splitted.size();
 	}
 
-    public static String[] splitTextForScreen(int width,String string)
+    static private String[] splitTextForScreen(int width,String string)
     {
     	final LinkedList<String> text=new LinkedList<String>();
     	if(string==null||string.isEmpty())
@@ -126,13 +124,13 @@ class SplittedLineProc
 	    }
 	    // check for new line char
 	    final int nl=line.indexOf('\n');
-			if(nl!=-1)
-			{ // have new line char, cut line to it
-			    line=line.substring(0,nl);
-			    i++; // skip new line
-			}
-			text.add(line);
-			i+=line.length();
+	    if(nl!=-1)
+	    { // have new line char, cut line to it
+		line=line.substring(0,nl);
+		i++; // skip new line
+	    }
+	    text.add(line);
+	    i+=line.length();
     	}
     	return text.toArray(new String[(text.size())]);
     }
