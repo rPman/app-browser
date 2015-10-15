@@ -38,7 +38,7 @@ import org.luwrain.browser.*;
 //import org.luwrain.browser.ElementList;
 import org.luwrain.browser.ElementList.*;
 
-class BrowserArea extends NavigateArea implements Constants
+class BrowserArea extends NavigateArea
 {
     static private final int MIN_WIDTH = 10;
 
@@ -299,13 +299,13 @@ return res >= 1?res:1;
     private void onAlert(final String message)
     {
 		if (message == null || message.trim().isEmpty()) return;
-		luwrain.message(PAGE_SCREEN_ALERT_MESSAGE+message, Luwrain.MESSAGE_ERROR);
+		luwrain.message("Внимание!" + message, Luwrain.MESSAGE_ERROR);
     }
 
     private String onPrompt(final String message,final String value)
     {
 		if (message == null || message.trim().isEmpty()) return null;
-		luwrain.message(PAGE_SCREEN_PROMPT_MESSAGE+message, Luwrain.MESSAGE_OK);
+		luwrain.message("Подтверждение: " +message, Luwrain.MESSAGE_OK);
 		return "";//result;
     }
 
@@ -322,7 +322,7 @@ return res >= 1?res:1;
 
     private  Boolean onConfirm(String message)
     {
-   		luwrain.message (PAGE_SCREEN_CONFIRM_MESSAGE+message, Luwrain.MESSAGE_OK);
+   		luwrain.message ("Подтверждение: " +message, Luwrain.MESSAGE_OK);
 		return false;
     }
 }
