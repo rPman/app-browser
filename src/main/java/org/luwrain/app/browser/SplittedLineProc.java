@@ -8,20 +8,21 @@ class SplittedLineProc
 {
     static class SplittedLine
     {
-	String type;
-	String text;
-	int pos; // element position in domidx
-	int index; // line index in global line count
-
-	SplittedLine(String type,String text,int pos,int index)
-	{
-	    this.type=type;
-	    this.text=text;
-	    this.pos=pos;
-	    this.index=index;
-	}
+		String type;
+		String text;
+		int pos; // element position in domidx
+		int index; // line index in global line count
+		int elIdx; // element index in current selector
+	
+		SplittedLine(String type,String text,int pos,int index,int elIdx)
+		{
+		    this.type=type;
+		    this.text=text;
+		    this.pos=pos;
+		    this.index=index;
+		    this.elIdx=elIdx;
+		}
     };
-
     private SplittedLine[][] splittedLines=new SplittedLine[0][];
     private int splittedCount=0;
 
@@ -49,11 +50,11 @@ class SplittedLineProc
 
     public SplittedLine[] getSplittedLineByPos(int pos)
     {
-	for(SplittedLine[] split: splittedLines)
-	{
-	    if(split[0].pos==pos) return split; 
-	}
-	return null;
+		for(SplittedLine[] split: splittedLines)
+		{
+		    if(split[0].pos==pos) return split; 
+		}
+		return null;
     }
 
     /* scan all elements via selector and call getText for each of them and split into lines, store in cache, accessed via getCachedText
@@ -64,6 +65,7 @@ class SplittedLineProc
 	final LinkedList<SplittedLine[]> result=new LinkedList<SplittedLine[]>();
 	splittedCount=0;
 	int index=0;
+	int elIdx=0;
 	if(selector.first(el))
 	{
 	    do {
@@ -72,8 +74,9 @@ class SplittedLineProc
 		final String[] lines = SplittedLineProc.splitTextForScreen(width,text);
 		final LinkedList<SplittedLine> splitted=new LinkedList<SplittedLine>();
 				for(String line:lines) 
-				    splitted.add(new SplittedLine(type,line, el.getPos(),index++));
+				    splitted.add(new SplittedLine(type,line, el.getPos(),index++,elIdx));
 				result.add(splitted.toArray(new SplittedLine[splitted.size()]));
+				elIdx++;
 				splittedCount+=splitted.size();
 	    } while(selector.next(el));
 	}
@@ -83,19 +86,19 @@ class SplittedLineProc
     /* update split for current element text, used to update info in split text cache */
     void updateSplitForElementText(int width, ElementList el)
     {
-	String type= el.getType();
+    	String type= el.getType();
 		String text = el.getText();
 		String[] lines = SplittedLineProc.splitTextForScreen(width,text);
-		if(splittedLines.length < el.getPos()) return; // FIXME: make better error handling, out of bound, cache size invalid
+		SplittedLine[] sl=getSplittedLineByPos(el.getPos());
+		if(sl==null||sl.length==0) return; // FIXME: make better error handling, out of bound, cache size invalid
+		int slIdx=sl[0].index;
+		int index=slIdx;
+		int elIdx=sl[0].elIdx;
 		final Vector<SplittedLine> splitted=new Vector<SplittedLine>();
-		int index=0;
 		for(String line:lines)
-		{
-		    splitted.add(new SplittedLine(type,line,el.getPos(),index));
-			index++;
-		}
-		splittedCount-=splittedLines[el.getPos()].length;
-		splittedLines[el.getPos()]=splitted.toArray(new SplittedLine[splitted.size()]);
+		    splitted.add(new SplittedLine(type,line,el.getPos(),index++,elIdx));
+		splittedCount-=splittedLines[elIdx].length;
+		splittedLines[elIdx]=splitted.toArray(new SplittedLine[splitted.size()]);
 		splittedCount += splitted.size();
 	}
 

@@ -40,6 +40,10 @@ import org.luwrain.browser.ElementList.*;
 
 class BrowserArea extends NavigateArea
 {
+    static final int PAGE_SCANER_INTERVAL=1000; 
+    static final int PAGE_SCANER_AROUND_ELEMENTS_COUNT=10; 
+    
+    
     static private final int MIN_WIDTH = 10;
 
     private Luwrain luwrain;
@@ -53,21 +57,48 @@ class BrowserArea extends NavigateArea
     private SelectorTEXT textSelectorEmpty=null;
     private Selector currentSelector = null;
 
+    class AutoPageElementScanner extends TimerTask
+    {
+    	BrowserArea browser;
+        Timer pageTimer=null;
+    	AutoPageElementScanner(BrowserArea browser)
+    	{
+    		this.browser=browser;
+    	}
+		@Override public void run()
+		{
+			browser.onTimerElementScan();
+		}
+		public void schedule()
+		{
+    		pageTimer=new Timer();
+			pageTimer.scheduleAtFixedRate(this,PAGE_SCANER_INTERVAL,PAGE_SCANER_INTERVAL);
+		}
+    }
+    
+    private AutoPageElementScanner pageScaner;
+
+    ElementList elementsForScan=null;
+    
     BrowserArea(Luwrain luwrain, Actions actions,
 		Browser browser)
     {
-	super(new DefaultControlEnvironment(luwrain));
-	this.luwrain = luwrain;
-	this.actions = actions;
-	this.environment = new DefaultControlEnvironment(luwrain);
-	this.page = (WebPage)browser;
-	NullCheck.notNull(luwrain, "luwrain");
-	NullCheck.notNull(actions, "actions");
-	NullCheck.notNull(browser, "browser");
-	browserEvents = new Events(luwrain, this);
-	this.page.init(browserEvents);
-	    	elements=page.elementList();
+		super(new DefaultControlEnvironment(luwrain));
+		this.luwrain = luwrain;
+		this.actions = actions;
+		this.environment = new DefaultControlEnvironment(luwrain);
+		this.page = (WebPage)browser;
+		NullCheck.notNull(luwrain, "luwrain");
+		NullCheck.notNull(actions, "actions");
+		NullCheck.notNull(browser, "browser");
+		browserEvents = new Events(luwrain, this);
+		this.page.init(browserEvents);
+		elements=page.elementList();
+		elementsForScan=page.elementList();
 		splittedLineProc = new SplittedLineProc();
+
+		pageScaner=new AutoPageElementScanner(this);
+		pageScaner.schedule();
     }
 
     private void  onNewSelectedElement()
@@ -90,7 +121,7 @@ return res >= 1?res:1;
 		if (split == null)
 		    return "";
 		//		System.out.println("splitted");
-		return split.text;
+		return split.type+" "+split.text;
     }
 
     @Override public String getAreaName()
@@ -106,6 +137,9 @@ return res >= 1?res:1;
 	    {
 	    case KeyboardEvent.ESCAPE:
 		onBreakCommand();
+		return true;
+	    case KeyboardEvent.F5: 
+		onRescanPageDom();
 		return true;
 	    case KeyboardEvent.F6: 
 		onChangeCurrentPageLink();
@@ -194,6 +228,19 @@ return res >= 1?res:1;
 	page.stop();
     }
 
+    private void onRescanPageDom()
+    {
+	    page.RescanDOM();
+	    textSelectorEmpty=page.selectorTEXT(true,null);
+	    final int width = luwrain.getAreaVisibleWidth(this);
+	    splittedLineProc.splitAllElementsTextToLines(width > MIN_WIDTH?width:width, textSelectorEmpty, elements);
+	    if(!textSelectorEmpty.first(elements))
+	    	environment.hint(Hints.NO_CONTENT); 
+	    currentSelector = textSelectorEmpty;
+	    environment.onAreaNewContent(this);
+	    luwrain.onAreaNewContent(this);
+    }
+    
     private void onChangeCurrentPageLink()
     {
 	String link = Popups.simple(luwrain, "Открыть страницу", "Введите адрес страницы:", "http://");
@@ -249,25 +296,47 @@ return res >= 1?res:1;
     }
     */
 
+    int lastHotPointY=-1;
+    int scanPos=-1;
+    public void onTimerElementScan()
+    {
+    	if(textSelectorEmpty==null) return;
+    	if(splittedLineProc==null) return;
+    	if(lastHotPointY!=getHotPointY()||scanPos==-1)
+    	{
+    		final SplittedLineProc.SplittedLine sl = splittedLineProc.getSplittedLineByIndex(getHotPointY());
+    		if(sl==null) return;
+    		scanPos=sl.pos;
+    	}
+    	
+    	if(elementsForScan.isChangedAround(textSelectorEmpty,scanPos,PAGE_SCANER_AROUND_ELEMENTS_COUNT))
+    	{ // detected changes
+    		onRescanPageDom();
+    		return;
+    	}
+    }
+    
     private boolean onDefaultAction()
     {
     	if(textSelectorEmpty==null)
 	    return false;
     	final SplittedLineProc.SplittedLine sl = splittedLineProc.getSplittedLineByIndex(getHotPointY());
     	boolean res=textSelectorEmpty.to(elements,sl.pos);
+    	// FIXME: make error handling for res==false
    		if(elements.isEditable())
 		{
 		    String oldValue = elements.getText();
-		    if (oldValue == null)
-			oldValue = "";
-		    final String newValue = Popups.simple(luwrain, "Редактирование формы", "Введите новое значение текстового поля формы:", oldValue);
-		    if (newValue == null)
-			return true;
+		    if (oldValue == null) oldValue = "";
+		    String newValue = Popups.simple(luwrain, "Редактирование формы", "Введите новое значение текстового поля формы:", oldValue);
+		    if (newValue == null) return true;
 		    elements.setText(newValue);
+		    final int width = luwrain.getAreaVisibleWidth(this);
+		    splittedLineProc.updateSplitForElementText(width,elements);
 		    onNewSelectedElement();
 		    environment.onAreaNewContent(this);
 		    return true;
 		}
+   		// emulate click
 		elements.clickEmulate();
 		return true;
     }
@@ -283,15 +352,7 @@ return res >= 1?res:1;
 	}
 	if(state == State.SUCCEEDED)
 	{
-	    final int width = luwrain.getAreaVisibleWidth(this);
-	    page.RescanDOM();
-	    textSelectorEmpty=page.selectorTEXT(true,null);
-	    splittedLineProc.splitAllElementsTextToLines(width > MIN_WIDTH?width:width, textSelectorEmpty, elements);
-	    if(!textSelectorEmpty.first(elements))
-	    	environment.hint(Hints.NO_CONTENT); 
-	    currentSelector = textSelectorEmpty;
-	    environment.onAreaNewContent(this);
-	    luwrain.onAreaNewContent(this);
+		onRescanPageDom();
 	    luwrain.message("Страница загружена", Luwrain.MESSAGE_DONE);
 	    return;
 	}
@@ -316,13 +377,13 @@ return res >= 1?res:1;
     private void onAlert(final String message)
     {
 		if (message == null || message.trim().isEmpty()) return;
-		luwrain.message("Внимание!" + message, Luwrain.MESSAGE_ERROR);
+		luwrain.message("Внимание!" + message, Luwrain.MESSAGE_OK);
     }
 
     private String onPrompt(final String message,final String value)
     {
 		if (message == null || message.trim().isEmpty()) return null;
-		luwrain.message("Подтверждение: " +message, Luwrain.MESSAGE_OK);
+		luwrain.message("Выбор: " +message, Luwrain.MESSAGE_OK);
 		return "";//result;
     }
 

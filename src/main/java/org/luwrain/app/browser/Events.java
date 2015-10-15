@@ -5,7 +5,6 @@ import javafx.concurrent.Worker.State;
 
 import org.luwrain.core.*;
 import org.luwrain.browser.*;
-import org.luwrain.interaction.browser.WebPage;
 
 class Events implements BrowserEvents
 {
@@ -34,29 +33,16 @@ class Events implements BrowserEvents
     {
     	AlertEvent event=new AlertEvent(area, message);
     	luwrain.enqueueEvent(event);
-    	try {
-    		//event.waitForBeProcessed();
-    	}
-    	catch(Exception e)
-    	{
-    		e.printStackTrace();
-    	}
+    	//event.waitForBeProcessed();
     }
 
     @Override public String onPrompt(String message, String value)
     {
     	final PromptEvent event = new PromptEvent(area, message, value);
     	luwrain.enqueueEvent(event);
-    	Log.debug("browser", "onPrompt sent, awaiting...");
-    	try {
-    		event.waitForBeProcessed();
-    	}
-    	catch(Exception e)
-    	{
-    		e.printStackTrace();
-    		return "";
-    	}
-    	Log.debug("browser", "onPrompt receive answer");
+    	//Log.debug("browser", "onPrompt sent, awaiting...");
+    	//event.waitForBeProcessed();
+    	//Log.debug("browser", "onPrompt receive answer");
     	return event.answer();
     }
 
@@ -75,14 +61,7 @@ class Events implements BrowserEvents
     {
 		final ConfirmEvent event = new ConfirmEvent(area, message);
 		luwrain.enqueueEvent(event);
-		try {
-		    event.waitForBeProcessed();
-		}
-		catch(InterruptedException e)
-		{
-		    e.printStackTrace();
-		    return false;
-		}
+		//event.waitForBeProcessed();
 		return event.answer();
     }
 };
