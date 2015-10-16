@@ -19,7 +19,7 @@ class Events implements BrowserEvents
 	this.area = area;
     }
 
-    @Override public void onChangeState(State state)
+    @Override public void onChangeState(WebState state)
     {
 		luwrain.enqueueEvent(new PageChangeStateEvent(area, state));
     }

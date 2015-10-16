@@ -16,19 +16,9 @@
 
 package org.luwrain.app.browser;
 
-import java.awt.RenderingHints.Key;
-import java.io.*;
-//import java.io.FileOutputStream;
-//import java.io.IOException;
-//import java.io.InputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.util.*;
-//import java.util.Objects;
-//import java.util.Vector;
 
 import javafx.concurrent.Worker.State;//FIXME:
-
 
 import org.luwrain.core.*;
 import org.luwrain.core.events.*;
@@ -36,7 +26,7 @@ import org.luwrain.controls.*;
 import org.luwrain.popups.*;
 import org.luwrain.interaction.browser.WebPage;
 import org.luwrain.browser.*;
-//import org.luwrain.browser.ElementList;
+import org.luwrain.browser.BrowserEvents.WebState;
 import org.luwrain.browser.ElementList.*;
 
 class BrowserArea extends NavigateArea
@@ -81,6 +71,8 @@ class BrowserArea extends NavigateArea
 
 	ElementList elementsForScan=null;
 	
+	WebState pageState=WebState.CANCELLED;
+	
 	BrowserArea(Luwrain luwrain, Actions actions,
 		Browser browser)
 	{
@@ -112,8 +104,8 @@ class BrowserArea extends NavigateArea
 
 	@Override public int getLineCount()
 	{
-final int res = splittedLineProc.getSplittedCount();
-return res >= 1?res:1;
+		final int res = splittedLineProc.getSplittedCount();
+		return res >= 1?res:1;
 	}
 
 	@Override public String getLine(int index)
@@ -121,7 +113,6 @@ return res >= 1?res:1;
 		final SplittedLineProc.SplittedLine split = splittedLineProc.getSplittedLineByIndex(index);
 		if (split == null)
 			return "";
-		//		System.out.println("splitted");
 		return split.text;
 	}
 
@@ -155,6 +146,10 @@ return res >= 1?res:1;
 		case KeyboardEvent.F10:
 			onChangeWebViewVisibility();
 		return true;
+		}
+		if(event.getCharacter()==' ')
+		{
+			onInfoAction();
 		}
 		return super.onKeyboardEvent(event);
 	}
@@ -224,6 +219,23 @@ return res >= 1?res:1;
 		confirm.setAnswer(answer);
 		return true;
 	}
+	if(event instanceof CheckChangesEvent)
+	{
+		if(pageState!=WebState.SUCCEEDED) return true;
+		if(lastHotPointY!=getHotPointY()||scanPos==-1)
+		{
+			if(page.isBusy()) return true;
+			final SplittedLineProc.SplittedLine sl = splittedLineProc.getSplittedLineByIndex(getHotPointY());
+			if(sl==null) return true;
+			scanPos=sl.elements[0].pos;
+		}
+		
+		if(elementsForScan.isChangedAround(textSelectorEmpty,scanPos,PAGE_SCANER_AROUND_ELEMENTS_COUNT))
+		{ // detected changes, add event to rescan page dom
+			onRescanPageDom();
+		}
+		return true;
+	}
 	return false;
 	}
 
@@ -234,6 +246,12 @@ return res >= 1?res:1;
 
 	private void onRescanPageDom()
 	{
+		if(pageState!=WebState.SUCCEEDED) return;
+		if(page.isBusy())
+		{
+			Log.debug("web","webpage is busy");
+			return;
+		}
 		page.RescanDOM();
 		textSelectorEmpty=page.selectorTEXT(true,null);
 		final int width = luwrain.getAreaVisibleWidth(this);
@@ -247,18 +265,18 @@ return res >= 1?res:1;
 	
 	private void onChangeCurrentPageLink()
 	{
-	String link = Popups.simple(luwrain, "Открыть страницу", "Введите адрес страницы:", "http://");
-	if(link==null) 
-		return;
-	if(!link.matches("^(http|https|ftp)://.*$"))
-		link="http://"+link;
-	page.load(link);
-	environment.onAreaNewContent(this);
+		String link = Popups.simple(luwrain, "Открыть страницу", "Введите адрес страницы:", "http://");
+		if(link==null) 
+			return;
+		if(!link.matches("^(http|https|ftp)://.*$"))
+			link="http://"+link;
+		page.load(link);
+		environment.onAreaNewContent(this);
 	}
 
 	private void onChangeWebViewVisibility()
 	{
-	page.setVisibility(!page.getVisibility());
+		page.setVisibility(!page.getVisibility());
 	}
 
 	private boolean onElementNavigateLeft()
@@ -320,18 +338,7 @@ return res >= 1?res:1;
 	{
 		if(textSelectorEmpty==null) return;
 		if(splittedLineProc==null) return;
-		if(lastHotPointY!=getHotPointY()||scanPos==-1)
-		{
-			final SplittedLineProc.SplittedLine sl = splittedLineProc.getSplittedLineByIndex(getHotPointY());
-			if(sl==null) return;
-			scanPos=sl.elements[0].pos;
-		}
-		
-		if(elementsForScan.isChangedAround(textSelectorEmpty,scanPos,PAGE_SCANER_AROUND_ELEMENTS_COUNT))
-		{ // detected changes
-			onRescanPageDom();
-			return;
-		}
+		luwrain.enqueueEvent(new CheckChangesEvent(this));
 	}
 	
 	private boolean onDefaultAction()
@@ -370,32 +377,52 @@ return res >= 1?res:1;
 		environment.onAreaNewContent(this);
 	}
 
-	private void onPageChangeState(State state)
+	private void onInfoAction()
 	{
-	if (state == State.SCHEDULED)
-		return;
-	if (state == State.RUNNING)
-	{
-		luwrain.message("Загрузка страницы");
-		return;
+		if(textSelectorEmpty==null) return;
+		SplittedLineProc.SplitedElementPos sPos=splittedLineProc.getSplitedByXY(getHotPointX(),getHotPointY());
+		if(sPos==null) return;
+		// select next element in text selector
+		SplittedLineProc.InlineElement element=splittedLineProc.getSplittedLines()[sPos.splited][sPos.line].elements[sPos.element];
+		boolean res=textSelectorEmpty.to(elements,element.pos);
+		if(!res) return; // FIXME: make error handling for res==false
+
+		final String type=elements.getType();
+		final String text=elements.getText();
+		final String link=elements.getLink();
+		if(!link.isEmpty())
+		{
+			luwrain.say(elementTypeTranslation(type) + " "+link);
+		} else
+		{
+			luwrain.say(elementTypeTranslation(type));
+		}
 	}
-	if(state == State.SUCCEEDED)
+	
+	private void onPageChangeState(WebState state)
 	{
-		onRescanPageDom();
-		luwrain.message("Страница загружена", Luwrain.MESSAGE_DONE);
-		return;
-	}
-	if (state == State.READY)
-	{
-		//		luwrain.message("Страница загружена", Luwrain.MESSAGE_DONE);
-		return;
-	}
-	if (state == State.FAILED)
-	{
-		luwrain.message("Страница не может быть загружена", Luwrain.MESSAGE_ERROR);
-		return;
-	}
-	System.out.println("browser:unhandled page state changing:" + state);
+		pageState=state;
+		switch(state)
+		{
+			case SCHEDULED:
+				return;
+			case RUNNING:
+				luwrain.message("Загрузка страницы");
+				return;
+			case SUCCEEDED:
+				onRescanPageDom();
+				luwrain.message("Страница загружена", Luwrain.MESSAGE_DONE);
+				return;
+			case READY:
+				// luwrain.message("Страница загружена", Luwrain.MESSAGE_DONE);
+				return;
+			case FAILED:
+				luwrain.message("Страница не может быть загружена", Luwrain.MESSAGE_ERROR);
+				return;
+			case CANCELLED:
+				return;
+		}
+		System.out.println("browser:unhandled page state changing:" + state);
 	}
 
 	private void onProgress(Number progress)

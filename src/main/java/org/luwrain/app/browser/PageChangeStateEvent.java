@@ -1,21 +1,21 @@
 
 package org.luwrain.app.browser;
 
-import javafx.concurrent.Worker.State;
+import org.luwrain.browser.BrowserEvents.WebState;
 import org.luwrain.core.*;
 import org.luwrain.core.events.*;
 
 class PageChangeStateEvent extends ThreadSyncEvent
 {
-    private State state;
+    private WebState state;
 
-    PageChangeStateEvent(Area area, State state)
+    PageChangeStateEvent(Area area, WebState state)
     {
 	super(area);
 	this.state = state;
     }
 
-    State state()
+    WebState state()
     {
 	return state;
     }

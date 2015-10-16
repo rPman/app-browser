@@ -115,7 +115,7 @@ class SplittedLineProc
 				int elementPos=0;
 		    	for(InlineElement se:splits[y-i].elements)
 		    	{
-		    		if(se.start<=x&&x<se.end)
+		    		if(se.start<=x&&(x<se.end||se.end==se.start))
 		    			return new SplitedElementPos(splitedPos,y-i,elementPos);
 					elementPos++;
 		    	}
@@ -150,7 +150,7 @@ class SplittedLineProc
 				final boolean isEditable=el.isEditable();
 				// only non editable element can be splited
 				// TODO: make decision to split editable elements for example input (radio or checkbox) or select
-				if(!isEditable&&prevSePos.element!=-1)
+				if(!isEditable&&!prevIsEditable&&prevSePos.element!=-1)
 				{ // we have previous splited element
 					if(text.length()<=freeWidth)
 					{ // we have space for this element in previous line
@@ -160,15 +160,20 @@ class SplittedLineProc
 							// insert element into previous splitedline
 							// 0 splited line position, because we not mix multiline element and multielement in one line
 							// append string to previous splited line
+							if(result.size()<=prevSePos.splited)
+							{
+								Log.debug("web","'"+text+"', "+prevSePos.splited);
+							}
 							result.get(prevSePos.splited)[0].text+=" "+text;
 							// add element to end of elements list (replace array)
 							InlineElement[] els=result.get(prevSePos.splited)[0].elements;
 							InlineElement[] nels=new InlineElement[els.length+1];
 							System.arraycopy(els,0,nels,0,els.length);
-							nels[els.length]=new InlineElement(type,elIdx,el.getPos(),els[els.length-1].end,els[els.length-1].end+1+text.length());
-							result.get(prevSePos.splited)[0].elements=nels;
+							nels[els.length]=new InlineElement(type,prevSePos.splited,el.getPos(),els[els.length-1].end,els[els.length-1].end+1+text.length());
+							result.get(prevSePos.splited)[prevSePos.line].elements=nels;
 							// save SplitedElementPos for comparison for next element
-							prevSePos.splited=index-1;
+							//prevSePos.splited=elIdx-1;
+							//prevSePos.line=0;
 							prevSePos.element=els.length; // pos of new element is a length previous element list
 							prevRect=rect;
 							prevIsEditable=isEditable;
@@ -192,8 +197,9 @@ class SplittedLineProc
 					lastStringLength=line.length();
 				}
 			    // save SplitedElementPos for comparsion for next element
-				prevSePos.splited=index-1;
+				prevSePos.splited=elIdx;
 				prevSePos.element=0; // we have only one element
+				prevSePos.line=splitted.size()-1;
 				prevRect=rect;
 				prevIsEditable=isEditable;
 				if(lines.length==1)
@@ -256,6 +262,7 @@ class SplittedLineProc
 	    if(i+width>=string.length()) // last part of string fit to the screen
 		line=string.substring(i); else
 	    { // too long part
+			Log.debug("web","SPLIT: i="+i+", width="+width+", string="+string.length());
 		line=string.substring(i,i+width-1);
 		// walk to first stopword char at end of line
 		int sw=line.lastIndexOf(' ');
