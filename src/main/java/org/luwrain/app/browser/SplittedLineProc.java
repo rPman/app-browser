@@ -144,10 +144,10 @@ class SplittedLineProc
 	    	int freeWidth=0; // current width free space in previous string line
 		    do
 		    {
-				final String type = el.getType();
-				final String text = el.getText().replace('\n',' ');
-				final Rectangle rect=el.getRect();
 				final boolean isEditable=el.isEditable();
+				final String type = el.getType();
+				final String text = isEditable?"["+el.getText().replace('\n',' ')+"]":el.getText().replace('\n',' ');
+				final Rectangle rect=el.getRect();
 				// only non editable element can be splited
 				// TODO: make decision to split editable elements for example input (radio or checkbox) or select
 				if(!isEditable&&!prevIsEditable&&prevSePos.element!=-1)
@@ -222,8 +222,9 @@ class SplittedLineProc
     // TODO: make decision to split editable elements for example input (radio or checkbox) or select
     void updateSplitForElementText(int width, ElementList el)
     {
-    	String type= el.getType();
-		String text = el.getText();
+		final boolean isEditable=el.isEditable();
+		final String type= el.getType();
+		final String text = isEditable?"["+el.getText().replace('\n',' ')+"]":el.getText().replace('\n',' ');
 		String[] lines = SplittedLineProc.splitTextForScreen(width,text);
 		SplitedElementPos sePos=getSplitedByElementDomPosition(el.getPos());
 		if(sePos==null) return; // FIXME: make better error handling, out of bound, cache size invalid

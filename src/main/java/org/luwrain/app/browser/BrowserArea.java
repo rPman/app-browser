@@ -47,6 +47,9 @@ class BrowserArea extends NavigateArea
 
 	private SelectorTEXT textSelectorEmpty=null;
 	private Selector currentSelector = null;
+	
+	private int progress=0;
+	private WebState state=WebState.READY;
 
 	class AutoPageElementScanner extends TimerTask
 	{
@@ -118,7 +121,7 @@ class BrowserArea extends NavigateArea
 
 	@Override public String getAreaName()
 	{
-		return page.getBrowserTitle();
+		return page.getBrowserTitle()+" "+state.name()+" "+progress;
 	}
 
 	@Override public boolean onKeyboardEvent(KeyboardEvent event)
@@ -351,10 +354,17 @@ class BrowserArea extends NavigateArea
 		SplittedLineProc.InlineElement element=splittedLineProc.getSplittedLines()[sPos.splited][sPos.line].elements[sPos.element];
 		boolean res=textSelectorEmpty.to(elements,element.pos);
 		if(!res) return true; // FIXME: make error handling for res==false
-   		if(elements.isEditable())
+		if(elements.isEditable())
 		{
-   			// edit element contents
-   			onEditElement();
+	   		// FIXME: make method to detect multitext
+			if(elements.getType().equals("select"))
+	   		{ // need multiselect popup
+	   			onMultiTextEditElement();
+	   		} else
+	   		{
+	   			// edit element contents
+	   			onEditElement();
+	   		}
 			return true;
 		} else
 		{
@@ -376,6 +386,22 @@ class BrowserArea extends NavigateArea
 		onNewSelectedElement();
 		environment.onAreaNewContent(this);
 	}
+	
+	private void onMultiTextEditElement()
+	{
+		String[] listValues = elements.getMultipleText();
+		if (listValues.length==0) return; // FIXME:
+		EditListPopup popup=new EditListPopup(luwrain,
+				new FixedListPopupModel(listValues),
+				"Редактирование формы","Выберите значение из списка",elements.getText());
+		luwrain.popup(popup);
+		if(popup.closing.cancelled()) return;
+		elements.setText(popup.text());
+		final int width = luwrain.getAreaVisibleWidth(this);
+		splittedLineProc.updateSplitForElementText(width,elements);
+		onNewSelectedElement();
+		environment.onAreaNewContent(this);
+	}
 
 	private void onInfoAction()
 	{
@@ -390,7 +416,7 @@ class BrowserArea extends NavigateArea
 		final String type=elements.getType();
 		final String text=elements.getText();
 		final String link=elements.getLink();
-		if(!link.isEmpty())
+		if(link!=null&&!link.isEmpty())
 		{
 			luwrain.say(elementTypeTranslation(type) + " "+link);
 		} else
@@ -427,7 +453,7 @@ class BrowserArea extends NavigateArea
 
 	private void onProgress(Number progress)
 	{
-	//FIXME:
+		this.progress=(int)(progress==null?0:Math.floor(progress.doubleValue()*100));
 	}
 
 	private void onAlert(final String message)
