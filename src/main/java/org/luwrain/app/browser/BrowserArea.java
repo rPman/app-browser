@@ -17,17 +17,14 @@
 package org.luwrain.app.browser;
 
 import java.util.*;
-
 import javafx.concurrent.Worker.State;//FIXME:
 
 import org.luwrain.core.*;
 import org.luwrain.core.events.*;
 import org.luwrain.controls.*;
 import org.luwrain.popups.*;
-import org.luwrain.interaction.browser.WebPage;
 import org.luwrain.browser.*;
-import org.luwrain.browser.BrowserEvents.WebState;
-import org.luwrain.browser.ElementList.*;
+import org.luwrain.browser.Events.WebState;
 
 class BrowserArea extends NavigateArea
 {
@@ -40,14 +37,14 @@ class BrowserArea extends NavigateArea
 	private Luwrain luwrain;
 	private ControlEnvironment environment;
 	private Actions actions;
-	private WebPage page;
-	private BrowserEvents browserEvents;
+	private org.luwrain.browser.Browser page;
+	private org.luwrain.browser.Events browserEvents;
 	private ElementList elements=null;
 	private SplittedLineProc splittedLineProc = null;
 
-	private SelectorTEXT textSelectorEmpty=null;
+	private SelectorText textSelectorEmpty=null;
 	private Selector currentSelector = null;
-	
+
 	private int progress=0;
 	private WebState state=WebState.READY;
 
@@ -83,14 +80,14 @@ class BrowserArea extends NavigateArea
 		this.luwrain = luwrain;
 		this.actions = actions;
 		this.environment = new DefaultControlEnvironment(luwrain);
-		this.page = (WebPage)browser;
+		this.page = browser;
 		NullCheck.notNull(luwrain, "luwrain");
 		NullCheck.notNull(actions, "actions");
 		NullCheck.notNull(browser, "browser");
 		browserEvents = new Events(luwrain, this);
 		this.page.init(browserEvents);
-		elements=page.elementList();
-		elementsForScan=page.elementList();
+		elements=page.iterator();
+		elementsForScan=page.iterator();
 		splittedLineProc = new SplittedLineProc();
 
 		pageScaner=new AutoPageElementScanner(this);
@@ -121,7 +118,7 @@ class BrowserArea extends NavigateArea
 
 	@Override public String getAreaName()
 	{
-		return page.getBrowserTitle()+" "+state.name()+" "+progress;
+		return page.getTitle()+" "+state.name()+" "+progress;
 	}
 
 	@Override public boolean onKeyboardEvent(KeyboardEvent event)
@@ -134,7 +131,7 @@ class BrowserArea extends NavigateArea
 			onBreakCommand();
 		return true;
 		case KeyboardEvent.F5: 
-			onRescanPageDom();
+			refresh();
 		return true;
 		case KeyboardEvent.F6: 
 			onChangeCurrentPageLink();
@@ -247,24 +244,48 @@ class BrowserArea extends NavigateArea
 	page.stop();
 	}
 
-	private void onRescanPageDom()
+    private void onRescanPageDom()
+    {
+	if(pageState!=WebState.SUCCEEDED)
+	    return;
+	if(page.isBusy())
 	{
-		if(pageState!=WebState.SUCCEEDED) return;
-		if(page.isBusy())
-		{
-			Log.debug("web","webpage is busy");
-			return;
-		}
-		page.RescanDOM();
-		textSelectorEmpty=page.selectorTEXT(true,null);
-		final int width = luwrain.getAreaVisibleWidth(this);
-		splittedLineProc.splitAllElementsTextToLines(width > MIN_WIDTH?width:width, textSelectorEmpty, elements);
-		if(!textSelectorEmpty.first(elements))
-			environment.hint(Hints.NO_CONTENT); 
-		currentSelector = textSelectorEmpty;
-		environment.onAreaNewContent(this);
-		luwrain.onAreaNewContent(this);
+	    Log.debug("web","webpage is busy");
+	    return;
 	}
+	page.RescanDOM();
+	textSelectorEmpty=page.selectorText(true,null);
+	final int width = luwrain.getAreaVisibleWidth(this);
+	splittedLineProc.splitAllElementsTextToLines(width > MIN_WIDTH?width:width, textSelectorEmpty, elements);
+	if(!textSelectorEmpty.moveFirst(elements))
+	    environment.hint(Hints.NO_CONTENT); 
+	currentSelector = textSelectorEmpty;
+	environment.onAreaNewContent(this);
+	luwrain.onAreaNewContent(this);
+    }
+
+    private void ready()
+    {
+	onRescanPageDom();
+
+	final ElementList it = page.iterator();
+	final SelectorAll sel = page.selectorAll(false);
+	System.out.println("Begin enumerating");
+	if (!sel.moveFirst(it))
+	{
+	    System.out.println("no first");
+	}
+	while(sel.moveNext(it))
+	    System.out.println(it.getText());
+	System.out.println("Finished!");
+
+    }
+
+    private void refresh()
+    {
+	onRescanPageDom();
+    }
+
 	
 	private void onChangeCurrentPageLink()
 	{
@@ -295,7 +316,7 @@ class BrowserArea extends NavigateArea
 		}
 		// select next element in text selector
 		SplittedLineProc.InlineElement next=splittedLineProc.getSplittedLines()[sPos.splited][sPos.line].elements[sPos.element-1];
-		boolean res=textSelectorEmpty.to(elements,next.pos);
+		boolean res=textSelectorEmpty.moveToPos(elements,next.pos);
 		this.setHotPointX(next.start);
 
   		onNewSelectedElement();
@@ -316,7 +337,7 @@ class BrowserArea extends NavigateArea
 		}
 		// select next element in text selector
 		SplittedLineProc.InlineElement next=splittedLineProc.getSplittedLines()[sPos.splited][sPos.line].elements[sPos.element+1];
-		boolean res=textSelectorEmpty.to(elements,next.pos);
+		boolean res=textSelectorEmpty.moveToPos(elements,next.pos);
 		this.setHotPointX(next.start);
 
   		onNewSelectedElement();
@@ -352,7 +373,7 @@ class BrowserArea extends NavigateArea
 		if(sPos==null) return true;
 		// select next element in text selector
 		SplittedLineProc.InlineElement element=splittedLineProc.getSplittedLines()[sPos.splited][sPos.line].elements[sPos.element];
-		boolean res=textSelectorEmpty.to(elements,element.pos);
+		boolean res=textSelectorEmpty.moveToPos(elements,element.pos);
 		if(!res) return true; // FIXME: make error handling for res==false
 		if(elements.isEditable())
 		{
@@ -410,7 +431,7 @@ class BrowserArea extends NavigateArea
 		if(sPos==null) return;
 		// select next element in text selector
 		SplittedLineProc.InlineElement element=splittedLineProc.getSplittedLines()[sPos.splited][sPos.line].elements[sPos.element];
-		boolean res=textSelectorEmpty.to(elements,element.pos);
+		boolean res=textSelectorEmpty.moveToPos(elements,element.pos);
 		if(!res) return; // FIXME: make error handling for res==false
 
 		final String type=elements.getType();
@@ -436,7 +457,7 @@ class BrowserArea extends NavigateArea
 				luwrain.message("Загрузка страницы");
 				return;
 			case SUCCEEDED:
-				onRescanPageDom();
+ready();
 				luwrain.message("Страница загружена", Luwrain.MESSAGE_DONE);
 				return;
 			case READY:

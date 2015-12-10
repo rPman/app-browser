@@ -5,7 +5,6 @@ import java.awt.Rectangle;
 import java.util.*;
 import org.luwrain.browser.*;
 import org.luwrain.core.Log;
-import org.luwrain.interaction.browser.WebPage;
 
 class SplittedLineProc
 {
@@ -130,13 +129,13 @@ class SplittedLineProc
      * it change current element's position to end
      * small elements (text len less than maximum width) which Y position in dom..info.rect the ?same? concatenated in one single splitedline
      */
-    void splitAllElementsTextToLines(int width,ElementList.Selector selector, ElementList el)
+    void splitAllElementsTextToLines(int width, Selector selector, ElementList el)
     {
 		final LinkedList<SplittedLine[]> result=new LinkedList<SplittedLine[]>();
 		splittedCount=0;
 		int index=0;
 		int elIdx=0;
-		if(selector.first(el))
+		if(selector.moveFirst(el))
 		{
 	    	SplitedElementPos prevSePos=new SplitedElementPos(-1,-1,-1);
 	    	Rectangle prevRect=null; // previous rectangle
@@ -213,7 +212,7 @@ class SplittedLineProc
 				result.add(splitted.toArray(new SplittedLine[splitted.size()]));
 				elIdx++;
 				splittedCount+=splitted.size();
-		    } while(selector.next(el));
+		    } while(selector.moveNext(el));
 		}
 		splittedLines=result.toArray(new SplittedLine[result.size()][]);
     }

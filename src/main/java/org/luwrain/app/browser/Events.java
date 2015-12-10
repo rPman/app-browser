@@ -6,7 +6,7 @@ import javafx.concurrent.Worker.State;
 import org.luwrain.core.*;
 import org.luwrain.browser.*;
 
-class Events implements BrowserEvents
+class Events implements org.luwrain.browser.Events
 {
     private Luwrain luwrain;
     private Area area;

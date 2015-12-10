@@ -1,7 +1,7 @@
 
 package org.luwrain.app.browser;
 
-import org.luwrain.browser.BrowserEvents.WebState;
+import org.luwrain.browser.Events.WebState;
 import org.luwrain.core.*;
 import org.luwrain.core.events.*;
 
