@@ -1,10 +1,7 @@
 
 package org.luwrain.app.browser;
 
-import javafx.concurrent.Worker.State;
-
 import org.luwrain.core.*;
-import org.luwrain.browser.*;
 
 class Events implements org.luwrain.browser.Events
 {

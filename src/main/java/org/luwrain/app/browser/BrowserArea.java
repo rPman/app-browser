@@ -17,7 +17,6 @@
 package org.luwrain.app.browser;
 
 import java.util.*;
-import javafx.concurrent.Worker.State;//FIXME:
 
 import org.luwrain.core.*;
 import org.luwrain.core.events.*;
@@ -37,8 +36,8 @@ class BrowserArea extends NavigateArea
 	private Luwrain luwrain;
 	private ControlEnvironment environment;
 	private Actions actions;
-	private org.luwrain.browser.Browser page;
-	private org.luwrain.browser.Events browserEvents;
+	private Browser page;
+	private Events browserEvents;
 	private ElementList elements=null;
 	private SplittedLineProc splittedLineProc = null;
 
@@ -221,6 +220,7 @@ class BrowserArea extends NavigateArea
 	}
 	if(event instanceof CheckChangesEvent)
 	{
+		//System.out.println("do check changes");
 		if(pageState!=WebState.SUCCEEDED) return true;
 		if(lastHotPointY!=getHotPointY()||scanPos==-1)
 		{
@@ -270,15 +270,15 @@ class BrowserArea extends NavigateArea
 
 	final ElementList it = page.iterator();
 	final SelectorAll sel = page.selectorAll(false);
+	/*
 	System.out.println("Begin enumerating");
 	if (!sel.moveFirst(it))
 	{
-	    System.out.println("no first");
+		System.out.println("no first");
 	}
-	while(sel.moveNext(it))
-	    System.out.println(it.getText());
+	while(sel.moveNext(it)) System.out.println(it.getText());
 	System.out.println("Finished!");
-
+	*/
     }
 
     private void refresh()
@@ -457,7 +457,7 @@ class BrowserArea extends NavigateArea
 				luwrain.message("Загрузка страницы");
 				return;
 			case SUCCEEDED:
-ready();
+				ready();
 				luwrain.message("Страница загружена", Luwrain.MESSAGE_DONE);
 				return;
 			case READY:

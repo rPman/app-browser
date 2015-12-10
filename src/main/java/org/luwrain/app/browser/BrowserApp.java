@@ -17,6 +17,10 @@
 package org.luwrain.app.browser;
 
 import org.luwrain.core.*;
+import org.luwrain.windows.Windows;
+
+import java.io.File;
+
 import org.luwrain.controls.*;
 
 class BrowserApp implements Application, Actions
