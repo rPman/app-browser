@@ -36,12 +36,13 @@ class BrowserArea extends NavigateArea
 	private Luwrain luwrain;
 	private ControlEnvironment environment;
 	private Actions actions;
-	private Browser page;
-	private Events browserEvents;
+	private org.luwrain.browser.Browser page;
+	private org.luwrain.browser.Events browserEvents;
 	private ElementList elements=null;
 	private SplittedLineProc splittedLineProc = null;
 
 	private SelectorText textSelectorEmpty=null;
+	private SelectorText textSelectorInvisible=null;
 	private Selector currentSelector = null;
 
 	private int progress=0;
@@ -220,7 +221,6 @@ class BrowserArea extends NavigateArea
 	}
 	if(event instanceof CheckChangesEvent)
 	{
-		//System.out.println("do check changes");
 		if(pageState!=WebState.SUCCEEDED) return true;
 		if(lastHotPointY!=getHotPointY()||scanPos==-1)
 		{
@@ -230,7 +230,7 @@ class BrowserArea extends NavigateArea
 			scanPos=sl.elements[0].pos;
 		}
 		
-		if(elementsForScan.isChangedAround(textSelectorEmpty,scanPos,PAGE_SCANER_AROUND_ELEMENTS_COUNT))
+		if(elementsForScan.isChangedAround(textSelectorInvisible,scanPos,PAGE_SCANER_AROUND_ELEMENTS_COUNT))
 		{ // detected changes, add event to rescan page dom
 			onRescanPageDom();
 		}
@@ -255,6 +255,7 @@ class BrowserArea extends NavigateArea
 	}
 	page.RescanDOM();
 	textSelectorEmpty=page.selectorText(true,null);
+	textSelectorInvisible=page.selectorText(false,null);
 	final int width = luwrain.getAreaVisibleWidth(this);
 	splittedLineProc.splitAllElementsTextToLines(width > MIN_WIDTH?width:width, textSelectorEmpty, elements);
 	if(!textSelectorEmpty.moveFirst(elements))
@@ -270,15 +271,15 @@ class BrowserArea extends NavigateArea
 
 	final ElementList it = page.iterator();
 	final SelectorAll sel = page.selectorAll(false);
-	/*
 	System.out.println("Begin enumerating");
 	if (!sel.moveFirst(it))
 	{
-		System.out.println("no first");
+	    System.out.println("no first");
 	}
-	while(sel.moveNext(it)) System.out.println(it.getText());
+	while(sel.moveNext(it))
+	    System.out.println(it.getText());
 	System.out.println("Finished!");
-	*/
+
     }
 
     private void refresh()
@@ -413,7 +414,7 @@ class BrowserArea extends NavigateArea
 		String[] listValues = elements.getMultipleText();
 		if (listValues.length==0) return; // FIXME:
 		EditListPopup popup=new EditListPopup(luwrain,
-				new FixedListPopupModel(listValues),
+				new FixedEditListPopupModel(listValues),
 				"Редактирование формы","Выберите значение из списка",elements.getText());
 		luwrain.popup(popup);
 		if(popup.closing.cancelled()) return;
@@ -457,7 +458,7 @@ class BrowserArea extends NavigateArea
 				luwrain.message("Загрузка страницы");
 				return;
 			case SUCCEEDED:
-				ready();
+ready();
 				luwrain.message("Страница загружена", Luwrain.MESSAGE_DONE);
 				return;
 			case READY:

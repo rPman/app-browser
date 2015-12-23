@@ -2,6 +2,7 @@
 package org.luwrain.app.browser;
 
 import org.luwrain.core.*;
+import org.luwrain.browser.*;
 
 class Events implements org.luwrain.browser.Events
 {
