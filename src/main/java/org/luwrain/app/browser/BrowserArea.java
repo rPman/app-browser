@@ -413,7 +413,7 @@ class BrowserArea extends NavigateArea
 		String[] listValues = elements.getMultipleText();
 		if (listValues.length==0) return; // FIXME:
 		EditListPopup popup=new EditListPopup(luwrain,
-				new FixedListPopupModel(listValues),
+				new FixedEditListPopupModel(listValues),
 				"Редактирование формы","Выберите значение из списка",elements.getText());
 		luwrain.popup(popup);
 		if(popup.closing.cancelled()) return;
