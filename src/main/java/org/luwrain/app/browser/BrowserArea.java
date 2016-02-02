@@ -38,7 +38,7 @@ class BrowserArea extends NavigateArea
 	private Actions actions;
 	private org.luwrain.browser.Browser page;
 	private org.luwrain.browser.Events browserEvents;
-	private ElementList elements=null;
+	private ElementIterator elements=null;
 	private SplittedLineProc splittedLineProc = null;
 
 	private SelectorText textSelectorEmpty=null;
@@ -69,7 +69,7 @@ class BrowserArea extends NavigateArea
 	
 	private AutoPageElementScanner pageScaner;
 
-	ElementList elementsForScan=null;
+	ElementIterator elementsForScan=null;
 	
 	WebState pageState=WebState.CANCELLED;
 	
@@ -269,7 +269,7 @@ class BrowserArea extends NavigateArea
     {
 	onRescanPageDom();
 
-	final ElementList it = page.iterator();
+	final ElementIterator it = page.iterator();
 	final SelectorAll sel = page.selectorAll(false);
 	System.out.println("Begin enumerating");
 	if (!sel.moveFirst(it))

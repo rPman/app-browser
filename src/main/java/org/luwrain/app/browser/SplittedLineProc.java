@@ -129,7 +129,7 @@ class SplittedLineProc
      * it change current element's position to end
      * small elements (text len less than maximum width) which Y position in dom..info.rect the ?same? concatenated in one single splitedline
      */
-    void splitAllElementsTextToLines(int width, Selector selector, ElementList el)
+    void splitAllElementsTextToLines(int width, Selector selector, ElementIterator el)
     {
 		final LinkedList<SplittedLine[]> result=new LinkedList<SplittedLine[]>();
 		splittedCount=0;
@@ -219,7 +219,7 @@ class SplittedLineProc
 
     /* update split for current element text, used to update info in split text cache */
     // TODO: make decision to split editable elements for example input (radio or checkbox) or select
-    void updateSplitForElementText(int width, ElementList el)
+    void updateSplitForElementText(int width, ElementIterator el)
     {
 		final boolean isEditable=el.isEditable();
 		final String type= el.getType();
