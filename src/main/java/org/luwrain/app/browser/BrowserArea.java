@@ -124,30 +124,30 @@ class BrowserArea extends NavigateArea
 	@Override public boolean onKeyboardEvent(KeyboardEvent event)
 	{
 		NullCheck.notNull(event, "event");
-		if (event.isCommand() && !event.isModified())
-		switch (event.getCommand())
+		if (event.isSpecial() && !event.isModified())
+		switch (event.getSpecial())
 		{
-		case KeyboardEvent.ESCAPE:
+		case ESCAPE:
 			onBreakCommand();
 		return true;
-		case KeyboardEvent.F5: 
+		case F5: 
 			refresh();
 		return true;
-		case KeyboardEvent.F6: 
+		case F6: 
 			onChangeCurrentPageLink();
 		return true;
-		case KeyboardEvent.ALTERNATIVE_ARROW_LEFT:
+		case ALTERNATIVE_ARROW_LEFT:
 			return onElementNavigateLeft();
-		case KeyboardEvent.ALTERNATIVE_ARROW_RIGHT:
+		case ALTERNATIVE_ARROW_RIGHT:
 			return onElementNavigateRight();
-		case KeyboardEvent.ENTER:
+		case ENTER:
 			onDefaultAction();
 		return true;
-		case KeyboardEvent.F10:
+		case F10:
 			onChangeWebViewVisibility();
 		return true;
 		}
-		if(event.getCharacter()==' ')
+		if(event.getChar()==' ')
 		{
 			onInfoAction();
 		}
