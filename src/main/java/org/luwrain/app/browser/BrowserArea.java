@@ -22,6 +22,8 @@ import org.luwrain.core.*;
 import org.luwrain.core.events.*;
 import org.luwrain.controls.*;
 import org.luwrain.popups.*;
+import org.luwrain.app.browser.web.WebDocument;
+import org.luwrain.app.browser.web.WebView;
 import org.luwrain.browser.*;
 import org.luwrain.browser.Events.WebState;
 
@@ -254,6 +256,12 @@ class BrowserArea extends NavigateArea
 	    return;
 	}
 	page.RescanDOM();
+	
+	WebDocument wd=new WebDocument();
+	wd.make(page);
+	WebView wv=new WebView();
+	wv.refill(wd.root,luwrain.getAreaVisibleWidth(this));
+	
 	textSelectorEmpty=page.selectorText(true,null);
 	textSelectorInvisible=page.selectorText(false,null);
 	final int width = luwrain.getAreaVisibleWidth(this);
