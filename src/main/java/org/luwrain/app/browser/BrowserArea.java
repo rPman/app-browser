@@ -259,8 +259,10 @@ class BrowserArea extends NavigateArea
 	
 	WebDocument wd=new WebDocument();
 	wd.make(page);
+	wd.root.print(0);
 	WebView wv=new WebView();
 	wv.refill(wd.root,luwrain.getAreaVisibleWidth(this));
+	wv.print();
 	
 	textSelectorEmpty=page.selectorText(true,null);
 	textSelectorInvisible=page.selectorText(false,null);
@@ -279,14 +281,14 @@ class BrowserArea extends NavigateArea
 
 	final ElementIterator it = page.iterator();
 	final SelectorAll sel = page.selectorAll(false);
-	System.out.println("Begin enumerating");
+	//System.out.println("Begin enumerating");
 	if (!sel.moveFirst(it))
 	{
 	    System.out.println("no first");
 	}
-	while(sel.moveNext(it))
-	    System.out.println(it.getText());
-	System.out.println("Finished!");
+	//while(sel.moveNext(it))
+	//    System.out.println(it.getText());
+	//System.out.println("Finished!");
 
     }
 
