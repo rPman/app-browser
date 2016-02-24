@@ -49,6 +49,8 @@ public class WebDocument
 			switch(list.getType())
 			{
 				case "button":
+					element=new WebButton(parent,list.clone());
+				break;
 				case "select":
 				case "table":
 				case "ul":
