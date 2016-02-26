@@ -33,7 +33,7 @@ import org.luwrain.browser.Events.WebState;
 
 class BrowserArea extends NavigateArea
 {
-	static final int PAGE_SCANER_INTERVAL=1000; 
+	static final int PAGE_SCANER_INTERVAL=3000; 
 	static final int PAGE_SCANER_AROUND_ELEMENTS_COUNT=10; 
 	
 	static private final int MIN_WIDTH = 10;
@@ -376,7 +376,7 @@ class BrowserArea extends NavigateArea
 
 	private void onChangeCurrentPageLink()
 	{
-		String link = Popups.simple(luwrain, "Открыть страницу", "Введите адрес страницы:", "http://rpserver/a.html");
+		String link = Popups.simple(luwrain, "Открыть страницу", "Введите адрес страницы:", "http://");
 		if(link==null||link=="") 
 			return;
 		if(!link.matches("^(http|https|ftp)://.*$"))
