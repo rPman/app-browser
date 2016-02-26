@@ -1,5 +1,6 @@
 package org.luwrain.app.browser.web;
 
+import java.awt.Rectangle;
 import java.util.Vector;
 
 public class WebView
@@ -37,6 +38,14 @@ public class WebView
 	/** cache of string lines for web elements view, must have size equal lines */ 
 	private Vector<String> cache=new Vector<String>();
 	
+	/**
+	 * @return lines count for current view
+	 */
+	public int getLinesCount()
+	{
+		return lines.size();
+	}
+
 	/** return text line from cache
 	  * @param y line number, counted from 0
 	  * @return full text of line by number or null, if line number out of bounds */
@@ -82,6 +91,7 @@ public class WebView
 	  * @param width maximum number characters in line */
 	public void refill(WebElement root,int width)
 	{
+		this.root=root;
 		// cleanup
 		lines=new Vector<Vector<WebElementPart>>();
 		cache=new Vector<String>();
@@ -92,6 +102,67 @@ public class WebView
 		lastPos=0;
 		// refill
 		refill(root);
+	}
+	public void refillComplex(WebElement root,int width)
+	{
+		this.root=root;
+		// cleanup
+		lines=new Vector<Vector<WebElementPart>>();
+		cache=new Vector<String>();
+		// prepare
+		widthLimit=width;
+		last=null;
+		lastWidth=0;
+		lastPos=0;
+		// refill
+		for(Vector<WebElement> row:root.getComplexMatrix())
+		{
+			for(WebElement element:row)
+			{
+				String text=element.getTextShort();
+				int textLength=text.length();
+				//
+				boolean newline=true;
+				int newWidth=lastWidth;
+				if(last!=null) newWidth+=last.getSplitter().length();
+				newWidth+=textLength;
+				if(newWidth>widthLimit)
+				{
+					newline=true;
+					break;
+				}
+				int from=0;
+				int partLength=text.length();
+				String splitter="";
+				if(newline)
+				{
+					//
+					lines.add(new Vector<WebElementPart>());
+					cache.add("");
+					lastPos=lines.size()-1; // we can use lastPos++ but size-1 more reliable
+					lastWidth=0;
+				} else
+				{ // we known last is not null
+					// get last splitter to append element
+					splitter=last.getSplitter();
+				}
+				WebElementPart webpart=new WebElementPart();
+				webpart.element=element;
+				webpart.from=from;
+				webpart.text=text;
+				webpart.textLength=partLength;
+				webpart.to=from+partLength;
+				webpart.pos=lastWidth;
+				lines.get(lastPos).add(webpart);
+				cache.set(lastPos,cache.get(lastPos)+splitter+text); // not optimal but simple
+				lastWidth+=splitter.length()+partLength;
+				// next line for multiline text always new
+				newline=true;
+				from+=partLength;
+				// 
+				last=element;
+			}
+		}
 	}
 	
 	/** width limit for current refill */
@@ -106,7 +177,7 @@ public class WebView
 	/** recursive method, add element to end of lines */
 	private void refill(WebElement element)
 	{
-		if(element.needToBeExpanded()&&element.haveChilds())
+		if((!element.needToBeComplex()||element==root)&&element.needToBeExpanded()&&element.haveChilds())
 		{ // we must expand this web element
 			for(WebElement child:element.getChilds())
 			{
@@ -115,7 +186,14 @@ public class WebView
 		} else
 		{ // we must use root element if it must not expanded or have no childs
 			// get element text before (optimization - we need known text line length before using it)
-			String text=element.getText();
+			String text;
+			if(element.needToBeComplex())
+			{
+				text=element.getTextShort();
+			} else
+			{
+				text=element.getTextSay();
+			}
 			int textLength=text.length();
 			String[] splited=splitTextForScreen(widthLimit,text);
 			// new line or not?
@@ -136,6 +214,14 @@ public class WebView
 				}
 				// check this element must not first at line
 				if(element.needBeginLine())
+				{
+					newline=true;
+					break;
+				}
+				// check this element designed on html have Y pos not like last element
+				Rectangle re=element.getElement().getRect();
+				Rectangle rl=last.getElement().getRect();
+				if(rl.y<re.y+re.height&&re.y<=rl.y+rl.height)
 				{
 					newline=true;
 					break;
@@ -223,7 +309,7 @@ public class WebView
 		{
 			System.out.print("parts: ");
 			for(WebElementPart part:lines.get(i))
-				System.out.print(part.element.getType()+"["+part.element.hashCode()+"]{"+part.text.replace('\n',' ')+"} ");
+				System.out.print(part.element.getTextShort()+"["+part.element.hashCode()+"]{"+part.text.replace('\n',' ')+"} ");
 			System.out.println();//" cache:"+cache.get(i));
 			
 		}

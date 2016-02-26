@@ -24,50 +24,89 @@ public class WebDocument
 		ElementIterator list=page.iterator();
 		rootChilds.moveFirst(list);
 		root=new WebText(null,list.clone());
-		// check for all childs
-		make_(page,root,list.getChilds(false));
-		// * repair structure
+		while(true)
+		{
+			// check for all childs
+			make_(page,root,list.getChilds(false));
+			if(!rootChilds.moveNext(list)) break;
+		}
+		//* repair structure
 		// remove nodes without childs and invisible
 		cleanup(root);
+		// call init for each element
+		elementInit(root);
 	}
 	
 	private void make_(Browser page,WebElement parent,Selector childs)
 	{
-		ElementIterator list=page.iterator();
+		ElementIterator nodeIt=page.iterator();
 		// have no childs
-		if(!childs.moveFirst(list)) return;
+		if(!childs.moveFirst(nodeIt)) return;
 		//System.out.println("* PARENT "+(list.getParent()==null?"null":list.getParent().getType()));
 		// enumerate childs
 		while(true)
 		{
 			//System.out.println("*   "+list.getType()+": "+list.getText().replace("\n"," "));
 			WebElement element;
-			if(list.isEditable())
+			if(nodeIt.isEditable())
 			{
-				element=new WebEdit(parent,list.clone());
+ 				switch(nodeIt.getType())
+				{
+					case "input checkbox":
+						element=new WebCheckbox(parent,nodeIt.clone());
+						break;
+					case "input radio":
+						element=new WebRadio(parent,nodeIt.clone());
+						break;
+					case "input button":
+						element=new WebButton(parent,nodeIt.clone());
+						break;
+					case "select":
+						element=new WebSelect(parent,nodeIt.clone());
+						break;
+					default:
+						element=new WebEdit(parent,nodeIt.clone());
+				}
 			} else
-			switch(list.getType())
+			switch(nodeIt.getType())
 			{
+				case "link":
+					element=new WebText(parent,nodeIt.clone());
+					element.setAttribute("href",nodeIt.getLink());
+					break;
 				case "button":
-					element=new WebButton(parent,list.clone());
+					element=new WebButton(parent,nodeIt.clone());
 				break;
-				case "select":
+				case "list":
+					element=new WebList(parent,nodeIt.clone());
+					break;
+				case "li":
+					element=new WebListElement(parent,nodeIt.clone());
+					break;
 				case "table":
-				case "ul":
+					element=new WebTable(parent,nodeIt.clone());
+					break;
+				case "tr":
+					element=new WebTableRow(parent,nodeIt.clone());
+					break;
+				case "td":
+				case "th":
+					element=new WebTableCell(parent,nodeIt.clone());
+					break;
 				default:
-					element=new WebText(parent,list.clone());
+					element=new WebText(parent,nodeIt.clone());
 				break;
 			}
-			if(list.forTEXT())
+			if(nodeIt.forTEXT())
 			{ // it can have text but no recurse
 				
 			} else
 			{ // it can have computed text but have recurse
 				//System.out.println("*   recurse "+list.getType());
-				make_(page,element,list.getChilds(false));
+				make_(page,element,nodeIt.getChilds(false));
 			}
 			parent.getChilds().add(element);
-			if(!childs.moveNext(list)) break;
+			if(!childs.moveNext(nodeIt)) break;
 		}
 		//System.out.println("* ]");
 	}
@@ -96,16 +135,34 @@ public class WebDocument
 		//System.out.println("replace: "+element.getType()+" "+element.getText());
 		if(element.getParent()!=null&&element.getChilds().size()==1)
 		{
-			if(element.getParent().getText().equals("link"))
-			{ // keep href attribute value
-				element.setAttribute("href",element.getParent().getNode().getAttributeProperty("href"));
-			}
-			int idx=element.getParent().getChilds().indexOf(element);
-			if(idx!=-1)
-			{ // idx can't be -1 but we check
-				// replace element in parent childs to first child of element (loose element at all)
-				element.getParent().getChilds().set(idx,element.getChilds().get(0));
+			switch(element.getElement().getType())
+			{
+				// ignore important tags for this optimization
+				case "li":
+				case "tr":
+				case "td":
+				case "th":
+					break;
+				default:
+					ElementIterator e=element.getParent().getElement();
+					System.out.println("REPLACE: "+e.getType()+" "+e.getText());
+					// keep attributes from removed parent in element
+					element.mixAttributes(element.getParent());
+					// replace by idx
+					int idx=element.getParent().getChilds().indexOf(element);
+					if(idx!=-1)
+					{ // idx can't be -1 but we check
+						// replace element in parent childs to first child of element (loose element at all)
+						element.getParent().getChilds().set(idx,element.getChilds().get(0));
+					}
+				break;
 			}
 		}
+	}
+	private void elementInit(WebElement element)
+	{
+		element.init();
+		for(WebElement child:element.getChilds())
+			elementInit(child);
 	}
 }

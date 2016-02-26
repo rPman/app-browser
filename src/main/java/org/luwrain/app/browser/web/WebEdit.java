@@ -13,5 +13,13 @@ public class WebEdit extends WebText
 	{
 		return "Edit";
 	}
+	@Override public String getTextSay()
+	{
+		return getType()+" "+rootElement.getText();
+	}
+	@Override public String getTextView()
+	{
+		return "["+getType()+" "+rootElement.getText()+"]";
+	}
 
 }

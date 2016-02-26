@@ -1,6 +1,8 @@
 package org.luwrain.app.browser.web;
 
+import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Vector;
 
 import org.luwrain.browser.Browser;
@@ -9,6 +11,9 @@ import org.luwrain.browser.ElementIterator;
 /* WebText is a parent of all web elements */
 public class WebText implements WebElement
 {
+	/** computed text size limit for html list to choose complex mode  */
+	static public final int LIST_COMPLEX_HIDE_LENGTH_LIMIT=1024;
+	
 	// Text - all element contains readable text, each of them can have own structure and have addition attributes, for example font styles, anchor links and so on
 	// all other elements was child of Text but have some more functions and attributes
 	// List, Table - more complex text structures, can be represented as list of elements with own navigation or 
@@ -39,13 +44,19 @@ public class WebText implements WebElement
 	protected boolean needToBeHidden=false;
 	protected boolean needBeginLine=false;
 	protected boolean needEndLine=false;
+	protected boolean needToBeComplex=false;
 	//
 	private boolean toRemove=false;
+	// some other options
 
 	@Override public void print(int lvl)
 	{
 		System.out.print(new String(new char[lvl]).replace("\0", "."));
-		System.out.print("v:"+rootElement.isVisible()+" t:"+rootElement.forTEXT()+" "+rootElement.getType()+":"+rootElement.getText().replace('\n',' ')+" css:"+rootElement.getComputedStyleProperty("font-weight"));
+		System.out.print("v:"+rootElement.isVisible()+" t:"+rootElement.forTEXT()+" "+rootElement.getType()+":"+rootElement.getText().replace('\n',' ')+
+//				" css:"+rootElement.getComputedStyleProperty("font-weight")+
+				(attributes.containsKey("href")?", href:"+attributes.get("href"):"")+
+//				" rect:"+rootElement.getRect()
+				"");
 		System.out.println();
 		for(WebElement e:childs)
 			e.print(lvl+1);
@@ -56,6 +67,9 @@ public class WebText implements WebElement
 		this.parent=parent;
 		this.rootElement=element;
 	}
+	@Override public void init(){}
+	@Override public Vector<Vector<WebElement>> getComplexMatrix(){return null;}
+	
 	public void setNeedToBeExpanded(boolean needToBeExpanded)
 	{
 		this.needToBeExpanded=needToBeExpanded;
@@ -80,9 +94,23 @@ public class WebText implements WebElement
 	{
 		return "Text";
 	}
-	@Override public String getText()
+	@Override public String getTextSay()
 	{
-		return rootElement.getText();
+		String res=rootElement.getText();
+		if(attributes.containsKey("href"))
+			res="link "+rootElement.getText();
+		return res;
+	}
+	@Override public String getTextView()
+	{
+		String res=rootElement.getText();
+		if(attributes.containsKey("href"))
+			res="[Link: "+rootElement.getText()+"]";
+		return res;
+	}
+	@Override public String getTextShort()
+	{
+		return rootElement.getType();
 	}
 	
 	@Override public ElementIterator getNode()
@@ -100,9 +128,9 @@ public class WebText implements WebElement
 		return childs;
 	}
 
-	@Override public boolean isComplex()
+	@Override public boolean needToBeComplex()
 	{
-		return false;
+		return needToBeComplex;
 	}
 	
 	@Override public boolean needToBeExpanded()
@@ -150,8 +178,19 @@ public class WebText implements WebElement
 	{
 		attributes.put(name,value);
 	}
+	@Override public void mixAttributes(WebElement element_)
+	{
+		// FIXME: work attributes more abstract
+		WebText element=(WebText)element_;
+		element.attributes.putAll(element.attributes);
+	}
+	@Override public LinkedHashMap<String,String> getAttributes()
+	{
+		return attributes;
+	}
 	@Override public ElementIterator getElement()
 	{
 		return rootElement;
 	}
+
 }

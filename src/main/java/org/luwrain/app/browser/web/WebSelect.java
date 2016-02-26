@@ -2,16 +2,16 @@ package org.luwrain.app.browser.web;
 
 import org.luwrain.browser.ElementIterator;
 
-public class WebButton extends WebText
+public class WebSelect extends WebEdit
 {
-
-	public WebButton(WebElement parent,ElementIterator element)
+	public WebSelect(WebElement parent,ElementIterator element)
 	{
 		super(parent,element);
+		super.needEndLine=true;
 	}
 	@Override public String getType()
 	{
-		return "Button";
+		return "Select";
 	}
 	@Override public String getTextSay()
 	{

@@ -2,16 +2,15 @@ package org.luwrain.app.browser.web;
 
 import org.luwrain.browser.ElementIterator;
 
-public class WebButton extends WebText
+public class WebCheckbox extends WebEdit
 {
-
-	public WebButton(WebElement parent,ElementIterator element)
+	public WebCheckbox(WebElement parent,ElementIterator element)
 	{
 		super(parent,element);
 	}
 	@Override public String getType()
 	{
-		return "Button";
+		return "Checkbox";
 	}
 	@Override public String getTextSay()
 	{
