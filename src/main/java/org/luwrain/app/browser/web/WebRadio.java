@@ -8,16 +8,16 @@ public class WebRadio extends WebEdit
 	{
 		super(parent,element);
 	}
-	@Override public String getType()
+	@Override public Type getType()
 	{
-		return "Radio";
+		return Type.Radio;
 	}
 	@Override public String getTextSay()
 	{
-		return getType()+" "+rootElement.getText();
+		return rootElement.getText();
 	}
 	@Override public String getTextView()
 	{
-		return "["+getType()+" "+rootElement.getText()+"]";
+		return "["+getType().name()+" "+rootElement.getText()+"]";
 	}
 }

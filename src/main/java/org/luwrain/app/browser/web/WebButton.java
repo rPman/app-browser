@@ -9,13 +9,13 @@ public class WebButton extends WebText
 	{
 		super(parent,element);
 	}
-	@Override public String getType()
+	@Override public Type getType()
 	{
-		return "Button";
+		return Type.Button;
 	}
 	@Override public String getTextSay()
 	{
-		return getType()+" "+rootElement.getText();
+		return rootElement.getText();
 	}
 	@Override public String getTextView()
 	{

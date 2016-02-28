@@ -11,9 +11,9 @@ public class WebTableRow extends WebText
 	{
 		super(parent,element);
 	}
-	@Override public String getType()
+	@Override public Type getType()
 	{
-		return "Table row";
+		return Type.TableRow;
 	}
 	@Override public String getTextSay()
 	{

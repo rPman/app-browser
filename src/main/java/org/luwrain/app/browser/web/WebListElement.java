@@ -13,9 +13,9 @@ public class WebListElement extends WebText
 		super.needBeginLine=true;
 		super.needEndLine=true;
 	}
-	@Override public String getType()
+	@Override public Type getType()
 	{
-		return "List element";
+		return Type.ListElement;
 	}
 	@Override public String getTextSay()
 	{

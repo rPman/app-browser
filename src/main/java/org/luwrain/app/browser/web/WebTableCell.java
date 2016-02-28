@@ -11,9 +11,9 @@ public class WebTableCell extends WebText
 	{
 		super(parent,element);
 	}
-	@Override public String getType()
+	@Override public Type getType()
 	{
-		return "Table cell";
+		return Type.TableCell;
 	}
 	@Override public String getTextSay()
 	{

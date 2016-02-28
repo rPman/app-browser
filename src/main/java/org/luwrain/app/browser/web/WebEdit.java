@@ -9,17 +9,17 @@ public class WebEdit extends WebText
 		super(parent,element);
 		super.needEndLine=true;
 	}
-	@Override public String getType()
+	@Override public Type getType()
 	{
-		return "Edit";
+		return Type.Edit;
 	}
 	@Override public String getTextSay()
 	{
-		return getType()+" "+rootElement.getText();
+		return rootElement.getText();
 	}
 	@Override public String getTextView()
 	{
-		return "["+getType()+" "+rootElement.getText()+"]";
+		return "["+getType().name()+" "+rootElement.getText()+"]";
 	}
 
 }

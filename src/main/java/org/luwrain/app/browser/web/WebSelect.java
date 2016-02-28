@@ -7,18 +7,19 @@ public class WebSelect extends WebEdit
 	public WebSelect(WebElement parent,ElementIterator element)
 	{
 		super(parent,element);
+		super.needBeginLine=false;
 		super.needEndLine=true;
 	}
-	@Override public String getType()
+	@Override public Type getType()
 	{
-		return "Select";
+		return Type.Select;
 	}
 	@Override public String getTextSay()
 	{
-		return getType()+" "+rootElement.getText();
+		return rootElement.getText();
 	}
 	@Override public String getTextView()
 	{
-		return "["+getType()+" "+rootElement.getText()+"]";
+		return "["+getType().name()+" "+rootElement.getText()+"]";
 	}
 }

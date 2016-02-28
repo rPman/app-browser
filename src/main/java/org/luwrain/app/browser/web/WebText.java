@@ -90,12 +90,13 @@ public class WebText implements WebElement
 		this.needEndLine=needEndLine;
 	}
 	
-	@Override public String getType()
+	@Override public Type getType()
 	{
-		return "Text";
+		return Type.Text;
 	}
 	@Override public String getTextSay()
 	{
+		// FIXME: make link sayble in Navigation area but not in WebElement
 		String res=rootElement.getText();
 		if(attributes.containsKey("href"))
 			res="link "+rootElement.getText();
@@ -118,12 +119,12 @@ public class WebText implements WebElement
 		return rootElement;
 	}
 	
-	@Override public boolean haveChilds()
+	@Override public boolean haveChildren()
 	{
 		return !childs.isEmpty();
 	}
 	
-	@Override public Vector<WebElement> getChilds()
+	@Override public Vector<WebElement> getChildren()
 	{
 		return childs;
 	}

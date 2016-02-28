@@ -27,13 +27,12 @@ import java.util.Vector;
 
 import org.luwrain.app.browser.Events;
 import org.luwrain.app.browser.web.*;
-import org.luwrain.app.browser.web.WebView.WebElementPart;
 import org.luwrain.browser.*;
 import org.luwrain.browser.Events.WebState;
 
 class BrowserArea extends NavigateArea
 {
-	static final int PAGE_SCANER_INTERVAL=3000; 
+	static final int PAGE_SCANER_INTERVAL=1000; 
 	static final int PAGE_SCANER_AROUND_ELEMENTS_COUNT=10; 
 	
 	static private final int MIN_WIDTH = 10;
@@ -330,7 +329,7 @@ class BrowserArea extends NavigateArea
 		wDoc=new WebDocument();
 		wDoc.make(page);
 		
-		element=wDoc.root;
+		element=wDoc.getRoot();
 		complexMode=false;
 		refill();
     	System.out.print("rescan end");
@@ -449,15 +448,17 @@ class BrowserArea extends NavigateArea
 			// store prev element to history
 			elementHistory.add(new HistoryElement(element,complexMode));
 			//
+			complexMode=!complexMode;
 			element=part.element;
 			// refill
 			wView=new WebView();
+			WebViewBuilder builder;
 			if(complexMode)
-				wView.refill(element,luwrain.getAreaVisibleWidth(this));
+				builder=new WebBuilderComplex();
 			else
-				wView.refillComplex(element,luwrain.getAreaVisibleWidth(this));
+				builder=new WebBuilderNormal();
+			builder.refill(wView,element,luwrain.getAreaVisibleWidth(this));
 			/**/wView.print();
-			complexMode=!complexMode;
 			
 			repairHotPoint();
 			environment.onAreaNewContent(this);
@@ -491,10 +492,12 @@ class BrowserArea extends NavigateArea
 	private void refill()
 	{
 		wView=new WebView();
+		WebViewBuilder builder;
 		if(complexMode)
-			wView.refillComplex(element,luwrain.getAreaVisibleWidth(this));
+			builder=new WebBuilderComplex();
 		else
-			wView.refill(element,luwrain.getAreaVisibleWidth(this));
+			builder=new WebBuilderNormal();
+		builder.refill(wView,element,luwrain.getAreaVisibleWidth(this));
 		/**/wView.print();
 		repairHotPoint();
 		//

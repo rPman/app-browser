@@ -27,7 +27,7 @@ public class WebTable extends WebEdit
 	}
 	private void tableScan(WebElement e)
 	{
-		for(WebElement child:e.getChilds())
+		for(WebElement child:e.getChildren())
 		{
 			String t=child.getElement().getType();
 			switch(t)
@@ -63,17 +63,17 @@ public class WebTable extends WebEdit
 		return matrix;
 	}
 	
-	@Override public String getType()
+	@Override public Type getType()
 	{
-		return "Table";
+		return Type.Table;
 	}
 	@Override public String getTextSay()
 	{
-		return getType()+" "+rootElement.getText();
+		return rootElement.getText();
 	}
 	@Override public String getTextView()
 	{
-		return "["+getType()+" "+rootElement.getText()+"]";
+		return "["+getType().name()+" "+rootElement.getText()+"]";
 	}
 	@Override public String getTextShort()
 	{

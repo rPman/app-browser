@@ -36,7 +36,7 @@ public class WebList extends WebEdit
 	{
 		String liDot=(parentName.isEmpty()?"":".");
 		int num=0;
-		for(WebElement child:element.getChilds())
+		for(WebElement child:element.getChildren())
 		{
 			// multilevel, if one of li contains other list
 			if(child instanceof WebList)
@@ -55,17 +55,17 @@ public class WebList extends WebEdit
 		}
 	}
 	
-	@Override public String getType()
+	@Override public Type getType()
 	{
-		return "List";
+		return Type.List;
 	}
 	@Override public String getTextSay()
 	{
-		return getType()+" "+rootElement.getText();
+		return rootElement.getText();
 	}
 	@Override public String getTextView()
 	{
-		return "["+getType()+" "+rootElement.getText()+"]";
+		return "["+getType().name()+" "+rootElement.getText()+"]";
 	}
 	@Override public String getTextShort()
 	{

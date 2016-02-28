@@ -5,13 +5,18 @@ import java.util.Iterator;
 import org.luwrain.browser.Browser;
 import org.luwrain.browser.ElementIterator;
 import org.luwrain.browser.Selector;
-import org.luwrain.browser.SelectorChilds;
+import org.luwrain.browser.SelectorChildren;
 
 public class WebDocument
 {
 	// make WebDocument structure for web page, more simple than html document, i.e.  only visible elements and without element with single child
 	// only visible elements
-	public WebElement root=null;
+	private WebElement root=null;
+	
+	public WebElement getRoot()
+	{
+		return root;
+	}
 	
 	/**
 	 * replace WebElement structure for given web page
@@ -20,15 +25,15 @@ public class WebDocument
 	public void make(Browser page)
 	{
 		// get all childs without parent (it must have only one)
-		SelectorChilds rootChilds=page.rootChilds(false);
+		SelectorChildren rootChildren=page.rootChildren(false);
 		ElementIterator list=page.iterator();
-		rootChilds.moveFirst(list);
+		rootChildren.moveFirst(list);
 		root=new WebText(null,list.clone());
 		while(true)
 		{
 			// check for all childs
-			make_(page,root,list.getChilds(false));
-			if(!rootChilds.moveNext(list)) break;
+			make_(page,root,list.getChildren(false));
+			if(!rootChildren.moveNext(list)) break;
 		}
 		//* repair structure
 		// remove nodes without childs and invisible
@@ -103,9 +108,9 @@ public class WebDocument
 			} else
 			{ // it can have computed text but have recurse
 				//System.out.println("*   recurse "+list.getType());
-				make_(page,element,nodeIt.getChilds(false));
+				make_(page,element,nodeIt.getChildren(false));
 			}
-			parent.getChilds().add(element);
+			parent.getChildren().add(element);
 			if(!childs.moveNext(nodeIt)) break;
 		}
 		//System.out.println("* ]");
@@ -114,7 +119,7 @@ public class WebDocument
 	{
 		// clean childs
 		int cnt=0;
-		for(WebElement child:element.getChilds())
+		for(WebElement child:element.getChildren())
 		{
 			cleanup(child);
 			if(!child.isDeleted())
@@ -124,7 +129,7 @@ public class WebDocument
 		if(cnt==0&&!element.isVisible())
 			element.toDelete();
 		// remove marked
-		Iterator<WebElement> i=element.getChilds().iterator();
+		Iterator<WebElement> i=element.getChildren().iterator();
 		while (i.hasNext())
 		{
 			WebElement child=i.next();
@@ -133,7 +138,7 @@ public class WebDocument
 		}
 		// replace single child with its parent
 		//System.out.println("replace: "+element.getType()+" "+element.getText());
-		if(element.getParent()!=null&&element.getChilds().size()==1)
+		if(element.getParent()!=null&&element.getChildren().size()==1)
 		{
 			switch(element.getElement().getType())
 			{
@@ -149,11 +154,11 @@ public class WebDocument
 					// keep attributes from removed parent in element
 					element.mixAttributes(element.getParent());
 					// replace by idx
-					int idx=element.getParent().getChilds().indexOf(element);
+					int idx=element.getParent().getChildren().indexOf(element);
 					if(idx!=-1)
 					{ // idx can't be -1 but we check
 						// replace element in parent childs to first child of element (loose element at all)
-						element.getParent().getChilds().set(idx,element.getChilds().get(0));
+						element.getParent().getChildren().set(idx,element.getChildren().get(0));
 					}
 				break;
 			}
@@ -162,7 +167,7 @@ public class WebDocument
 	private void elementInit(WebElement element)
 	{
 		element.init();
-		for(WebElement child:element.getChilds())
+		for(WebElement child:element.getChildren())
 			elementInit(child);
 	}
 }

@@ -8,13 +8,13 @@ public class WebCheckbox extends WebEdit
 	{
 		super(parent,element);
 	}
-	@Override public String getType()
+	@Override public Type getType()
 	{
-		return "Checkbox";
+		return Type.Checkbox;
 	}
 	@Override public String getTextSay()
 	{
-		return getType()+" "+rootElement.getText();
+		return rootElement.getText();
 	}
 	@Override public String getTextView()
 	{
