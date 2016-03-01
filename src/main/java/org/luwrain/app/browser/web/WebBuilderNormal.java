@@ -86,7 +86,7 @@ public class WebBuilderNormal implements WebViewBuilder
 				// check this element designed on html have Y pos not like last element
 				Rectangle re=element.getElement().getRect();
 				Rectangle rl=last.getElement().getRect();
-				if(rl.y<re.y+re.height&&re.y<=rl.y+rl.height)
+				if(rl.y>=re.y+re.height||re.y>=rl.y+rl.height)
 				{
 					newline=true;
 					break;

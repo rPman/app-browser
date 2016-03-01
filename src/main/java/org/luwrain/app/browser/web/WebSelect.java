@@ -16,7 +16,7 @@ public class WebSelect extends WebEdit
 	}
 	@Override public String getTextSay()
 	{
-		return rootElement.getText();
+		return getType().name()+" "+rootElement.getText();
 	}
 	@Override public String getTextView()
 	{

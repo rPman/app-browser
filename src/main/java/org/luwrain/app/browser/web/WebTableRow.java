@@ -10,6 +10,8 @@ public class WebTableRow extends WebText
 	public WebTableRow(WebElement parent,ElementIterator element)
 	{
 		super(parent,element);
+		super.needBeginLine=true;
+		super.needEndLine=true;
 	}
 	@Override public Type getType()
 	{

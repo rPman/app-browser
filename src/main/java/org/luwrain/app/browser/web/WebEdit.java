@@ -7,6 +7,7 @@ public class WebEdit extends WebText
 	public WebEdit(WebElement parent,ElementIterator element)
 	{
 		super(parent,element);
+		super.needBeginLine=false;
 		super.needEndLine=true;
 	}
 	@Override public Type getType()
@@ -15,7 +16,7 @@ public class WebEdit extends WebText
 	}
 	@Override public String getTextSay()
 	{
-		return rootElement.getText();
+		return getType().name()+" "+rootElement.getText();
 	}
 	@Override public String getTextView()
 	{

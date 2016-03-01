@@ -20,12 +20,14 @@ public class WebList extends WebEdit
 	{
 		// try to compute size
 		String ctext=rootElement.getComputedText();
-		//if(ctext.length()>LIST_COMPLEX_HIDE_LENGTH_LIMIT)
-			needToBeComplex=false;
 		// calculate numbers for elements and detect multilevel
 		liCount=0;
 		isMultilevel=false;
 		liCalc(this,"");
+		// FIXME: make condition to complex
+		needToBeComplex=false;
+		super.needBeginLine=true;
+		super.needEndLine=true;
 	}
 	@Override public Vector<Vector<WebElement>> getComplexMatrix()
 	{

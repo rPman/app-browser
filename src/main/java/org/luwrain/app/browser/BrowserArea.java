@@ -32,7 +32,8 @@ import org.luwrain.browser.Events.WebState;
 
 class BrowserArea extends NavigateArea
 {
-	static final int PAGE_SCANER_INTERVAL=1000; 
+	static final int PAGE_SCANER_INTERVAL=1000;
+	static final int PAGE_SCANER_INTERVAL_FAST=100;
 	static final int PAGE_SCANER_AROUND_ELEMENTS_COUNT=10; 
 	
 	static private final int MIN_WIDTH = 10;
@@ -80,6 +81,11 @@ class BrowserArea extends NavigateArea
 		{
 			pageTimer=new Timer();
 			pageTimer.scheduleAtFixedRate(this,PAGE_SCANER_INTERVAL,PAGE_SCANER_INTERVAL);
+		}
+		public void fast()
+		{
+			//pageTimer.cancel();
+			pageTimer.scheduleAtFixedRate(this,PAGE_SCANER_INTERVAL_FAST,PAGE_SCANER_INTERVAL);
 		}
 	}
 	
@@ -314,7 +320,7 @@ class BrowserArea extends NavigateArea
 
     private void onRescanPageDom()
     {
-    	System.out.print("rescan start");
+    	System.out.println("rescan start");
 		if(state!=WebState.SUCCEEDED)
 		    return;
 		if(page.isBusy())
@@ -328,6 +334,7 @@ class BrowserArea extends NavigateArea
 	
 		wDoc=new WebDocument();
 		wDoc.make(page);
+		wDoc.getRoot().print(1);
 		
 		element=wDoc.getRoot();
 		complexMode=false;
@@ -469,13 +476,21 @@ class BrowserArea extends NavigateArea
 		{ // editable element, edit it
 			if(part.element instanceof WebSelect)
 				onMultiTextEditElement(part);
-			if(part.element instanceof WebEdit)
+			else if(part.element instanceof WebRadio||part.element instanceof WebCheckbox)
+				onClickElement(part);
+			else
 				onEditElement(part);
 		} else
 		{ // any other element - click it
-			part.element.getElement().clickEmulate();
+			onClickElement(part);
 		}
-		// FIXME:
+		return true;
+	}
+	private boolean onClickElement(WebElementPart part)
+	{
+		part.element.getElement().clickEmulate();
+		onTimerElementScan();
+		//pageScaner.fast();
 		return true;
 	}
 	private boolean onHistoryBack()

@@ -150,7 +150,7 @@ public class WebDocument
 					break;
 				default:
 					ElementIterator e=element.getParent().getElement();
-					System.out.println("REPLACE: "+e.getType()+" "+e.getText());
+					//System.out.println("REPLACE: "+e.getType()+" "+e.getText());
 					// keep attributes from removed parent in element
 					element.mixAttributes(element.getParent());
 					// replace by idx

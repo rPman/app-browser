@@ -55,7 +55,7 @@ public class WebText implements WebElement
 		System.out.print("v:"+rootElement.isVisible()+" t:"+rootElement.forTEXT()+" "+rootElement.getType()+":"+rootElement.getText().replace('\n',' ')+
 //				" css:"+rootElement.getComputedStyleProperty("font-weight")+
 				(attributes.containsKey("href")?", href:"+attributes.get("href"):"")+
-//				" rect:"+rootElement.getRect()
+				" rect:"+rootElement.getRect().x+"x"+rootElement.getRect().y+"-"+(rootElement.getRect().width+rootElement.getRect().x)+"x"+(rootElement.getRect().height+rootElement.getRect().y)+
 				"");
 		System.out.println();
 		for(WebElement e:childs)

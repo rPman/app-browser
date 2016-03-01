@@ -56,7 +56,9 @@ public class WebView
 			if(x>=wp.pos&&x<wp.pos+wp.textLength)
 				return wp;
 		}
-		return null;
+		// we need return first element on line
+		if(lines.get(y).size()==0) return null;
+		return lines.get(y).get(0);
 	}
 	
 	/**

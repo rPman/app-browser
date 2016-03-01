@@ -18,12 +18,14 @@ public class WebTable extends WebEdit
 	{
 		// try to compute size
 		String ctext=rootElement.getComputedText();
-		// FIXME:
-		needToBeComplex=true;
 		// calculate numbers for elements
 		row=0;
 		col=0;
 		tableScan(this);
+		// FIXME: make condition to complex
+		super.needBeginLine=true;
+		super.needEndLine=true;
+		needToBeComplex=false;
 	}
 	private void tableScan(WebElement e)
 	{
