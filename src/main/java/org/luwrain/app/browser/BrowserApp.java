@@ -17,7 +17,6 @@
 package org.luwrain.app.browser;
 
 import org.luwrain.core.*;
-import org.luwrain.controls.*;
 
 class BrowserApp implements Application, Actions
 {

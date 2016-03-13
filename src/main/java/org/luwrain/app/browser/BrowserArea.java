@@ -1,4 +1,4 @@
-﻿/*
+/*
    Copyright 2012-2014 Michael Pozhidaev <msp@altlinux.org>
 
    This file is part of the Luwrain.
@@ -36,8 +36,6 @@ class BrowserArea extends NavigateArea
 	static final int PAGE_SCANER_INTERVAL_FAST=100;
 	static final int PAGE_SCANER_AROUND_ELEMENTS_COUNT=10; 
 	
-	static private final int MIN_WIDTH = 10;
-
 	private Luwrain luwrain;
 	private ControlEnvironment environment;
 	private Actions actions;
@@ -135,33 +133,35 @@ class BrowserArea extends NavigateArea
 	@Override public boolean onKeyboardEvent(KeyboardEvent event)
 	{
 		NullCheck.notNull(event, "event");
-		if (event.isCommand() && !event.isModified())
-		switch (event.getCommand())
+		if (event.isSpecial() && !event.isModified())
+		switch (event.getSpecial())
 		{
-		case KeyboardEvent.TAB:
+		case TAB:
 			return onInfoAction();
-		case KeyboardEvent.ESCAPE:
+		case ESCAPE:
 			onBreakCommand();
-		return true;
-		case KeyboardEvent.F5: 
+			return true;
+		case F5: 
 			onRescanPageDom();
-		return true;
-		case KeyboardEvent.F6: 
+			return true;
+		case F6: 
 			onChangeCurrentPageLink();
-		return true;
-		case KeyboardEvent.ALTERNATIVE_ARROW_LEFT:
+			return true;
+		case ALTERNATIVE_ARROW_LEFT:
 			return onElementNavigateLeft();
-		case KeyboardEvent.ALTERNATIVE_ARROW_RIGHT:
+		case ALTERNATIVE_ARROW_RIGHT:
 			return onElementNavigateRight();
-		case KeyboardEvent.ENTER:
+		case ENTER:
 			return onDefaultAction();
-		case KeyboardEvent.BACKSPACE:
+		case BACKSPACE:
 			return onHistoryBack();
-		case KeyboardEvent.F10:
+		case F10:
 			onChangeWebViewVisibility();
-		return true;
+			return true;
+		default:
+			break;
 		}
-		if(event.getCharacter()==' ')
+		if(event.getChar()==' ')
 		{
 			WebElementPart part=wView.getElementByPos(getHotPointX(),getHotPointY());
 			if(part!=null)
@@ -175,10 +175,10 @@ class BrowserArea extends NavigateArea
 		NullCheck.notNull(event, "event");
 		switch(event.getCode())
 		{
-		case EnvironmentEvent.CLOSE:
+		case CLOSE:
 			actions.closeApp();
 			return true;
-		case EnvironmentEvent.THREAD_SYNC:
+		case THREAD_SYNC:
 			if (onThreadSyncEvent(event))
 			return true;
 			return super.onEnvironmentEvent(event);
