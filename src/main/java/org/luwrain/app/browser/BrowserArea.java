@@ -32,58 +32,63 @@ import org.luwrain.browser.Events.WebState;
 
 class BrowserArea extends NavigateArea
 {
-	static final int PAGE_SCANER_INTERVAL=1000;
-	static final int PAGE_SCANER_INTERVAL_FAST=100;
-	static final int PAGE_SCANER_AROUND_ELEMENTS_COUNT=10; 
-	
-	private Luwrain luwrain;
-	private ControlEnvironment environment;
-	private Actions actions;
-	private Browser page;
-	private Events browserEvents;
+    static private final int PAGE_SCANNER_INTERVAL=1000;
+    static private final int PAGE_SCANNER_INTERVAL_FAST=100;
+    static private final int PAGE_SCANNER_AROUND_ELEMENTS_COUNT=10; 
 
-	private WebState state=WebState.READY;
-	private int progress=0;
-	
-	WebDocument wDoc=new WebDocument();
-	WebView wView=new WebView();
-	/** current element in view */
-	WebElement element;
-	class HistoryElement
+    private Luwrain luwrain;
+    private ControlEnvironment environment;
+    private Actions actions;
+    private Browser page;
+    private Events browserEvents;
+
+    private WebState state = WebState.READY;
+    private int progress = 0;
+
+    WebDocument wDoc = new WebDocument();
+    WebView wView = new WebView();
+    /** current element in view */
+    WebElement element;
+
+    static class HistoryElement
+    {
+	HistoryElement(WebElement element,boolean mode)
 	{
-		public HistoryElement(WebElement element,boolean mode)
-		{
-			this.element=element;
-			this.mode=mode;
-		}
-		public WebElement element;
-		public boolean mode;
+	    this.element=element;
+	    this.mode=mode;
 	}
-	Vector<HistoryElement> elementHistory=new Vector<HistoryElement>();
-	
-	private boolean complexMode=false;
-	
-	class AutoPageElementScanner extends TimerTask
+
+	WebElement element;
+	boolean mode;
+    }
+
+    final Vector<HistoryElement> elementHistory = new Vector<HistoryElement>();
+    private boolean complexMode=false;
+
+    static private class AutoPageElementScanner extends TimerTask
+    {
+	BrowserArea browser;
+	Timer pageTimer=null;
+
+	AutoPageElementScanner(BrowserArea browser)
 	{
-		BrowserArea browser;
-		Timer pageTimer=null;
-		AutoPageElementScanner(BrowserArea browser)
-		{
-			this.browser=browser;
-		}
-		@Override public void run()
-		{
-			browser.onTimerElementScan();
-		}
-		public void schedule()
-		{
-			pageTimer=new Timer();
-			pageTimer.scheduleAtFixedRate(this,PAGE_SCANER_INTERVAL,PAGE_SCANER_INTERVAL);
-		}
+	    this.browser=browser;
+	}
+
+	@Override public void run()
+	{
+	    browser.onTimerElementScan();
+	}
+
+	void schedule()
+	{
+	    pageTimer=new Timer();
+	    pageTimer.scheduleAtFixedRate(this,PAGE_SCANNER_INTERVAL,PAGE_SCANNER_INTERVAL);
+	}
 		public void fast()
 		{
 			//pageTimer.cancel();
-			pageTimer.scheduleAtFixedRate(this,PAGE_SCANER_INTERVAL_FAST,PAGE_SCANER_INTERVAL);
+			pageTimer.scheduleAtFixedRate(this,PAGE_SCANNER_INTERVAL_FAST,PAGE_SCANNER_INTERVAL);
 		}
 	}
 	
@@ -245,7 +250,7 @@ class BrowserArea extends NavigateArea
 			if(line==null||line.size()==0) return true;
 			scanPos=line.get(0).element.getElement().getPos();
 			
-			if(elementsForScan.isChangedAround(textSelectorInvisible,scanPos,PAGE_SCANER_AROUND_ELEMENTS_COUNT))
+			if(elementsForScan.isChangedAround(textSelectorInvisible,scanPos,PAGE_SCANNER_AROUND_ELEMENTS_COUNT))
 			{ // detected changes, add event to rescan page dom
 				onRescanPageDom();
 			}
