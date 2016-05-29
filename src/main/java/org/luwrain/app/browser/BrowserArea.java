@@ -91,10 +91,10 @@ class BrowserArea extends NavigateArea
 			pageTimer.scheduleAtFixedRate(this,PAGE_SCANNER_INTERVAL_FAST,PAGE_SCANNER_INTERVAL);
 		}
 	}
-	
-	private AutoPageElementScanner pageScaner;
+
+	private AutoPageElementScanner pageScanner;
 	ElementIterator elementsForScan=null;
-	private SelectorText textSelectorInvisible=null;
+	private SelectorText textSelectorInvisible = null;
 
 	int scanPos=-1;
 	public void onTimerElementScan()
@@ -103,22 +103,21 @@ class BrowserArea extends NavigateArea
 		luwrain.enqueueEvent(new CheckChangesEvent(this));
 	}
 
-	BrowserArea(Luwrain luwrain, Actions actions, Browser browser)
-	{
-		super(new DefaultControlEnvironment(luwrain));
-		this.luwrain = luwrain;
-		this.actions = actions;
-		this.environment = new DefaultControlEnvironment(luwrain);
-		this.page = browser;
-		NullCheck.notNull(luwrain, "luwrain");
-		NullCheck.notNull(actions, "actions");
-		NullCheck.notNull(browser, "browser");
-		browserEvents = new Events(luwrain, this);
-		this.page.init(browserEvents);
-
-		pageScaner=new AutoPageElementScanner(this);
-		pageScaner.schedule();
-	}
+    BrowserArea(Luwrain luwrain, Actions actions, Browser browser)
+    {
+	super(new DefaultControlEnvironment(luwrain));
+	this.luwrain = luwrain;
+	this.actions = actions;
+	this.environment = new DefaultControlEnvironment(luwrain);
+	this.page = browser;
+	NullCheck.notNull(luwrain, "luwrain");
+	NullCheck.notNull(actions, "actions");
+	NullCheck.notNull(browser, "browser");
+	browserEvents = new Events(luwrain, this);
+	this.page.init(browserEvents);
+	pageScanner=new AutoPageElementScanner(this);
+	pageScanner.schedule();
+    }
 
 	@Override public String getAreaName()
 	{
@@ -495,7 +494,7 @@ class BrowserArea extends NavigateArea
 	{
 		part.element.getElement().clickEmulate();
 		onTimerElementScan();
-		//pageScaner.fast();
+		//pageScanner.fast();
 		return true;
 	}
 	private boolean onHistoryBack()
@@ -545,7 +544,7 @@ class BrowserArea extends NavigateArea
 		if (listValues.length==0) return; // FIXME:
 		EditListPopup popup=new EditListPopup(luwrain,
 				new FixedEditListPopupModel(listValues),
-				"Редактирование формы","Выберите значение из списка",e.getText());
+						      "Редактирование формы","Выберите значение из списка",e.getText(), Popups.DEFAULT_POPUP_FLAGS);
 		luwrain.popup(popup);
 		if(popup.closing.cancelled()) return;
 		e.setText(popup.text());
