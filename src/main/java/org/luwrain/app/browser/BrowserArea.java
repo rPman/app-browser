@@ -30,7 +30,7 @@ import org.luwrain.app.browser.web.*;
 import org.luwrain.browser.*;
 import org.luwrain.browser.Events.WebState;
 
-class BrowserArea extends NavigateArea
+class BrowserArea extends NavigationArea
 {
     static private final int PAGE_SCANNER_INTERVAL=1000;
     static private final int PAGE_SCANNER_INTERVAL_FAST=100;
