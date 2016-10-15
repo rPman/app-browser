@@ -126,12 +126,12 @@ class BrowserArea extends NavigationArea
 
 	@Override public int getLineCount()
 	{
-		return wView.getLinesCount();
+		return wView.getLineCount();
 	}
 
 	@Override public String getLine(int index)
 	{
-		return wView.getLineByPos(index);
+		return wView.getLineByIndex(index);
 	}
 
 	@Override public boolean onKeyboardEvent(KeyboardEvent event)
@@ -245,7 +245,7 @@ class BrowserArea extends NavigationArea
 			
 			if(page.isBusy()) return true;
 			//if(wView.getLinesCount()<=getHotPointY()) return true;
-			Vector<WebElementPart> line=wView.getPartsByPos(getHotPointY());
+			final Vector<WebElementPart> line=wView.getPartsByLineIndex(getHotPointY());
 			if(line==null||line.size()==0) return true;
 			scanPos=line.get(0).element.getElement().getPos();
 			
@@ -357,7 +357,7 @@ class BrowserArea extends NavigationArea
 				// last try?
 				if(y==0&&x==0) break;
 				// we try to select first element in the last line
-				if(y==wView.getLinesCount()-1)
+				if(y==wView.getLineCount()-1)
 				{
 					if(x==0)
 					{ // try to get first line
@@ -369,9 +369,9 @@ class BrowserArea extends NavigationArea
 						continue;
 					}
 				} else
-				if(y>=wView.getLinesCount())
+				if(y>=wView.getLineCount())
 				{
-					y=wView.getLinesCount()-1;
+					y=wView.getLineCount()-1;
 					continue;
 				} else
 				{
@@ -398,13 +398,13 @@ class BrowserArea extends NavigationArea
 	private boolean onElementNavigateLeft()
 	{ // prev
 		WebElementPart part=wView.getElementByPos(getHotPointX(),getHotPointY());
-		Vector<WebElementPart> line=wView.getPartsByPos(getHotPointY());
+		Vector<WebElementPart> line=wView.getPartsByLineIndex(getHotPointY());
 		if(part==null||line==null) return false;
 		int idx=line.indexOf(part);
 		if(idx==0)
 		{ // move previous line
 			if(getHotPointY()==0) return false;
-			line=wView.getPartsByPos(getHotPointY()-1);
+			line=wView.getPartsByLineIndex(getHotPointY()-1);
 			setHotPoint(line.lastElement().pos,getHotPointY()-1);
 		} else
 		{ // move inside line
@@ -417,12 +417,12 @@ class BrowserArea extends NavigationArea
 	private boolean onElementNavigateRight()
 	{ // next
 		WebElementPart part=wView.getElementByPos(getHotPointX(),getHotPointY());
-		Vector<WebElementPart> line=wView.getPartsByPos(getHotPointY());
+		final Vector<WebElementPart> line=wView.getPartsByLineIndex(getHotPointY());
 		if(part==null||line==null) return false;
 		int idx=line.indexOf(part);
 		if(idx==line.size()-1)
 		{ // move next line
-			if(getHotPointY()+1==wView.getLinesCount()) return false;
+			if(getHotPointY()+1==wView.getLineCount()) return false;
 			setHotPoint(0,getHotPointY()+1);
 		} else
 		{ // move inside line
