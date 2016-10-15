@@ -90,6 +90,6 @@ this.cache = new Vector<String>();
 		last=element;
 	    }
 	}
-return new WebView(root, lines, cache);
+return new WebView(lines, cache);
     }
 }

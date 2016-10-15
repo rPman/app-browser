@@ -45,7 +45,7 @@ this.cache = new Vector<String>();
 		lastPos=0;
 		// refill
 		refill(root);
-return new WebView(root, lines, cache);
+return new WebView(lines, cache);
 	}
 
 	/** recursive method, add element to end of lines */

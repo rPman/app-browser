@@ -19,9 +19,6 @@ public class WebView
     // tips:
     // Multiline text web element always start at new line
 
-    /** root web element used to fill lines */
-    private final WebElement root;
-
     /** The list of lines, each item is a list of WebElement parts*/
     private final Vector<Vector<WebElementPart>> lines;
 
@@ -30,20 +27,14 @@ public class WebView
 
     public WebView()
     {
-	root = null;
 	lines = new Vector<Vector<WebElementPart>>();
 cache = new Vector<String>();
-
     }
 
-
-
-    WebView(WebElement root, Vector<Vector<WebElementPart>> lines, Vector<String> cache)
+    WebView(Vector<Vector<WebElementPart>> lines, Vector<String> cache)
     {
-	NullCheck.notNull(root, "root");
 	NullCheck.notNull(lines, "lines");
 	NullCheck.notNull(cache, "cache");
-	this.root = root;
 	this.lines = lines;
 	this.cache = cache;
     }
