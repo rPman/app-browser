@@ -20,13 +20,33 @@ public class WebView
     // Multiline text web element always start at new line
 
     /** root web element used to fill lines */
-    private WebElement root = null;
+    private final WebElement root;
 
     /** The list of lines, each item is a list of WebElement parts*/
-    private Vector<Vector<WebElementPart>> lines=new Vector<Vector<WebElementPart>>();
+    private final Vector<Vector<WebElementPart>> lines;
 
     /** The text cache, representing web elements view, must be of the same size as a number of lines*/ 
-    private Vector<String> cache=new Vector<String>();
+    private final Vector<String> cache;
+
+    public WebView()
+    {
+	root = null;
+	lines = new Vector<Vector<WebElementPart>>();
+cache = new Vector<String>();
+
+    }
+
+
+
+    WebView(WebElement root, Vector<Vector<WebElementPart>> lines, Vector<String> cache)
+    {
+	NullCheck.notNull(root, "root");
+	NullCheck.notNull(lines, "lines");
+	NullCheck.notNull(cache, "cache");
+	this.root = root;
+	this.lines = lines;
+	this.cache = cache;
+    }
 
     /**
      * @return lines count for current view
@@ -88,17 +108,5 @@ public class WebView
 		System.out.print(part.element.getTextShort()+"["+part.element.hashCode()+"]{"+part.text.replace('\n',' ')+"} ");
 	    System.out.println();//" cache:"+cache.get(i));
 	}
-    }
-
-    void setLines(Vector<Vector<WebElementPart>> lines)
-    {
-	NullCheck.notNull(lines, "lines");
-	this.lines=lines;
-    }
-
-    void setCache(Vector<String> cache)
-    {
-	NullCheck.notNull(cache, "cache");
-	this.cache=cache;
     }
 }

@@ -90,10 +90,6 @@ this.cache = new Vector<String>();
 		last=element;
 	    }
 	}
-	// move result to view
-	final WebView wView = new WebView();
-	wView.setLines(lines);
-	wView.setCache(cache);
-	return wView;
+return new WebView(root, lines, cache);
     }
 }

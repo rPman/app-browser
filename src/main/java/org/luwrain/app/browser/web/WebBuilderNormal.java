@@ -6,7 +6,7 @@ import java.util.Vector;
 
 import org.luwrain.core.*;
 
-public class WebBuilderNormal implements WebViewBuilder
+class WebBuilderNormal implements WebViewBuilder
 {
 	/** root web element used to fill lines */
 	private final WebElement root;
@@ -45,11 +45,7 @@ this.cache = new Vector<String>();
 		lastPos=0;
 		// refill
 		refill(root);
-		// move result to view
-		final WebView wView = new WebView();
-		wView.setLines(lines);
-		wView.setCache(cache);
-		return wView;
+return new WebView(root, lines, cache);
 	}
 
 	/** recursive method, add element to end of lines */
