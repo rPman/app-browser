@@ -458,17 +458,11 @@ class BrowserArea extends NavigationArea
 		{ // select complex element as base for view in navigation area
 			// store prev element to history
 			elementHistory.add(new HistoryElement(element,complexMode));
-			//
 			complexMode=!complexMode;
 			element=part.element;
 			// refill
-			wView=new WebView();
-			WebViewBuilder builder;
-			if(complexMode)
-				builder=new WebBuilderComplex();
-			else
-				builder=new WebBuilderNormal();
-			builder.refill(wView,element,luwrain.getAreaVisibleWidth(this));
+				final WebViewBuilder builder = WebViewBuilder.newBuilder(complexMode?WebViewBuilder.Type.COMPLEX:WebViewBuilder.Type.NORMAL, element,luwrain.getAreaVisibleWidth(this));
+wView = builder.build();
 			/**/wView.print();
 			
 			repairHotPoint();
@@ -510,13 +504,8 @@ class BrowserArea extends NavigationArea
 	
 	private void refill()
 	{
-		wView=new WebView();
-		WebViewBuilder builder;
-		if(complexMode)
-			builder=new WebBuilderComplex();
-		else
-			builder=new WebBuilderNormal();
-		builder.refill(wView,element,luwrain.getAreaVisibleWidth(this));
+		final WebViewBuilder builder = WebViewBuilder.newBuilder(complexMode?WebViewBuilder.Type.COMPLEX:WebViewBuilder.Type.NORMAL, element, luwrain.getAreaVisibleWidth(this));
+		wView = builder.build();
 		/**/wView.print();
 		repairHotPoint();
 		//

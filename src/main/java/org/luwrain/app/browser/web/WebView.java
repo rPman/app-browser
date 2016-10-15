@@ -90,13 +90,13 @@ public class WebView
 	}
     }
 
-    public void setLines(Vector<Vector<WebElementPart>> lines)
+    void setLines(Vector<Vector<WebElementPart>> lines)
     {
 	NullCheck.notNull(lines, "lines");
 	this.lines=lines;
     }
 
-    public void setCache(Vector<String> cache)
+    void setCache(Vector<String> cache)
     {
 	NullCheck.notNull(cache, "cache");
 	this.cache=cache;

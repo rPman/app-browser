@@ -1,42 +1,55 @@
+
 package org.luwrain.app.browser.web;
 
 import java.awt.Rectangle;
 import java.util.Vector;
 
+import org.luwrain.core.*;
+
 public class WebBuilderNormal implements WebViewBuilder
 {
 	/** root web element used to fill lines */
-	private WebElement root=null;
+	private final WebElement root;
+
 	/** list of lines and each contains linst of WebElement parts */
-	private Vector<Vector<WebElementPart>> lines=new Vector<Vector<WebElementPart>>();
+	private final Vector<Vector<WebElementPart>> lines;
+
 	/** cache of string lines for web elements view, must have size equal lines */ 
-	private Vector<String> cache=new Vector<String>();
+	private final Vector<String> cache;
 
 	/** width limit for current refill */
-	private int widthLimit;
+	private final int widthLimit;
+
 	/** last element, added to lines */
 	private WebElement last;
+
 	/** current width of last string line */
 	private int lastWidth;
+
 	/** last line num */
 	private int lastPos;
 
-	@Override public void refill(WebView wView,WebElement root,int width)
-	{
-		this.root=root;
-		// cleanup
-		lines=new Vector<Vector<WebElementPart>>();
-		cache=new Vector<String>();
-		// prepare
-		widthLimit=width;
+    WebBuilderNormal(WebElement root, int width)
+    {
+	NullCheck.notNull(root, "root");
+	this.root = root;
+this.widthLimit = width;
+this.lines = new Vector<Vector<WebElementPart>>();
+this.cache = new Vector<String>();
+    }
+
+    @Override public WebView build()
+    {
 		last=null;
 		lastWidth=0;
 		lastPos=0;
 		// refill
 		refill(root);
 		// move result to view
+		final WebView wView = new WebView();
 		wView.setLines(lines);
 		wView.setCache(cache);
+		return wView;
 	}
 
 	/** recursive method, add element to end of lines */
