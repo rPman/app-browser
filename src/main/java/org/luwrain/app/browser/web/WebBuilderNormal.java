@@ -51,7 +51,7 @@ return new WebView(lines, cache);
 	/** recursive method, add element to end of lines */
 	private void refill(WebElement element)
 	{
-		if((!element.needToBeComplex()||element==root)&&element.needToBeExpanded()&&element.haveChildren())
+		if((!element.needToBeComplex()||element==root)&&element.needToBeExpanded()&&element.hasChildren())
 		{ // we must expand this web element
 			for(WebElement child:element.getChildren())
 			{

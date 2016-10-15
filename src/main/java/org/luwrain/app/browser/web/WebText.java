@@ -1,9 +1,7 @@
+
 package org.luwrain.app.browser.web;
 
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Vector;
+import java.util.*;
 
 import org.luwrain.browser.Browser;
 import org.luwrain.browser.ElementIterator;
@@ -11,30 +9,28 @@ import org.luwrain.browser.ElementIterator;
 /* WebText is a parent of all web elements */
 public class WebText implements WebElement
 {
-	/** computed text size limit for html list to choose complex mode  */
-	static public final int LIST_COMPLEX_HIDE_LENGTH_LIMIT=1024;
-	
-	// Text - all element contains readable text, each of them can have own structure and have addition attributes, for example font styles, anchor links and so on
-	// all other elements was child of Text but have some more functions and attributes
-	// List, Table - more complex text structures, can be represented as list of elements with own navigation or 
-	// Edit, Button, Checkbox, Groupbox, Select - form elements with own activity
-	// * Edit - simple, can be edited, have attribute isMultiline (for textarea html element)
-	// * Button - simple, can be pressed
-	// * Checkbox - can be pressed and can have 2 or 3 states (on,off,unchecked)
-	// * Groupbox - similar checkbox can have two state but have group name, linked with other groupbox element on page (each changes need to rescan all page but it can be optimized)
-	// Each element can be represented as simplified text (request to WebPage node), each element can have ordered child, for example, complex text paragraph with font styled words or links
-	// Each element have root html node,which can be accessed to read html style, attributes and so on
-	// Elements can have short text representation and base type name text
-	// Visualisation:
-	// Elements can be expanded by default in navigation area or not and represented as short text string
-	// tips:
-	// * empty invisible (without childs) elements must be removed
-	// * some elements can be replaced with own childs (for example simple html not table and list)
- 
-	// enum Type {Text,Edit,Button,Checkbox,Groupbox,List,Table};
-	
-	// internal structure of element
-	protected Vector<WebElement> childs=new Vector<WebElement>();
+    /** computed text size limit for html list to choose complex mode  */
+    static public final int LIST_COMPLEX_HIDE_LENGTH_LIMIT=1024;
+
+    // Text - all element contains readable text, each of them can have own structure and have addition attributes, for example font styles, anchor links and so on
+    // all other elements was child of Text but have some more functions and attributes
+    // List, Table - more complex text structures, can be represented as list of elements with own navigation or 
+    // Edit, Button, Checkbox, Groupbox, Select - form elements with own activity
+    // * Edit - simple, can be edited, have attribute isMultiline (for textarea html element)
+    // * Button - simple, can be pressed
+    // * Checkbox - can be pressed and can have 2 or 3 states (on,off,unchecked)
+    // * Groupbox - similar checkbox can have two state but have group name, linked with other groupbox element on page (each changes need to rescan all page but it can be optimized)
+    // Each element can be represented as simplified text (request to WebPage node), each element can have ordered child, for example, complex text paragraph with font styled words or links
+    // Each element have root html node,which can be accessed to read html style, attributes and so on
+    // Elements can have short text representation and base type name text
+    // Visualisation:
+    // Elements can be expanded by default in navigation area or not and represented as short text string
+    // tips:
+    // * empty invisible (without childs) elements must be removed
+    // * some elements can be replaced with own childs (for example simple html not table and list)
+
+    // internal structure of element
+    protected final Vector<WebElement> children = new Vector<WebElement>();
 	protected WebElement parent=null;
 	protected LinkedHashMap<String,String> attributes=new LinkedHashMap<String,String>();
 	// link to web page node
@@ -58,7 +54,7 @@ public class WebText implements WebElement
 				" rect:"+rootElement.getRect().x+"x"+rootElement.getRect().y+"-"+(rootElement.getRect().width+rootElement.getRect().x)+"x"+(rootElement.getRect().height+rootElement.getRect().y)+
 				"");
 		System.out.println();
-		for(WebElement e:childs)
+		for(WebElement e:children)
 			e.print(lvl+1);
 	}
 
@@ -119,14 +115,14 @@ public class WebText implements WebElement
 		return rootElement;
 	}
 	
-	@Override public boolean haveChildren()
+	@Override public boolean hasChildren()
 	{
-		return !childs.isEmpty();
+		return !children.isEmpty();
 	}
 	
 	@Override public Vector<WebElement> getChildren()
 	{
-		return childs;
+		return children;
 	}
 
 	@Override public boolean needToBeComplex()
