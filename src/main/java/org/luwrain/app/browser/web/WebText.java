@@ -50,7 +50,7 @@ public class WebText implements WebElement
 
     WebText(WebElement parent,ElementIterator element)
     {
-	NullCheck.notNull(parent, "parent");
+	//Breaks page loading, subject to debug: NullCheck.notNull(parent, "parent");
 	NullCheck.notNull(element, "element");
 	this.parent = parent;
 	this.rootElement = element;

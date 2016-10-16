@@ -52,8 +52,8 @@ cache = new Vector<String>();
      * @return full text of line by number or null, if line number out of bounds */
     public String getLineByIndex(int y)
     {
-	if(y<0||y>=cache.size())
-	    throw new IllegalArgumentException("y = " + y);
+	if(y < 0 || y >= cache.size())
+	    return "";
 	return cache.get(y);
     }
 

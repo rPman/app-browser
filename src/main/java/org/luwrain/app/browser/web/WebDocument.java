@@ -1,3 +1,4 @@
+
 package org.luwrain.app.browser.web;
 
 import java.util.Iterator;
@@ -7,46 +8,49 @@ import org.luwrain.browser.ElementIterator;
 import org.luwrain.browser.Selector;
 import org.luwrain.browser.SelectorChildren;
 
+import org.luwrain.core.*;
+
 public class WebDocument
 {
-	// make WebDocument structure for web page, more simple than html document, i.e.  only visible elements and without element with single child
-	// only visible elements
-	private WebElement root=null;
-	
-	public WebElement getRoot()
-	{
-		return root;
-	}
-	
-	/**
-	 * replace WebElement structure for given web page
-	 * @param page - web page
-	 */
-	public void make(Browser page)
-	{
+    // make WebDocument structure for web page, more simple than html document, i.e.  only visible elements and without element with single child
+    // only visible elements
+    private WebElement root=null;
+
+    public WebElement getRoot()
+    {
+	return root;
+    }
+
+    /**
+     * replace WebElement structure for given web page
+     * @param page - web page
+     */
+    public void make(Browser page)
+    {
 		// get all childs without parent (it must have only one)
-		SelectorChildren rootChildren=page.rootChildren(false);
-		ElementIterator list=page.iterator();
+		final SelectorChildren rootChildren = page.rootChildren(false);
+		final ElementIterator list=page.iterator();
 		rootChildren.moveFirst(list);
-		root=new WebText(null,list.clone());
-		while(true)
-		{
-			// check for all childs
+		root = new WebText(null,list.clone());
+			//Enumerating all children
+		//		while(true)
+		do {
 			make_(page,root,list.getChildren(false));
-			if(!rootChildren.moveNext(list)) break;
-		}
-		//* repair structure
-		// remove nodes without childs and invisible
+			//			if(!rootChildren.moveNext(list)) 
+			//break;
+		} while(rootChildren.moveNext(list));
 		cleanup(root);
-		// call init for each element
 		elementInit(root);
 	}
-	
-	private void make_(Browser page,WebElement parent,Selector childs)
+
+    private void make_(Browser page,WebElement parent,Selector selector)
 	{
-		ElementIterator nodeIt=page.iterator();
+	    NullCheck.notNull(page, "page");
+	    NullCheck.notNull(parent, "parent");
+	    NullCheck.notNull(selector, "selector");
+		final ElementIterator nodeIt = page.iterator();
 		// have no childs
-		if(!childs.moveFirst(nodeIt)) return;
+		if(!selector.moveFirst(nodeIt)) return;
 		//System.out.println("* PARENT "+(list.getParent()==null?"null":list.getParent().getType()));
 		// enumerate childs
 		while(true)
@@ -111,9 +115,8 @@ public class WebDocument
 				make_(page,element,nodeIt.getChildren(false));
 			}
 			parent.getChildren().add(element);
-			if(!childs.moveNext(nodeIt)) break;
+			if(!selector.moveNext(nodeIt)) break;
 		}
-		//System.out.println("* ]");
 	}
 	private void cleanup(WebElement element)
 	{
