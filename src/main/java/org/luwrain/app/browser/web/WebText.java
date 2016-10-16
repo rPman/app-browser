@@ -33,7 +33,7 @@ public class WebText implements WebElement
     protected final WebElement parent;
     protected LinkedHashMap<String,String> attributes=new LinkedHashMap<String,String>();
 
-    // link to web page node
+    //The iterator pointing at the corresponding node in DOM structure
     protected final ElementIterator nodeIt;
 
     // WebView related attributes
@@ -48,12 +48,12 @@ public class WebText implements WebElement
 
     // some other options
 
-    WebText(WebElement parent,ElementIterator element)
+    WebText(WebElement parent,ElementIterator nodeIt)
     {
 	//Breaks page loading, subject to debug: NullCheck.notNull(parent, "parent");
-	NullCheck.notNull(element, "element");
+	NullCheck.notNull(nodeIt, "nodeIt");
 	this.parent = parent;
-	this.nodeIt = element;
+	this.nodeIt = nodeIt;
     }
 
     @Override public Type getType()
