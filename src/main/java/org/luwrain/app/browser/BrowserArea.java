@@ -21,8 +21,8 @@ import org.luwrain.core.events.*;
 import org.luwrain.controls.*;
 import org.luwrain.popups.*;
 
-import java.util.Timer;
-import java.util.TimerTask;
+//import java.util.Timer;
+//import java.util.TimerTask;
 import java.util.Vector;
 
 import org.luwrain.app.browser.Events;
@@ -32,92 +32,56 @@ import org.luwrain.browser.Events.WebState;
 
 class BrowserArea extends NavigationArea
 {
-    static private final int PAGE_SCANNER_INTERVAL=1000;
-    static private final int PAGE_SCANNER_INTERVAL_FAST=100;
+    //static private final int PAGE_SCANNER_INTERVAL=1000;
+    //    static private final int PAGE_SCANNER_INTERVAL_FAST=100;
     static private final int PAGE_SCANNER_AROUND_ELEMENTS_COUNT=10; 
 
-    private Luwrain luwrain;
-    private ControlEnvironment environment;
-    private Actions actions;
-    private Browser page;
+    private final Luwrain luwrain;
+    private final ControlEnvironment environment;
+    private final Actions actions;
+    private final Browser page;
     private Events browserEvents;
 
     private WebState state = WebState.READY;
     private int progress = 0;
 
-    WebDocument wDoc = new WebDocument();
-    WebView wView = new WebView();
+    private WebDocument wDoc = new WebDocument();
+    private WebView wView = new WebView();
     /** current element in view */
-    WebElement element;
+    private WebElement element;
 
-    static class HistoryElement
-    {
-	HistoryElement(WebElement element,boolean mode)
-	{
-	    this.element=element;
-	    this.mode=mode;
-	}
+    private final Vector<HistoryElement> elementHistory = new Vector<HistoryElement>();
+    private boolean complexMode = false;
 
-	WebElement element;
-	boolean mode;
-    }
+	private final AutoPageElementScanner pageScanner;
+    private ElementIterator elementsForScan = null;
+    private SelectorText textSelectorInvisible = null;
 
-    final Vector<HistoryElement> elementHistory = new Vector<HistoryElement>();
-    private boolean complexMode=false;
-
-    static private class AutoPageElementScanner extends TimerTask
-    {
-	BrowserArea browser;
-	Timer pageTimer=null;
-
-	AutoPageElementScanner(BrowserArea browser)
-	{
-	    this.browser=browser;
-	}
-
-	@Override public void run()
-	{
-	    browser.onTimerElementScan();
-	}
-
-	void schedule()
-	{
-	    pageTimer=new Timer();
-	    pageTimer.scheduleAtFixedRate(this,PAGE_SCANNER_INTERVAL,PAGE_SCANNER_INTERVAL);
-	}
-		public void fast()
-		{
-			//pageTimer.cancel();
-			pageTimer.scheduleAtFixedRate(this,PAGE_SCANNER_INTERVAL_FAST,PAGE_SCANNER_INTERVAL);
-		}
-	}
-
-	private AutoPageElementScanner pageScanner;
-	ElementIterator elementsForScan=null;
-	private SelectorText textSelectorInvisible = null;
-
-	int scanPos=-1;
-	public void onTimerElementScan()
-	{
-		if(state!=WebState.SUCCEEDED) return;
-		luwrain.enqueueEvent(new CheckChangesEvent(this));
-	}
+	private int scanPos = -1;
 
     BrowserArea(Luwrain luwrain, Actions actions, Browser browser)
     {
 	super(new DefaultControlEnvironment(luwrain));
+	NullCheck.notNull(luwrain, "luwrain");
+	NullCheck.notNull(actions, "actions");
+	NullCheck.notNull(browser, "browser");
 	this.luwrain = luwrain;
 	this.actions = actions;
 	this.environment = new DefaultControlEnvironment(luwrain);
 	this.page = browser;
-	NullCheck.notNull(luwrain, "luwrain");
-	NullCheck.notNull(actions, "actions");
-	NullCheck.notNull(browser, "browser");
 	browserEvents = new Events(luwrain, this);
 	this.page.init(browserEvents);
-	pageScanner=new AutoPageElementScanner(this);
+	pageScanner = new AutoPageElementScanner(this);
 	pageScanner.schedule();
     }
+
+
+    void onTimerElementScan()
+    {
+	if(state!=WebState.SUCCEEDED) return;
+	luwrain.enqueueEvent(new CheckChangesEvent(this));
+    }
+
 
 	@Override public String getAreaName()
 	{

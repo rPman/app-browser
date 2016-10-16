@@ -6,10 +6,10 @@ import org.luwrain.browser.*;
 
 class Events implements org.luwrain.browser.Events
 {
-    private Luwrain luwrain;
-    private Area area;
+    private final Luwrain luwrain;
+    private final BrowserArea area;
 
-    Events(Luwrain luwrain, Area area)
+    Events(Luwrain luwrain, BrowserArea area)
     {
 	NullCheck.notNull(luwrain, "luwrain");
 	NullCheck.notNull(area, "area");
