@@ -2,12 +2,12 @@ package org.luwrain.app.browser.web;
 
 import org.luwrain.browser.ElementIterator;
 
-public class WebListElement extends WebText
+public class WebListItem extends WebText
 {
 	/** usuali it is list number element in multilevel or simle lists, changed by WebList in constructor */
 	protected String name=null;
 	
-	public WebListElement(WebElement parent,ElementIterator element)
+	public WebListItem(WebElement parent,ElementIterator element)
 	{
 		super(parent,element);
 		super.needBeginLine=true;

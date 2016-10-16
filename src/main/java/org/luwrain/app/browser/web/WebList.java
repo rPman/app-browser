@@ -47,11 +47,11 @@ class WebList extends WebEdit
 	    if(child instanceof WebList)
 		isMultilevel=true;
 	    // calc li elements
-	    if(child instanceof WebListElement)
+	    if(child instanceof WebListItem)
 	    {
 		liCount++;
 		num++;
-		WebListElement li=((WebListElement)child);
+		WebListItem li=((WebListItem)child);
 		if(li.name==null)
 		    li.name=parentName+liDot+num;
 		matrix.add(new Vector<WebElement>(){{ add(child);}});

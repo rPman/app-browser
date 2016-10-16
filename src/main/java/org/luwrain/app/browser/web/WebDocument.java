@@ -85,7 +85,7 @@ public class WebDocument
 		    element = new WebList(parent,nodeIt.clone());
 		    break;
 		case "li":
-		    element = new WebListElement(parent,nodeIt.clone());
+		    element = new WebListItem(parent,nodeIt.clone());
 		    break;
 		case "table":
 		    element = new WebTable(parent,nodeIt.clone());

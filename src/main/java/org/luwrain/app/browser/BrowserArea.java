@@ -564,7 +564,7 @@ wView = builder.build();
 		// scan for parent complex
 		while(e!=null)
 		{
-			if(e instanceof WebListElement)
+			if(e instanceof WebListItem)
 			{
 				info+=" list item "+e.getTextShort();
 				break;
