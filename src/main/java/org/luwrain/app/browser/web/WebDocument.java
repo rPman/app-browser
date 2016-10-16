@@ -27,110 +27,99 @@ public class WebDocument
      */
     public void make(Browser page)
     {
-		// get all childs without parent (it must have only one)
-		final SelectorChildren rootChildren = page.rootChildren(false);
-		final ElementIterator list=page.iterator();
-		rootChildren.moveFirst(list);
-		root = new WebText(null,list.clone());
-			//Enumerating all children
-		//		while(true)
-		do {
-			make_(page,root,list.getChildren(false));
-			//			if(!rootChildren.moveNext(list)) 
-			//break;
-		} while(rootChildren.moveNext(list));
-		cleanup(root);
-		elementInit(root);
-	}
+	NullCheck.notNull(page, "page");
+	// get all childs without parent (it must have only one)
+	final SelectorChildren selector = page.rootChildren(false);
+	final ElementIterator it = page.iterator();
+	selector.moveFirst(it);
+	root = new WebText(null, it.clone());
+	//Enumerating all children
+	do {
+	    make_(page, root, it.getChildren(false));
+	} while(selector.moveNext(it));
+	cleanup(root);
+	elementInit(root);
+    }
 
     private void make_(Browser page,WebElement parent,Selector selector)
-	{
-	    NullCheck.notNull(page, "page");
-	    NullCheck.notNull(parent, "parent");
-	    NullCheck.notNull(selector, "selector");
-		final ElementIterator nodeIt = page.iterator();
-		// have no childs
-		if(!selector.moveFirst(nodeIt)) return;
-		//System.out.println("* PARENT "+(list.getParent()==null?"null":list.getParent().getType()));
-		// enumerate childs
-		while(true)
+    {
+	NullCheck.notNull(page, "page");
+	NullCheck.notNull(parent, "parent");
+	NullCheck.notNull(selector, "selector");
+	final ElementIterator nodeIt = page.iterator();
+	if(!selector.moveFirst(nodeIt))
+	    return;
+	//Enumerating all children
+	do {
+	    final WebElement element;
+	    if(nodeIt.isEditable())
+	    {
+		switch(nodeIt.getType())
 		{
-			//System.out.println("*   "+list.getType()+": "+list.getText().replace("\n"," "));
-			WebElement element;
-			if(nodeIt.isEditable())
-			{
- 				switch(nodeIt.getType())
-				{
-					case "input checkbox":
-						element=new WebCheckbox(parent,nodeIt.clone());
-						break;
-					case "input radio":
-						element=new WebRadio(parent,nodeIt.clone());
-						break;
-					case "input button":
-						element=new WebButton(parent,nodeIt.clone());
-						break;
-					case "select":
-						element=new WebSelect(parent,nodeIt.clone());
-						break;
-					default:
-						element=new WebEdit(parent,nodeIt.clone());
-				}
-			} else
-			switch(nodeIt.getType())
-			{
-				case "link":
-					element=new WebText(parent,nodeIt.clone());
-					element.setAttribute("href",nodeIt.getLink());
-					break;
-				case "button":
-					element=new WebButton(parent,nodeIt.clone());
-				break;
-				case "list":
-					element=new WebList(parent,nodeIt.clone());
-					break;
-				case "li":
-					element=new WebListElement(parent,nodeIt.clone());
-					break;
-				case "table":
-					element=new WebTable(parent,nodeIt.clone());
-					break;
-				case "tr":
-					element=new WebTableRow(parent,nodeIt.clone());
-					break;
-				case "td":
-				case "th":
-					element=new WebTableCell(parent,nodeIt.clone());
-					break;
-				default:
-					element=new WebText(parent,nodeIt.clone());
-				break;
-			}
-			if(nodeIt.forTEXT())
-			{ // it can have text but no recurse
-				
-			} else
-			{ // it can have computed text but have recurse
-				//System.out.println("*   recurse "+list.getType());
-				make_(page,element,nodeIt.getChildren(false));
-			}
-			parent.getChildren().add(element);
-			if(!selector.moveNext(nodeIt)) break;
+		case "input checkbox":
+		    element = new WebCheckbox(parent,nodeIt.clone());
+		    break;
+		case "input radio":
+		    element = new WebRadio(parent,nodeIt.clone());
+		    break;
+		case "input button":
+		    element = new WebButton(parent,nodeIt.clone());
+		    break;
+		case "select":
+		    element = new WebSelect(parent,nodeIt.clone());
+		    break;
+		default:
+		    element=new WebEdit(parent,nodeIt.clone());
 		}
-	}
-	private void cleanup(WebElement element)
-	{
-		// clean childs
-		int cnt=0;
+	    } else
+		switch(nodeIt.getType())
+		{
+		case "link":
+		    element=new WebText(parent,nodeIt.clone());
+		    element.setAttribute("href",nodeIt.getLink());
+		    break;
+		case "button":
+		    element = new WebButton(parent,nodeIt.clone());
+		    break;
+		case "list":
+		    element = new WebList(parent,nodeIt.clone());
+		    break;
+		case "li":
+		    element = new WebListElement(parent,nodeIt.clone());
+		    break;
+		case "table":
+		    element = new WebTable(parent,nodeIt.clone());
+		    break;
+		case "tr":
+		    element = new WebTableRow(parent,nodeIt.clone());
+		    break;
+		case "td":
+		case "th":
+		    element = new WebTableCell(parent,nodeIt.clone());
+		break;
+		default:
+		    element=new WebText(parent,nodeIt.clone());
+		    break;
+		}
+	    if(!nodeIt.forTEXT())
+		make_(page,element,nodeIt.getChildren(false));
+	    parent.getChildren().add(element);
+	} while(selector.moveNext(nodeIt));
+    }
+
+    private void cleanup(WebElement element)
+    {
+	// clean childs
+		int cnt = 0;
 		for(WebElement child:element.getChildren())
 		{
-			cleanup(child);
-			if(!child.isDeleted())
-				cnt++;
+		    cleanup(child);
+		    if(!child.isDeleted())
+			cnt++;
 		}
 		// remove this if have no child and invisible
 		if(cnt==0&&!element.isVisible())
-			element.toDelete();
+		    element.toDelete();
 		// remove marked
 		Iterator<WebElement> i=element.getChildren().iterator();
 		while (i.hasNext())
