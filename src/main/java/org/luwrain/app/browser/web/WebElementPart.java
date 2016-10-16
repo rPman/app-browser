@@ -3,21 +3,30 @@ package org.luwrain.app.browser.web;
 
 import org.luwrain.core.*;
 
-/** structure to store WebElement link and position in line or text part inside */
+/**
+ * A fragment of a text representation of WebElement, purposed to be able
+ * to split in case the line doesn't have a necessary length.
+ *
+ * @see WebElement WebView WebViewBuilder
+ */
 public class WebElementPart
 {
+    /** The source element this part is a fragment of*/
     public final WebElement element;
 
-    /** cached part of element text (full element or part, if element contains on multiple lines) */
-    public final String text;
+    /**A copy of the text this part represents (the exact substring of a source text)*/
+    final String text;
 
-    /** text length */
-    public final int textLength; 
+    /**The length of the text*/
+    final int textLength; 
 
-    /** text part position in WebElement text */
-    public final int from,to;
+    /**The starting point of this part in source web element (meaning, its text representation)*/
+    private final int from;
 
-    /** text position on line (for example 0 if element begin in line) */
+    /**The ending point of this part in source web element (meaning, its text representation)*/
+    private final int to;
+
+    /**The offset from the line beginning this part starts at*/
     public final int pos;
 
     WebElementPart(WebElement el, String text, int textLen,
@@ -31,5 +40,10 @@ public class WebElementPart
 	this.pos = pos;
 	this.from = from;
 	this.to = to;
+    }
+
+    @Override public String toString()
+    {
+	return text;
     }
 }

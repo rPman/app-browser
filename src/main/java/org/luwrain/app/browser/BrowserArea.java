@@ -169,7 +169,7 @@ class BrowserArea extends NavigationArea
 		{
 			WebElementPart part=wView.getElementByPos(getHotPointX(),getHotPointY());
 			if(part!=null)
-				environment.say(part.text);
+			    environment.say(part.toString());
 		}
 		return super.onKeyboardEvent(event);
 	}
@@ -511,7 +511,7 @@ wView = builder.build();
 		//
 		WebElementPart part=wView.getElementByPos(getHotPointX(),getHotPointY());
 		if(part!=null)
-			environment.say(part.text);
+		    environment.say(part.toString());
 		environment.onAreaNewContent(this);
 		luwrain.onAreaNewContent(this);
 	}
