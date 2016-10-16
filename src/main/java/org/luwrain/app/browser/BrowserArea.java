@@ -154,104 +154,74 @@ class BrowserArea extends NavigationArea
 			return super.onEnvironmentEvent(event);
 		}
 	}
-	
-	private boolean onThreadSyncEvent(EnvironmentEvent event)
+
+    private boolean onThreadSyncEvent(EnvironmentEvent event)
+    {
+	NullCheck.notNull(event, "event");
+	if (event instanceof PromptEvent)
 	{
-		if (event instanceof PageChangeStateEvent)
-		{
-			final PageChangeStateEvent changeState = (PageChangeStateEvent)event;
-			onPageChangeState(changeState.state());
-			return true;
-		}
-		if (event instanceof ProgressEvent)
-		{
-			final ProgressEvent progress = (ProgressEvent)event;
-			onProgress(progress.value());
-			return true;
-		}
-		if (event instanceof AlertEvent)
-		{
-			Log.debug("web","t:"+Thread.currentThread().getId()+" ALERT event inside area");
-			final AlertEvent alert = (AlertEvent)event;
-			onAlert(alert.message());
-			return true;
-		}
-		if (event instanceof PromptEvent)
-		{
-			Log.debug("web","t:"+Thread.currentThread().getId()+" PROMPT event inside area");
-			final PromptEvent prompt = (PromptEvent)event;
-			final String answer = onPrompt(prompt.message(), prompt.value());
-			prompt.setAnswer (answer);
-			return true;
-		}
-		if (event instanceof ErrorEvent)
-		{
-			final ErrorEvent error = (ErrorEvent)event;
-			onError(error.message());
-			return true;
-		}
-		if (event instanceof DownloadEvent)
-		{
-			final DownloadEvent download = (DownloadEvent)event;
-			onDownloadStart(download.url());
-			return true;
-		}
-		if (event instanceof ConfirmEvent)
-		{
-			final ConfirmEvent confirm = (ConfirmEvent)event;
-			final boolean answer = onConfirm(confirm.message());
-			confirm.setAnswer(answer);
-			return true;
-		}
-		if(event instanceof CheckChangesEvent)
-		{
-			if(state!=WebState.SUCCEEDED) return true;
-			
-			if(page.isBusy()) return true;
-			//if(wView.getLinesCount()<=getHotPointY()) return true;
-			final Vector<WebElementPart> line=wView.getPartsByLineIndex(getHotPointY());
-			if(line==null||line.size()==0) return true;
-			scanPos=line.get(0).element.getElement().getPos();
-			
-			if(elementsForScan.isChangedAround(textSelectorInvisible,scanPos,PAGE_SCANNER_AROUND_ELEMENTS_COUNT))
-			{ // detected changes, add event to rescan page dom
-				onRescanPageDom();
-			}
-			return true;
-		}
-		return false;
+	    Log.debug("web","t:"+Thread.currentThread().getId()+" PROMPT event inside area");
+	    final PromptEvent prompt = (PromptEvent)event;
+	    final String answer = onPrompt(prompt.message(), prompt.value());
+	    prompt.setAnswer (answer);
+	    return true;
 	}
+	if (event instanceof ConfirmEvent)
+	{
+	    final ConfirmEvent confirm = (ConfirmEvent)event;
+	    final boolean answer = onConfirm(confirm.message());
+	    confirm.setAnswer(answer);
+	    return true;
+	}
+	if(event instanceof CheckChangesEvent)
+	{
+	    if(state!=WebState.SUCCEEDED) return true;
+	    if(page.isBusy()) return true;
+	    //if(wView.getLinesCount()<=getHotPointY()) return true;
+	    final Vector<WebElementPart> line=wView.getPartsByLineIndex(getHotPointY());
+	    if(line==null||line.size()==0) return true;
+	    scanPos=line.get(0).element.getElement().getPos();
+	    if(elementsForScan.isChangedAround(textSelectorInvisible,scanPos,PAGE_SCANNER_AROUND_ELEMENTS_COUNT))
+	    { // detected changes, add event to rescan page dom
+		onRescanPageDom();
+	    }
+	    return true;
+	}
+	return false;
+    }
+
     void onPageChangeState(WebState state)
+    {
+	NullCheck.notNull(state, "state");
+	this.state=state;
+	switch(state)
 	{
-	    NullCheck.notNull(state, "state");
-		this.state=state;
-		switch(state)
-		{
-			case SCHEDULED:
-				return;
-			case RUNNING:
-				luwrain.message("Загрузка страницы");
-				return;
-			case SUCCEEDED:
-				onRescanPageDom();
-				luwrain.message("Страница загружена", Luwrain.MESSAGE_DONE);
-				return;
-			case READY:
-				// luwrain.message("Страница загружена", Luwrain.MESSAGE_DONE);
-				return;
-			case FAILED:
-				luwrain.message("Страница не может быть загружена", Luwrain.MESSAGE_ERROR);
-				return;
-			case CANCELLED:
-				return;
-		}
-		System.out.println("browser:unhandled page state changing:" + state);
+	case SCHEDULED:
+	    return;
+	case RUNNING:
+	    luwrain.message("Загрузка страницы");
+	    return;
+	case SUCCEEDED:
+	    onRescanPageDom();
+	    luwrain.message("Страница загружена", Luwrain.MESSAGE_DONE);
+	    return;
+	case READY:
+	    // luwrain.message("Страница загружена", Luwrain.MESSAGE_DONE);
+	    return;
+	case FAILED:
+	    luwrain.message("Страница не может быть загружена", Luwrain.MESSAGE_ERROR);
+	    return;
+	case CANCELLED:
+	    return;
 	}
-void onProgress(Number progress)
-	{
-	    NullCheck.notNull(progress, "progress");
-		this.progress=(int)(progress==null?0:Math.floor(progress.doubleValue()*100));
-	}
+	System.out.println("browser:unhandled page state changing:" + state);
+    }
+
+    void onProgress(Number progress)
+    {
+	NullCheck.notNull(progress, "progress");
+	this.progress=(int)(progress==null?0:Math.floor(progress.doubleValue()*100));
+    }
 
 void onAlert(final String message)
 	{
