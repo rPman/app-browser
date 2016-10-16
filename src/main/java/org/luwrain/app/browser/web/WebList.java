@@ -19,7 +19,7 @@ public class WebList extends WebEdit
 	@Override public void init()
 	{
 		// try to compute size
-		String ctext=rootElement.getComputedText();
+		final String ctext = nodeIt.getComputedText();
 		// calculate numbers for elements and detect multilevel
 		liCount=0;
 		isMultilevel=false;
@@ -63,16 +63,16 @@ public class WebList extends WebEdit
 	}
 	@Override public String getTextSay()
 	{
-		return rootElement.getText();
+		return nodeIt.getText();
 	}
 	@Override public String getTextView()
 	{
-		return "["+getType().name()+" "+rootElement.getText()+"]";
+		return "["+getType().name()+" " + nodeIt.getText()+"]";
 	}
 	@Override public String getTextShort()
 	{
 		String ordered;
-		switch(rootElement.getType())
+		switch(nodeIt.getType())
 		{
 			case "ol":
 				ordered="ordered";

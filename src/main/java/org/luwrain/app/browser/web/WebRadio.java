@@ -14,10 +14,10 @@ public class WebRadio extends WebEdit
 	}
 	@Override public String getTextSay()
 	{
-		return rootElement.getText();
+		return nodeIt.getText();
 	}
 	@Override public String getTextView()
 	{
-		return "["+getType().name()+" "+rootElement.getText()+"]";
+		return "["+getType().name()+" " + nodeIt.getText() + "]";
 	}
 }

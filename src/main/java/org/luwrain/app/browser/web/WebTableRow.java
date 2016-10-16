@@ -19,11 +19,11 @@ public class WebTableRow extends WebText
 	}
 	@Override public String getTextSay()
 	{
-		return rootElement.getText();
+		return nodeIt.getText();
 	}
 	@Override public String getTextView()
 	{
-		return rootElement.getText();
+		return nodeIt.getText();
 	}
 	@Override public String getTextShort()
 	{

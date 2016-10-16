@@ -14,10 +14,10 @@ public class WebCheckbox extends WebEdit
 	}
 	@Override public String getTextSay()
 	{
-		return rootElement.getText();
+		return nodeIt.getText();
 	}
 	@Override public String getTextView()
 	{
-		return "["+getType()+" "+rootElement.getText()+"]";
+		return "["+getType()+" " + nodeIt.getText()+"]";
 	}
 }

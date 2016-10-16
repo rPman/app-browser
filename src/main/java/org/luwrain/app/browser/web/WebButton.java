@@ -16,11 +16,11 @@ class WebButton extends WebText
 
     @Override public String getTextSay()
     {
-	return "Кнопка " + rootElement.getText();
+	return "Кнопка " + nodeIt.getText();
     }
 
     @Override public String getTextView()
     {
-	return "["+getType()+" "+rootElement.getText()+"]";
+	return "["+getType()+" " + nodeIt.getText() + "]";
     }
 }

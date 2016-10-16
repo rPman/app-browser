@@ -34,7 +34,7 @@ public class WebText implements WebElement
     protected LinkedHashMap<String,String> attributes=new LinkedHashMap<String,String>();
 
     // link to web page node
-    protected final ElementIterator rootElement;
+    protected final ElementIterator nodeIt;
 
     // WebView related attributes
     protected boolean needToBeExpanded=true;
@@ -53,7 +53,7 @@ public class WebText implements WebElement
 	//Breaks page loading, subject to debug: NullCheck.notNull(parent, "parent");
 	NullCheck.notNull(element, "element");
 	this.parent = parent;
-	this.rootElement = element;
+	this.nodeIt = element;
     }
 
     @Override public Type getType()
@@ -93,28 +93,28 @@ public class WebText implements WebElement
     @Override public String getTextSay()
     {
 	// FIXME: make link sayble in Navigation area but not in WebElement
-	String res=rootElement.getText();
+	String res=nodeIt.getText();
 	if(attributes.containsKey("href"))
-	    res="Ссылка "+rootElement.getText();
+	    res="Ссылка "+nodeIt.getText();
 	return res;
     }
 
     @Override public String getTextView()
     {
-	String res=rootElement.getText();
+	String res=nodeIt.getText();
 	if(attributes.containsKey("href"))
-	    res="[Link: "+rootElement.getText()+"]";
+	    res="[Link: "+nodeIt.getText()+"]";
 	return res;
     }
 
     @Override public String getTextShort()
     {
-	return rootElement.getType();
+	return nodeIt.getType();
     }
 
     @Override public ElementIterator getNode()
     {
-	return rootElement;
+	return nodeIt;
     }
 
     @Override public boolean hasChildren()
@@ -169,7 +169,7 @@ public class WebText implements WebElement
 
     @Override public boolean isVisible()
     {
-	return rootElement.isVisible();
+	return nodeIt.isVisible();
     }
 
     @Override public WebElement getParent()
@@ -196,16 +196,16 @@ public class WebText implements WebElement
 
     @Override public ElementIterator getElement()
     {
-	return rootElement;
+	return nodeIt;
     }
 
     @Override public void print(int lvl)
     {
 	System.out.print(new String(new char[lvl]).replace("\0", "."));
-	System.out.print("v:"+rootElement.isVisible()+" t:"+rootElement.forTEXT()+" "+rootElement.getType()+":"+rootElement.getText().replace('\n',' ')+
-			 //				" css:"+rootElement.getComputedStyleProperty("font-weight")+
+	System.out.print("v:"+nodeIt.isVisible()+" t:"+nodeIt.forTEXT()+" "+nodeIt.getType()+":"+nodeIt.getText().replace('\n',' ')+
+			 //				" css:"+nodeIt.getComputedStyleProperty("font-weight")+
 			 (attributes.containsKey("href")?", href:"+attributes.get("href"):"")+
-			 " rect:"+rootElement.getRect().x+"x"+rootElement.getRect().y+"-"+(rootElement.getRect().width+rootElement.getRect().x)+"x"+(rootElement.getRect().height+rootElement.getRect().y)+
+			 " rect:"+nodeIt.getRect().x+"x"+nodeIt.getRect().y+"-"+(nodeIt.getRect().width+nodeIt.getRect().x)+"x"+(nodeIt.getRect().height+nodeIt.getRect().y)+
 			 "");
 	System.out.println();
 	for(WebElement e:children)

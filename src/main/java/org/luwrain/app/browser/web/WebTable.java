@@ -17,7 +17,7 @@ public class WebTable extends WebEdit
 	@Override public void init()
 	{
 		// try to compute size
-		String ctext=rootElement.getComputedText();
+		final String ctext = nodeIt.getComputedText();
 		// calculate numbers for elements
 		row=0;
 		col=0;
@@ -71,11 +71,11 @@ public class WebTable extends WebEdit
 	}
 	@Override public String getTextSay()
 	{
-		return rootElement.getText();
+		return nodeIt.getText();
 	}
 	@Override public String getTextView()
 	{
-		return "["+getType().name()+" "+rootElement.getText()+"]";
+		return "["+getType().name()+" " + nodeIt.getText() + "]";
 	}
 	@Override public String getTextShort()
 	{

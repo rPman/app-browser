@@ -16,10 +16,10 @@ public class WebSelect extends WebEdit
 	}
 	@Override public String getTextSay()
 	{
-		return getType().name()+" "+rootElement.getText();
+		return getType().name()+" " + nodeIt.getText();
 	}
 	@Override public String getTextView()
 	{
-		return "["+getType().name()+" "+rootElement.getText()+"]";
+		return "["+getType().name()+" " + nodeIt.getText()+"]";
 	}
 }
