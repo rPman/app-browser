@@ -128,13 +128,15 @@ return new WebView(lines, cache);
 					// get last splitter to append element
 					splitter=last.getSplitter();
 				}
-				WebElementPart webpart=new WebElementPart();
+				final WebElementPart webpart=new WebElementPart(element, part, partLength, lastWidth, from, from + partLength);
+				/*
 				webpart.element=element;
 				webpart.from=from;
 				webpart.text=part;
 				webpart.textLength=partLength;
 				webpart.to=from+partLength;
 				webpart.pos=lastWidth;
+				*/
 				lines.get(lastPos).add(webpart);
 				cache.set(lastPos,cache.get(lastPos)+splitter+part); // not optimal but simple
 				lastWidth+=splitter.length()+partLength;

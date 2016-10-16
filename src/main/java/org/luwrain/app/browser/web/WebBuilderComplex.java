@@ -42,19 +42,18 @@ this.cache = new Vector<String>();
 	last = null;
 	lastWidth = 0;
 	lastPos = 0;
-	// refill
-	for(Vector<WebElement> row:root.getComplexMatrix())
+	for(Vector<WebElement> row: root.getComplexMatrix())
 	{
-	    for(WebElement element:row)
+	    for(WebElement element: row)
 	    {
 		final String text = element.getTextShort();
 		final int textLength=text.length();
 		boolean newline=true;
 		int newWidth=lastWidth;
 		if(last != null) 
-		    newWidth+=last.getSplitter().length();
-		newWidth+=textLength;
-		if(newWidth>widthLimit)
+		    newWidth += last.getSplitter().length();
+		newWidth += textLength;
+		if(newWidth > widthLimit)
 		{
 		    newline=true;
 		    break;
@@ -73,13 +72,15 @@ this.cache = new Vector<String>();
 		    // get last splitter to append element
 		    splitter = last.getSplitter();
 		}
-		final WebElementPart webpart=new WebElementPart();
+		final WebElementPart webpart=new WebElementPart(element, text, partLength, lastWidth, from, from + partLength);
+		/*
 		webpart.element=element;
 		webpart.from=from;
 		webpart.text=text;
 		webpart.textLength=partLength;
 		webpart.to=from+partLength;
 		webpart.pos=lastWidth;
+		*/
 		lines.get(lastPos).add(webpart);
 		cache.set(lastPos,cache.get(lastPos)+splitter+text); // not optimal but simple
 		lastWidth+=splitter.length()+partLength;
