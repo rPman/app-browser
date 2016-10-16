@@ -19,19 +19,20 @@ class Events implements org.luwrain.browser.Events
 
     @Override public void onChangeState(WebState state)
     {
-		luwrain.enqueueEvent(new PageChangeStateEvent(area, state));
+	NullCheck.notNull(state, "state");
+	luwrain.runInMainThread(()->area.			onPageChangeState(state));
     }
 
     @Override public void onProgress(Number progress)
     {
-    	luwrain.enqueueEvent(new ProgressEvent(area, progress));
+	NullCheck.notNull(progress, "progress");
+	luwrain.runInMainThread(()->area.onProgress(progress));
     }
 
     @Override public void onAlert(String message)
     {
-    	AlertEvent event=new AlertEvent(area, message);
-    	luwrain.enqueueEvent(event);
-    	//event.waitForBeProcessed();
+	NullCheck.notNull(message, "message");
+	luwrain.runInMainThread(()->area.onAlert(message));
     }
 
     @Override public String onPrompt(String message, String value)
@@ -46,12 +47,14 @@ class Events implements org.luwrain.browser.Events
 
     @Override public void onError(String message)
     {
-    	luwrain.enqueueEvent(new ErrorEvent(area, message));
+	NullCheck.notNull(message, "message");
+	luwrain.runInMainThread(()->area.onError(message));
     }
 
     @Override public boolean onDownloadStart(String url)
     {
-    	luwrain.enqueueEvent(new DownloadEvent(area, url));
+	NullCheck.notNull(url, "url");
+	luwrain.runInMainThread(()->area.onDownloadStart(url));
     	return true;
     }
 

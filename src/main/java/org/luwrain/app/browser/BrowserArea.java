@@ -221,8 +221,9 @@ class BrowserArea extends NavigationArea
 		}
 		return false;
 	}
-	private void onPageChangeState(WebState state)
+    void onPageChangeState(WebState state)
 	{
+	    NullCheck.notNull(state, "state");
 		this.state=state;
 		switch(state)
 		{
@@ -246,13 +247,15 @@ class BrowserArea extends NavigationArea
 		}
 		System.out.println("browser:unhandled page state changing:" + state);
 	}
-	private void onProgress(Number progress)
+void onProgress(Number progress)
 	{
+	    NullCheck.notNull(progress, "progress");
 		this.progress=(int)(progress==null?0:Math.floor(progress.doubleValue()*100));
 	}
 
-	private void onAlert(final String message)
+void onAlert(final String message)
 	{
+	    NullCheck.notNull(message, "message");
 		if (message == null || message.trim().isEmpty()) return;
 		luwrain.message("Внимание!" + message, Luwrain.MESSAGE_OK);
 	}
@@ -264,13 +267,13 @@ class BrowserArea extends NavigationArea
 		return "";//result;
 	}
 
-	private void onError(String message)
+    void onError(String message)
 	{
 		if (message == null || message.trim().isEmpty()) return;
    		luwrain.message (message, Luwrain.MESSAGE_ERROR);
 	}
 
-	private boolean onDownloadStart(String url)
+boolean onDownloadStart(String url)
 	{
 	return true;
 	}
@@ -348,7 +351,7 @@ class BrowserArea extends NavigationArea
 		setHotPoint(x,y);
     }
 
-	private void onChangeCurrentPageLink()
+    private void onChangeCurrentPageLink()
 	{
 		String link = Popups.simple(luwrain, "Открыть страницу", "Введите адрес страницы:", "http://");
 		if(link==null||link=="") 
