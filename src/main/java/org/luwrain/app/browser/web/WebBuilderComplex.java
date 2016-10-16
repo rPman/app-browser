@@ -16,7 +16,7 @@ class WebBuilderComplex implements WebViewBuilder
     /** cache of string lines for web elements view, must have size equal lines */ 
     private final Vector<String> cache;
 
-    /** width limit for current refill */
+    /**The maximum line length we may use in our process*/
     private final int widthLimit;
 
     /** last element, added to lines */

@@ -8,17 +8,12 @@ import org.luwrain.core.*;
 
 class WebBuilderNormal implements WebViewBuilder
 {
-	/** root web element used to fill lines */
 	private final WebElement root;
+	private final Vector<Vector<WebElementPart>> lines = new Vector<Vector<WebElementPart>>();;
+	private final Vector<String> cache = new Vector<String>();
 
-	/** list of lines and each contains linst of WebElement parts */
-	private final Vector<Vector<WebElementPart>> lines;
-
-	/** cache of string lines for web elements view, must have size equal lines */ 
-	private final Vector<String> cache;
-
-	/** width limit for current refill */
-	private final int widthLimit;
+    /**The maximum line length we may use in our process*/
+    private final int maxWidth;
 
 	/** last element, added to lines */
 	private WebElement last;
@@ -27,63 +22,54 @@ class WebBuilderNormal implements WebViewBuilder
 	private int lastWidth;
 
 	/** last line num */
-	private int lastPos;
+	private int lastNum;
 
-    WebBuilderNormal(WebElement root, int width)
+    WebBuilderNormal(WebElement root, int maxWidth)
     {
 	NullCheck.notNull(root, "root");
 	this.root = root;
-this.widthLimit = width;
-this.lines = new Vector<Vector<WebElementPart>>();
-this.cache = new Vector<String>();
+this.maxWidth = maxWidth;
     }
 
     @Override public WebView build()
     {
-		last=null;
-		lastWidth=0;
-		lastPos=0;
-		// refill
-		refill(root);
-return new WebView(lines, cache);
-	}
+		last = null;
+		lastWidth = 0;
+		lastNum = 0;
+		build(root);
+		return new WebView(lines, cache);
+    }
 
-	/** recursive method, add element to end of lines */
-	private void refill(WebElement element)
+	private void build(WebElement element)
 	{
-		if((!element.needToBeComplex()||element==root)&&element.needToBeExpanded()&&element.hasChildren())
+	    NullCheck.notNull(element, "element");
+		if((!element.needToBeComplex() || element == root) &&
+element.needToBeExpanded() && element.hasChildren())
 		{ // we must expand this web element
-			for(WebElement child:element.getChildren())
-			{
-				refill(child);
-			}
+			for(WebElement child: element.getChildren())
+			    build(child);
 		} else
 		{ // we must use root element if it must not expanded or have no childs
 			// get element text before (optimization - we need known text line length before using it)
-			String text;
+			final String text;
 			if(element.needToBeComplex())
-			{
-				text=element.getTextShort();
-			} else
-			{
-				text=element.getTextSay();
-			}
-			int textLength=text.length();
-			String[] splited=Utils.splitTextForScreen(widthLimit,text);
+				text = element.getTextShort(); else
+				text = element.getTextSay();
+			final int textLength = text.length();
+			final String[] splitted = Utils.splitTextForScreen(maxWidth, text);
 			// new line or not?
 			boolean newline=false;
-			do // single step loop only for break statement
-			{
+			do {// single step loop only for break statement
 				// first element
-				if(last==null)
+				if(last == null)
 				{
-					newline=true;
+					newline = true;
 					break;
 				}
 				// check for last element can placed before
 				if(last.needEndLine())
 				{
-					newline=true;
+					newline = true;
 					break;
 				}
 				// check this element must not first at line
@@ -93,18 +79,19 @@ return new WebView(lines, cache);
 					break;
 				}
 				// check this element designed on html have Y pos not like last element
-				Rectangle re=element.getElement().getRect();
-				Rectangle rl=last.getElement().getRect();
+Rectangle re=element.getElement().getRect();
+				final Rectangle rl=last.getElement().getRect();
 				if(rl.y>=re.y+re.height||re.y>=rl.y+rl.height)
 				{
 					newline=true;
 					break;
 				}
 				// check for width limit
-				int newWidth=lastWidth;
-				if(last!=null) newWidth+=last.getSplitter().length();
+				int newWidth = lastWidth;
+				if(last!=null) 
+newWidth+=last.getSplitter().length();
 				newWidth+=textLength;
-				if(newWidth>widthLimit)
+				if(newWidth > maxWidth)
 				{
 					newline=true;
 					break;
@@ -112,41 +99,30 @@ return new WebView(lines, cache);
 			} while(false);
 			// from - current position of element part in text
 			int from=0;
-			for(String part:splited)
+			for(String part: splitted)
 			{
-				int partLength=part.length();
+				final int partLength=part.length();
 				String splitter="";
 				if(newline)
 				{
-					//
 					lines.add(new Vector<WebElementPart>());
 					cache.add("");
-					lastPos=lines.size()-1; // we can use lastPos++ but size-1 more reliable
-					lastWidth=0;
+					lastNum = lines.size() - 1;//More reliable than ++lastNum
+					lastWidth = 0;
 				} else
-				{ // we known last is not null
+				{ //We sure last is not null
 					// get last splitter to append element
-					splitter=last.getSplitter();
+					splitter = last.getSplitter();
 				}
-				final WebElementPart webpart=new WebElementPart(element, part, partLength, lastWidth, from, from + partLength);
-				/*
-				webpart.element=element;
-				webpart.from=from;
-				webpart.text=part;
-				webpart.textLength=partLength;
-				webpart.to=from+partLength;
-				webpart.pos=lastWidth;
-				*/
-				lines.get(lastPos).add(webpart);
-				cache.set(lastPos,cache.get(lastPos)+splitter+part); // not optimal but simple
-				lastWidth+=splitter.length()+partLength;
+				//				final WebElementPart webpart=new WebElementPart(element, part, partLength, lastWidth, from, from + partLength);
+				lines.get(lastNum).add(new WebElementPart(element, part, partLength, lastWidth, from, from + partLength));
+				cache.set(lastNum,cache.get(lastNum)+splitter+part); // not optimal but simple
+				lastWidth += splitter.length()+partLength;
 				// next line for multiline text always new
-				newline=true;
-				from+=partLength;
-				// 
-				last=element;
+				newline = true;
+				from += partLength;
+				last = element;
 			}
 		}
 	}
-
 }
