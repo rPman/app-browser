@@ -75,28 +75,78 @@ class BrowserArea extends NavigationArea
 	pageScanner.schedule();
     }
 
-
     void onTimerElementScan()
     {
 	if(state!=WebState.SUCCEEDED) return;
 	luwrain.enqueueEvent(new CheckChangesEvent(this));
     }
 
-
-	@Override public String getAreaName()
+    /**
+     * Performs DOM scanning with updating the auxiliary structures used for
+     * user navigation. This method may be called only if the page is
+     * successfully loaded and the browser isn't busy with background work.
+     *
+     * @return true if the browser is free and able to do the refreshing, false otherwise
+     */
+    boolean refresh()
+    {
+	Log.debug("browser", "starting DOM refreshing");
+	if(state != WebState.SUCCEEDED)
+	    return false;
+	if(page.isBusy())
 	{
-		return page.getTitle()+" "+state.name()+" "+progress;
+	    Log.warning("browser", "trying to refresh DOM with busy browser");
+	    return false;
 	}
+	page.RescanDOM();
+	elementsForScan=page.iterator();
+	textSelectorInvisible=page.selectorText(false,null);
+	wDoc = new WebDocument();
+	wDoc.make(page);
+	wDoc.getRoot().print(1);
+	element = wDoc.getRoot();
+	complexMode=false;
+	refill();
+	Log.debug("browser", "DOM refreshed");
+	return true;
+    }
 
-	@Override public int getLineCount()
-	{
-		return wView.getLineCount();
-	}
+    /**Checks if the browser has valid loaded page
+     *
+     * @return true if there is any successfully loaded page, false otherwise
+     */ 
+    boolean isEmpty()
+    {
+	return true;
+    }
 
-	@Override public String getLine(int index)
-	{
-		return wView.getLineByIndex(index);
-	}
+    /**Checks if the browser is doing any background work (usually fetching
+     * and loading the pages). In this state the browser has very limited
+     * functionality, but allows user navigation over the previously loaded
+     * page.
+     *
+     * @return true if the browser is busy with background tasks, false otherwise
+     */
+    boolean isBusy()
+    {
+	return page.isBusy();
+    }
+
+
+    @Override public String getAreaName()
+    {
+	return page.getTitle()+" "+state.name()+" "+progress;
+    }
+
+    @Override public int getLineCount()
+    {
+	return wView.getLineCount();
+    }
+
+    @Override public String getLine(int index)
+    {
+	return wView.getLineByIndex(index);
+    }
 
 	@Override public boolean onKeyboardEvent(KeyboardEvent event)
 	{
@@ -110,11 +160,9 @@ class BrowserArea extends NavigationArea
 			onBreakCommand();
 			return true;
 		case F5: 
-			onRescanPageDom();
-			return true;
+		    return refresh();
 		case F6: 
-			onChangeCurrentPageLink();
-			return true;
+		    return onOpenUrl();
 		case ALTERNATIVE_ARROW_LEFT:
 			return onElementNavigateLeft();
 		case ALTERNATIVE_ARROW_RIGHT:
@@ -183,7 +231,7 @@ class BrowserArea extends NavigationArea
 	    scanPos=line.get(0).element.getElement().getPos();
 	    if(elementsForScan.isChangedAround(textSelectorInvisible,scanPos,PAGE_SCANNER_AROUND_ELEMENTS_COUNT))
 	    { // detected changes, add event to rescan page dom
-		onRescanPageDom();
+		refresh();
 	    }
 	    return true;
 	}
@@ -202,8 +250,9 @@ class BrowserArea extends NavigationArea
 	    luwrain.message("Загрузка страницы");
 	    return;
 	case SUCCEEDED:
-	    onRescanPageDom();
-	    luwrain.message("Страница загружена", Luwrain.MESSAGE_DONE);
+	    refresh();
+	    //	    luwrain.message("Страница загружена", Luwrain.MESSAGE_DONE);
+	    luwrain.message(page.getTitle(), Luwrain.MESSAGE_DONE);
 	    return;
 	case READY:
 	    // luwrain.message("Страница загружена", Luwrain.MESSAGE_DONE);
@@ -220,32 +269,36 @@ class BrowserArea extends NavigationArea
     void onProgress(Number progress)
     {
 	NullCheck.notNull(progress, "progress");
-	this.progress=(int)(progress==null?0:Math.floor(progress.doubleValue()*100));
+	this.progress = (int)(progress==null?0:Math.floor(progress.doubleValue()*100));
     }
 
-void onAlert(final String message)
-	{
-	    NullCheck.notNull(message, "message");
-		if (message == null || message.trim().isEmpty()) return;
-		luwrain.message("Внимание!" + message, Luwrain.MESSAGE_OK);
+    void onAlert(final String message)
+    {
+	NullCheck.notNull(message, "message");
+	if (message.trim().isEmpty())
+	    return;
+	luwrain.message("Внимание!" + message, Luwrain.MESSAGE_OK);
 	}
 
-	private String onPrompt(final String message,final String value)
+	private String onPrompt(String message, String value)
 	{
-		if (message == null || message.trim().isEmpty()) return null;
+		if (message.trim().isEmpty())
+return null;
 		luwrain.message("Выбор: " +message, Luwrain.MESSAGE_OK);
 		return "";//result;
 	}
 
     void onError(String message)
 	{
-		if (message == null || message.trim().isEmpty()) return;
+	    NullCheck.notNull(message, "message");
+	    if (message.trim().isEmpty())
+return;
    		luwrain.message (message, Luwrain.MESSAGE_ERROR);
 	}
 
-boolean onDownloadStart(String url)
-	{
-	return true;
+    void onDownloadStart(String url)
+    {
+	//FIXME:
 	}
 
 	private  Boolean onConfirm(String message)
@@ -254,34 +307,11 @@ boolean onDownloadStart(String url)
 		return false;
 	}
 
-	private void onBreakCommand()
-	{
-		page.stop();
-	}
-
-    private void onRescanPageDom()
+    private void onBreakCommand()
     {
-    	System.out.println("rescan start");
-		if(state!=WebState.SUCCEEDED)
-		    return;
-		if(page.isBusy())
-		{
-		    Log.debug("web","webpage is busy");
-		    return;
-		}
-		page.RescanDOM();
-		elementsForScan=page.iterator();
-		textSelectorInvisible=page.selectorText(false,null);
-	
-		wDoc=new WebDocument();
-		wDoc.make(page);
-		wDoc.getRoot().print(1);
-		
-		element=wDoc.getRoot();
-		complexMode=false;
-		refill();
-    	System.out.print("rescan end");
+	page.stop();
     }
+
     private void repairHotPoint()
     {
 		int x=getHotPointX(),y=getHotPointY();
@@ -321,16 +351,19 @@ boolean onDownloadStart(String url)
 		setHotPoint(x,y);
     }
 
-    private void onChangeCurrentPageLink()
-	{
+    private boolean onOpenUrl()
+    {
+	if (page.isBusy())
+	    return false;
 		String link = Popups.simple(luwrain, "Открыть страницу", "Введите адрес страницы:", "http://");
-		if(link==null||link=="") 
-			return;
+		if(link==null || link.trim().isEmpty())
+		    return true;
 		if(!link.matches("^(http|https|ftp)://.*$"))
-			link="http://"+link;
+		    link="http://"+link;
 		page.load(link);
 		environment.onAreaNewContent(this);
-	}
+		return true;
+    }
 
 	private boolean onElementNavigateLeft()
 	{ // prev
