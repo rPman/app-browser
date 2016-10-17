@@ -117,7 +117,7 @@ class BrowserArea extends NavigationArea
      */ 
     boolean isEmpty()
     {
-	return true;
+	return false;
     }
 
     /**Checks if the browser is doing any background work (usually fetching
@@ -168,7 +168,7 @@ class BrowserArea extends NavigationArea
 		case ALTERNATIVE_ARROW_RIGHT:
 			return onElementNavigateRight();
 		case ENTER:
-			return onDefaultAction();
+			return onClick();
 		case BACKSPACE:
 			return onHistoryBack();
 		case F10:
@@ -420,58 +420,76 @@ return;
 			return type;
 		}
 	}
-	private boolean onDefaultAction()
-	{
-		WebElementPart part=wView.getElementByPos(getHotPointX(),getHotPointY());
-		if(part==null) return false;
-		if(part.element.needToBeComplex()||complexMode)
-		{ // select complex element as base for view in navigation area
-			// store prev element to history
-			elementHistory.add(new HistoryElement(element,complexMode));
-			complexMode=!complexMode;
-			element=part.element;
-			// refill
-				final WebViewBuilder builder = WebViewBuilder.newBuilder(complexMode?WebViewBuilder.Type.COMPLEX:WebViewBuilder.Type.NORMAL, element,luwrain.getAreaVisibleWidth(this));
-wView = builder.build();
-			/**/wView.print();
-			
-			repairHotPoint();
-			environment.onAreaNewContent(this);
-			luwrain.onAreaNewContent(this);
-			return true;
-		}
-		if(part.element.getElement().isEditable())
-		{ // editable element, edit it
-			if(part.element instanceof WebSelect)
-				onMultiTextEditElement(part);
-			else if(part.element instanceof WebRadio||part.element instanceof WebCheckbox)
-				onClickElement(part);
-			else
-				onEditElement(part);
-		} else
-		{ // any other element - click it
-			onClickElement(part);
-		}
-		return true;
+
+    /**Performs some default action relevant to the element under the hot
+     * point. What exact action will be done is dependent on the type of the
+     * element under the hot point. If there is a form input edit, the user
+     * will get an offer to enter some text. If there is a form list, the
+     * user will get a popup to choose some item from the list and so
+     * on. This operation may be performed only if the browser is free
+     * (meaning, not empty and not busy).
+     *
+     * @return true if the operation has been done, false otherwise (usually the browser is busy or doesn't have a loaded page)
+     */
+    private boolean onClick()
+    {
+	if (isEmpty() || isBusy())
+	    return false;
+	final WebElementPart part=wView.getElementByPos(getHotPointX(),getHotPointY());
+	if(part==null)
+	    return false;
+	if(part.element.needToBeComplex()||complexMode)
+	{ // select complex element as base for view in navigation area
+	    // store prev element to history
+	    elementHistory.add(new HistoryElement(element,complexMode));
+	    complexMode = !complexMode;
+	    element = part.element;
+	    final WebViewBuilder builder = WebViewBuilder.newBuilder(complexMode?WebViewBuilder.Type.COMPLEX:WebViewBuilder.Type.NORMAL, element,luwrain.getAreaVisibleWidth(this));
+	    wView = builder.build();
+	    repairHotPoint();
+	    environment.onAreaNewContent(this);
+	    return true;
 	}
-	private boolean onClickElement(WebElementPart part)
-	{
-		part.element.getElement().clickEmulate();
-		onTimerElementScan();
-		//pageScanner.fast();
-		return true;
+	if(part.element.getElement().isEditable())
+	{ // editable element, edit it
+	    if(part.element instanceof WebRadio||part.element instanceof WebCheckbox)
+		return emulateClick(part);
+	    if(part.element instanceof WebSelect)
+		return onFormSelectFromList(part);
+	    return onFormEditText(part);
 	}
-	private boolean onHistoryBack()
-	{
-		if(elementHistory.isEmpty()) return false;
-		HistoryElement h=elementHistory.lastElement();
-		elementHistory.remove(elementHistory.size()-1);
-		complexMode=h.mode;
-		element=h.element;
-		refill();
-		return true;
-	}
-	
+	return emulateClick(part);
+    }
+
+    /**Asks the browser core to emulate the action which looks like the user
+     * clicks on the given element. This operation may be performed only if
+     * the browser is free (meaning, not empty and not busy).
+     *
+     * @param part The element to emulate click on
+     * @return true if the operation has been done, false otherwise (usually the browser is busy or doesn't have a loaded page)
+     */
+    private boolean emulateClick(WebElementPart part)
+    {
+	NullCheck.notNull(part, "part");
+	if (isEmpty() || isBusy())
+	    return false;
+	part.element.getElement().clickEmulate();
+	onTimerElementScan();
+	//pageScanner.fast();
+	return true;
+    }
+
+    private boolean onHistoryBack()
+    {
+	if(elementHistory.isEmpty()) return false;
+	HistoryElement h=elementHistory.lastElement();
+	elementHistory.remove(elementHistory.size()-1);
+	complexMode=h.mode;
+	element=h.element;
+	refill();
+	return true;
+    }
+
 	private void refill()
 	{
 		final WebViewBuilder builder = WebViewBuilder.newBuilder(complexMode?WebViewBuilder.Type.COMPLEX:WebViewBuilder.Type.NORMAL, element, luwrain.getAreaVisibleWidth(this));
@@ -485,30 +503,43 @@ wView = builder.build();
 		environment.onAreaNewContent(this);
 		luwrain.onAreaNewContent(this);
 	}
-	
-	private void onEditElement(WebElementPart part)
-	{
-		ElementIterator e=part.element.getElement();
-		String oldValue = e.getText();
-		if (oldValue == null) oldValue = "";
-		String newValue = Popups.simple(luwrain, "Редактирование формы", "Введите новое значение текстового поля формы:", oldValue);
-		if (newValue == null) return;
-		e.setText(newValue);
-		refill();
-	}
-	private void onMultiTextEditElement(WebElementPart part)
-	{
-		ElementIterator e=part.element.getElement();
-		String[] listValues = e.getMultipleText();
-		if (listValues.length==0) return; // FIXME:
-		EditListPopup popup=new EditListPopup(luwrain,
-				new EditListPopupUtils.FixedModel(listValues),
-						      "Редактирование формы","Выберите значение из списка",e.getText(), Popups.DEFAULT_POPUP_FLAGS);
-		luwrain.popup(popup);
-		if(popup.closing.cancelled()) return;
-		e.setText(popup.text());
-		refill();
-	}
+
+    private boolean onFormEditText(WebElementPart part)
+    {
+	NullCheck.notNull(part, "part");
+	if (isEmpty() || isBusy())
+	    return false;
+	final ElementIterator e = part.element.getElement();
+	String oldValue = e.getText();
+	if (oldValue == null)
+	    oldValue = "";
+	String newValue = Popups.simple(luwrain, "Редактирование формы", "Введите новое значение текстового поля формы:", oldValue);
+	if (newValue == null) 
+	    return true;
+	e.setText(newValue);
+	refill();
+	return true;
+    }
+
+    private boolean onFormSelectFromList(WebElementPart part)
+    {
+	NullCheck.notNull(part, "part");
+	if (isEmpty() || isBusy())
+	    return false;
+	final ElementIterator e=part.element.getElement();
+	final String[] listValues = e.getMultipleText();
+	if (listValues.length==0) 
+	    return true; // FIXME:
+	EditListPopup popup=new EditListPopup(luwrain,
+					      new EditListPopupUtils.FixedModel(listValues),
+					      "Редактирование формы","Выберите значение из списка",e.getText(), Popups.DEFAULT_POPUP_FLAGS);
+	luwrain.popup(popup);
+	if(popup.closing.cancelled()) 
+	    return true;
+	e.setText(popup.text());
+	refill();
+	return true;
+    }
 
 	private boolean onInfoAction()
 	{
