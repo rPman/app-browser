@@ -103,7 +103,7 @@ class BrowserArea extends NavigationArea
 	textSelectorInvisible=page.selectorText(false,null);
 	wDoc = new WebDocument();
 	wDoc.make(page);
-	wDoc.getRoot().print(1);
+	wDoc.getRoot().print(1,true);
 	element = wDoc.getRoot();
 	complexMode=false;
 	refill();

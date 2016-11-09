@@ -1,6 +1,7 @@
 
 package org.luwrain.app.browser.web;
 
+import java.awt.Rectangle;
 import java.util.*;
 
 import org.luwrain.browser.Browser;
@@ -45,6 +46,9 @@ public class WebText implements WebElement
 
     //
     private boolean toRemove=false;
+
+    private long weight=0;
+	boolean statusBIG=false;
 
     // some other options
 
@@ -199,16 +203,44 @@ public class WebText implements WebElement
 	return nodeIt;
     }
 
-    @Override public void print(int lvl)
+    @Override public void print(int lvl,boolean printChildren)
     {
 	System.out.print(new String(new char[lvl]).replace("\0", "."));
-	System.out.print("v:"+nodeIt.isVisible()+" t:"+nodeIt.forTEXT()+" "+nodeIt.getType()+":"+nodeIt.getText().replace('\n',' ')+
-			 //				" css:"+nodeIt.getComputedStyleProperty("font-weight")+
+	System.out.print("v:"+nodeIt.isVisible()+" t:"+nodeIt.forTEXT()+
+			 " w:"+this.getWeight()+(this.isBIG()?" BIG":"")+" "+
+			 nodeIt.getType()+":"+nodeIt.getText().replace('\n',' ')+
+			 //" css:"+nodeIt.getComputedStyleProperty("font-weight")+
 			 (attributes.containsKey("href")?", href:"+attributes.get("href"):"")+
 			 " rect:"+nodeIt.getRect().x+"x"+nodeIt.getRect().y+"-"+(nodeIt.getRect().width+nodeIt.getRect().x)+"x"+(nodeIt.getRect().height+nodeIt.getRect().y)+
 			 "");
 	System.out.println();
-	for(WebElement e:children)
-	    e.print(lvl+1);
+	if(printChildren)
+		for(WebElement e:children)
+			e.print(lvl+1,true);
     }
+
+	@Override public long getWeight()
+	{
+		return weight;
+	}
+	@Override public void incWeight(long weight)
+	{
+		this.weight+=weight;
+	}
+	@Override public long calcWeight()
+	{
+		// todo make this method on each WebElement more wisely
+		//return 1;
+		// weight from item square
+		Rectangle r=this.nodeIt.getRect();
+		return r.width*r.height;
+	}
+	@Override public boolean isBIG()
+	{
+		return statusBIG;
+	}
+	@Override public void setBIG(boolean isBIG)
+	{
+		statusBIG=isBIG;
+	}
 }

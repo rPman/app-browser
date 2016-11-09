@@ -1,7 +1,9 @@
 
 package org.luwrain.app.browser.web;
 
+import java.util.Comparator;
 import java.util.Iterator;
+import java.util.Vector;
 
 import org.luwrain.browser.Browser;
 import org.luwrain.browser.ElementIterator;
@@ -12,9 +14,22 @@ import org.luwrain.core.*;
 
 public class WebDocument
 {
+	/**  minimal weight limit ratio for element to root document element, to allow select this element as BIG */
+	final double BIG_WEIGHT_LIMIT=0.07;
+	/** minimal rate limit for total weight for some element children with fair distribution of weight */
+	final double BIG_WEIGHT_FAIR_TOTAL=0.4;
+	/** minimal difference between near children (sorted by weight) with fair fair distribution of weight */
+	final double BIG_WEIGHT_FAIR_CHILD=0.4;
+	/** number of this children in element with fair distribution of weight */
+	final int BIG_WEIGHT_FAIR_COUNT=3;	
+	/** max number of BIG element */
+	final int BIG_MAX_COUNT=5;
+	
     // make WebDocument structure for web page, more simple than html document, i.e.  only visible elements and without element with single child
     // only visible elements
     private WebElement root=null;
+    
+    private int currentBigCount=0;
 
     public WebElement getRoot()
     {
@@ -39,9 +54,10 @@ public class WebDocument
 	} while(selector.moveNext(it));
 	cleanup(root);
 	elementInit(root);
+	searchBigElements();
     }
 
-    private void make_(Browser page,WebElement parent,Selector selector)
+	private void make_(Browser page,WebElement parent,Selector selector)
     {
 	NullCheck.notNull(page, "page");
 	NullCheck.notNull(parent, "parent");
@@ -159,7 +175,123 @@ public class WebDocument
 	private void elementInit(WebElement element)
 	{
 		element.init();
-		for(WebElement child:element.getChildren())
-			elementInit(child);
+		// calculate weight
+		if(!element.hasChildren())
+		{
+			element.incWeight(element.calcWeight());
+		} else
+		{
+			for(WebElement child:element.getChildren())
+			{
+				// and init elements
+				elementInit(child);
+				element.incWeight(child.getWeight());
+			}
+		}
 	}
+
+	/* recursive search of elements to detect important BIG elements to remove or hide in UI */
+	private void searchBigElements()
+	{
+		currentBigCount=0;
+		searchBigElements_(1,this.getRoot());
+	}
+	
+	private void searchBigElements_(int lvl,WebElement element)
+	{
+		System.out.print("search: ");element.print(lvl,false);
+		// check BIG element count
+		if(currentBigCount>=BIG_MAX_COUNT)
+		{
+			System.out.println("stop: big count is "+currentBigCount);
+			return;
+		}
+		// check element weight 
+		if((double)element.getWeight()/getRoot().getWeight()<BIG_WEIGHT_FAIR_TOTAL)
+		{
+			System.out.println("stop: rate of element weight to root too small "+((double)element.getWeight()/getRoot().getWeight()));
+			return;
+		}
+		// work with item weight
+		Vector<WebElement> sortedchildren=new Vector<WebElement>();
+		// clone children list
+		for(WebElement child:element.getChildren())
+			sortedchildren.add(child);
+		// sort by weight reversed
+		sortedchildren.sort(new Comparator<WebElement>() {
+			@Override public int compare(WebElement o1,WebElement o2)
+			{
+				if(o1==o2||o1.getWeight()==o2.getWeight()) return 0;
+				// reversed order
+				return o1.getWeight()<o2.getWeight()?1:-1;
+			}});
+		// debug info
+		System.out.print("sorted: ");
+		for(WebElement e:sortedchildren)
+			System.out.print(e.getWeight()+" ");
+		System.out.println();
+		// get first BIG_WEIGHT_FAIR_COUNT children and calculate total weight of them
+		long totalWeight=0;
+		long fairCount=0;
+		WebElement prevChild=null;
+		for(WebElement child:sortedchildren)
+		{
+			totalWeight+=child.getWeight();
+			if(prevChild!=null)
+			{
+				if((double)Long.max(prevChild.getWeight(),child.getWeight())/Long.min(prevChild.getWeight(),child.getWeight())<BIG_WEIGHT_FAIR_CHILD)
+				{
+					// child not in fair distribution, break
+					System.out.println("break: child not in fair");
+					break;
+				}
+			}
+			fairCount++;
+			prevChild=child;
+		}
+		if(fairCount>=BIG_WEIGHT_FAIR_COUNT&&(double)totalWeight/element.getWeight()>=BIG_WEIGHT_FAIR_TOTAL)
+		{
+			// this element is a BIG
+			System.out.println("BIG");
+			element.setBIG(true);
+			// disable big status for parent (small fix of algorithm)
+			WebElement p=element.getParent();
+			while(p!=null)
+			{
+				if(p.isBIG())
+				{
+					p.setBIG(false);
+					currentBigCount--;
+				}
+				p=p.getParent();
+			}
+			// count this BIG
+			if(currentBigCount++>=BIG_MAX_COUNT) return;
+		} else
+		{
+			// compare element weight with max child weight with 
+			if((double)sortedchildren.get(0).getWeight()/getRoot().getWeight()<=BIG_WEIGHT_FAIR_TOTAL)
+			{
+				System.out.println("BIG");
+				element.setBIG(true);
+				// disable big status for parent (small fix of algorithm)
+				WebElement p=element.getParent();
+				while(p!=null)
+				{
+					if(p.isBIG())
+					{
+						p.setBIG(false);
+						currentBigCount--;
+					}
+					p=p.getParent();
+				}
+				// count this BIG
+				if(currentBigCount++>=BIG_MAX_COUNT) return;
+			}
+		}
+		// recurse for all child
+		for(WebElement child:sortedchildren)
+			searchBigElements_(lvl+1,child);
+	}
+
 }

@@ -55,6 +55,18 @@ public interface WebElement
 
 	/** visible root element */
 	boolean isVisible();
+	
+	/** get BIG status for element */
+	boolean isBIG();
+	/** set BIG status */
+	void setBIG(boolean isBIG);
+
+	/** return item weight */
+	long getWeight();
+	/** */
+	void incWeight(long weight);
+	/** return element weight if it leaf (have no children) */
+	long calcWeight();
 
 	/** set element attribute name, for example href  */
 	void setAttribute(String name,String value);
@@ -68,5 +80,8 @@ public interface WebElement
 	/** return matrix for complex mode view, preparied for each complex WebElement on init and used for WebView.refillComplex  */
 	Vector<Vector<WebElement>> getComplexMatrix();
 
-	void print(int lvl);
+	/** print this element debug info
+	 * @param lvl current level in recursive call, for root must be 0
+	 * @param printChildren if true, children will printed recursive */
+	void print(int lvl,boolean printChildren);
 }
