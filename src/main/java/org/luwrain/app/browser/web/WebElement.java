@@ -84,4 +84,11 @@ public interface WebElement
 	 * @param lvl current level in recursive call, for root must be 0
 	 * @param printChildren if true, children will printed recursive */
 	void print(int lvl,boolean printChildren);
+
+    /**
+     * Returns some element description, mostly for debug purposes.
+     *
+     * @return The text description of the element
+     */
+    String getDescr();
 }

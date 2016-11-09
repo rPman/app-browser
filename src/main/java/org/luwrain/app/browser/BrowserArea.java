@@ -360,6 +360,7 @@ return;
 		    return true;
 		if(!link.matches("^(http|https|ftp)://.*$"))
 		    link="http://"+link;
+		Log.debug("browser", "loading URL " + link);
 		page.load(link);
 		environment.onAreaNewContent(this);
 		return true;
