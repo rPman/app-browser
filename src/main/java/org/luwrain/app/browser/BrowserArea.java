@@ -103,7 +103,7 @@ class BrowserArea extends NavigationArea
 	textSelectorInvisible=page.selectorText(false,null);
 	wDoc = new WebDocument();
 	wDoc.make(page);
-	wDoc.getRoot().print(1,true);
+	//wDoc.getRoot().print(1,true);
 	element = wDoc.getRoot();
 	complexMode=false;
 	refill();
@@ -225,6 +225,7 @@ class BrowserArea extends NavigationArea
 	{
 	    if(state!=WebState.SUCCEEDED) return true;
 	    if(page.isBusy()) return true;
+	    if(wView.getLineCount()==0) return true;
 	    //if(wView.getLinesCount()<=getHotPointY()) return true;
 	    final Vector<WebElementPart> line=wView.getPartsByLineIndex(getHotPointY());
 	    if(line==null||line.size()==0) return true;
@@ -360,6 +361,7 @@ return;
 		    return true;
 		if(!link.matches("^(http|https|ftp)://.*$"))
 		    link="http://"+link;
+		Log.debug("browser", "loading URL " + link);
 		page.load(link);
 		environment.onAreaNewContent(this);
 		return true;

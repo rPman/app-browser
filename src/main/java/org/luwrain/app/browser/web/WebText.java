@@ -44,11 +44,8 @@ public class WebText implements WebElement
     protected boolean needEndLine=false;
     protected boolean needToBeComplex=false;
 
-    //
     private boolean toRemove=false;
-
     private long weight=0;
-	boolean statusBIG=false;
 
     // some other options
 
@@ -205,9 +202,10 @@ public class WebText implements WebElement
 
     @Override public void print(int lvl,boolean printChildren)
     {
+	
 	System.out.print(new String(new char[lvl]).replace("\0", "."));
 	System.out.print("v:"+nodeIt.isVisible()+" t:"+nodeIt.forTEXT()+
-			 " w:"+this.getWeight()+(this.isBIG()?" BIG":"")+" "+
+			 " w:"+this.getWeight()+" "+
 			 nodeIt.getType()+":"+nodeIt.getText().replace('\n',' ')+
 			 //" css:"+nodeIt.getComputedStyleProperty("font-weight")+
 			 (attributes.containsKey("href")?", href:"+attributes.get("href"):"")+
@@ -217,30 +215,22 @@ public class WebText implements WebElement
 	if(printChildren)
 		for(WebElement e:children)
 			e.print(lvl+1,true);
+	
     }
 
 	@Override public long getWeight()
 	{
 		return weight;
 	}
-	@Override public void incWeight(long weight)
+
+	@Override public void incWeight(long value)
 	{
-		this.weight+=weight;
+		this.weight += value;
 	}
-	@Override public long calcWeight()
-	{
-		// todo make this method on each WebElement more wisely
-		//return 1;
-		// weight from item square
-		Rectangle r=this.nodeIt.getRect();
-		return r.width*r.height;
-	}
-	@Override public boolean isBIG()
-	{
-		return statusBIG;
-	}
-	@Override public void setBIG(boolean isBIG)
-	{
-		statusBIG=isBIG;
-	}
+
+    @Override public String getDescr()
+    {
+	NullCheck.notNull(nodeIt, "nodeIt");
+	return nodeIt.getType() + " " + nodeIt.getText();
+    }
 }
