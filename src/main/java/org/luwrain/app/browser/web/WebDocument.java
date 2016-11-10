@@ -171,6 +171,7 @@ public class WebDocument
 	public void elementInit(WebElement element, Weight.Calculator calculator)
 	{
 		element.init();
+		element.incWeight(-1*element.getWeight()); // TODO: make weight zero at init or add method
 		// calculate weight
 		if(!element.hasChildren())
 		{
@@ -185,5 +186,6 @@ public class WebDocument
 			}
 		}
 	}
+
 
 }

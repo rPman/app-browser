@@ -202,7 +202,7 @@ public class WebText implements WebElement
 
     @Override public void print(int lvl,boolean printChildren)
     {
-
+	
 	System.out.print(new String(new char[lvl]).replace("\0", "."));
 	System.out.print("v:"+nodeIt.isVisible()+" t:"+nodeIt.forTEXT()+
 			 " w:"+this.getWeight()+" "+
@@ -215,7 +215,7 @@ public class WebText implements WebElement
 	if(printChildren)
 		for(WebElement e:children)
 			e.print(lvl+1,true);
-
+	
     }
 
 	@Override public long getWeight()
