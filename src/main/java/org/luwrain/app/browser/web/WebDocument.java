@@ -50,7 +50,6 @@ public class WebDocument
 	for(WebElement e:result)
 		e.print(0,false);
 	System.out.println("BIG result END");
-	BigSearcherTest.main(this);
     }
 
 	private void make_(Browser page,WebElement parent,Selector selector)

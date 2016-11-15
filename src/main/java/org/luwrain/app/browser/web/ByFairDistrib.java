@@ -8,13 +8,13 @@ import org.luwrain.core.NullCheck;
 public class ByFairDistrib implements BigSearcher
 {
 	/**  minimal weight limit ratio for element to root document element, to allow select this element as BIG */
-	double BIG_WEIGHT_LIMIT=0.01;
+	double BIG_WEIGHT_LIMIT=0.125;
 
 	/** minimal rate limit for total weight for some element children with fair distribution of weight */
-	double BIG_WEIGHT_FAIR_TOTAL = 0.4;
+	double BIG_WEIGHT_FAIR_TOTAL = 0.125;
 
 	/** minimal difference between near children (sorted by weight) with fair fair distribution of weight */
-	double BIG_WEIGHT_FAIR_CHILD = 0.4;
+	double BIG_WEIGHT_FAIR_CHILD = 0.2;
 
 	/** number of this children in element with fair distribution of weight */
 	int BIG_WEIGHT_FAIR_COUNT = 3;
@@ -55,7 +55,7 @@ public class ByFairDistrib implements BigSearcher
 	/** weight ration between two elements, compare max and min of them */
 	private double weightComparsionRate(WebElement prevChild,WebElement child)
 	{
-		return (double)Long.max(prevChild.getWeight(),child.getWeight())/Long.min(prevChild.getWeight(),child.getWeight());
+		return (double)Long.min(prevChild.getWeight(),child.getWeight())/Long.max(prevChild.getWeight(),child.getWeight());
 	}
 
 
@@ -79,9 +79,12 @@ public class ByFairDistrib implements BigSearcher
 //		    Log.debug("search", "stopping, big element count exceeded: " + currentBigCount);
 			return;
 		}
+		// check children
+		if(!element.hasChildren())
+			return;
 		// check element weight 
 		final double weightRateRoot = weightRateRoot(element);
-		if(weightRateRoot < BIG_WEIGHT_FAIR_TOTAL)
+		if(weightRateRoot < BIG_WEIGHT_LIMIT)
 		{
 //		    Log.debug("search", "too small element comparing to weight of the root (" + weightRateRoot + ")");
 			return;
@@ -116,6 +119,7 @@ public class ByFairDistrib implements BigSearcher
 			{
 				double weightComparsionRate=weightComparsionRate(prevChild,child);
 				//(double)Long.max(prevChild.getWeight(),child.getWeight())/Long.min(prevChild.getWeight(),child.getWeight())
+				//System.out.println("ch: "+weightComparsionRate);
 				if(weightComparsionRate<BIG_WEIGHT_FAIR_CHILD)
 				{
 					// child not in fair distribution, break

@@ -174,6 +174,9 @@ class BrowserArea extends NavigationArea
 		case F10:
 			onChangeWebViewVisibility();
 			return true;
+		case F9:
+			BigSearcherTest.main(wDoc,luwrain);
+			return true;
 		default:
 			break;
 		}
@@ -496,7 +499,7 @@ return;
 	{
 		final WebViewBuilder builder = WebViewBuilder.newBuilder(complexMode?WebViewBuilder.Type.COMPLEX:WebViewBuilder.Type.NORMAL, element, luwrain.getAreaVisibleWidth(this));
 		wView = builder.build();
-		/**/wView.print();
+		//**/wView.print();
 		repairHotPoint();
 		//
 		WebElementPart part=wView.getElementByPos(getHotPointX(),getHotPointY());
