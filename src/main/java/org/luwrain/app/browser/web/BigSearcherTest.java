@@ -17,8 +17,8 @@ public class BigSearcherTest
 
 		
 		String wmin = Popups.simple(luwrain, "BIG_WEIGHT_LIMIT", "min: ", "0.05");
-		String wmax = Popups.simple(luwrain, "BIG_WEIGHT_LIMIT", "max: ", "0.5");
-		String wstp = Popups.simple(luwrain, "BIG_WEIGHT_LIMIT", "max: ", "0.5");
+		String wmax = Popups.simple(luwrain, "BIG_WEIGHT_LIMIT", "max: ", "0.55");
+		String wstp = Popups.simple(luwrain, "BIG_WEIGHT_LIMIT", "step: ", "0.05");
 		double wn=Double.parseDouble(wmin);
 		double wx=Double.parseDouble(wmax);
 		double ws=Double.parseDouble(wstp);
