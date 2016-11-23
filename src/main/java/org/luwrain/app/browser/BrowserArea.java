@@ -16,18 +16,18 @@
 
 package org.luwrain.app.browser;
 
+import java.net.URL;
+import java.util.Vector;
+
 import org.luwrain.core.*;
 import org.luwrain.core.events.*;
 import org.luwrain.controls.*;
 import org.luwrain.popups.*;
 
-//import java.util.Timer;
-//import java.util.TimerTask;
-import java.util.Vector;
-
-import org.luwrain.app.browser.Events;
-import org.luwrain.app.browser.web.*;
+//import org.luwrain.app.browser.Events;
 import org.luwrain.browser.*;
+import org.luwrain.app.browser.web.*;
+
 import org.luwrain.browser.Events.WebState;
 
 class BrowserArea implements Area
@@ -36,7 +36,7 @@ class BrowserArea implements Area
 
     private final Luwrain luwrain;
     private final ControlEnvironment environment;
-    private final Actions actions;
+    //    private final Actions actions;
 
     private final Browser page;
     private Events events;
@@ -58,14 +58,13 @@ class BrowserArea implements Area
 
 	private int scanPos = -1;
 
-    BrowserArea(Luwrain luwrain, Actions actions, Browser browser)
+    BrowserArea(Luwrain luwrain, Browser browser)
     {
 	//	super(new DefaultControlEnvironment(luwrain));
 	NullCheck.notNull(luwrain, "luwrain");
-	NullCheck.notNull(actions, "actions");
 	NullCheck.notNull(browser, "browser");
 	this.luwrain = luwrain;
-	this.actions = actions;
+	//	this.actions = actions;
 	this.environment = new DefaultControlEnvironment(luwrain);
 	this.page = browser;
 	events = new Events(luwrain, this);
@@ -131,11 +130,21 @@ class BrowserArea implements Area
 	return page.isBusy();
     }
 
+    boolean open(URL url)
+    {
+	NullCheck.notNull(url, "url");
+	if (page.isBusy())
+	    return false;
+	Log.debug("browser", "opening URL " + url.toString());
+	    page.load(url.toString());
+	environment.onAreaNewContent(this);
+	return true;
+    }
+
     @Override public boolean onAreaQuery(AreaQuery query)
     {
 	return false;
     }
-
 
     @Override public String getAreaName()
     {
@@ -175,8 +184,6 @@ class BrowserArea implements Area
 			return true;
 		case F5: 
 		    return refresh();
-		case F6: 
-		    return onOpenUrl();
 		case ALTERNATIVE_ARROW_LEFT:
 			return onElementNavigateLeft();
 		case ALTERNATIVE_ARROW_RIGHT:
@@ -203,22 +210,20 @@ class BrowserArea implements Area
 		//		return super.onKeyboardEvent(event);
 		return false;
 	}
-	
+
 	@Override public boolean onEnvironmentEvent(EnvironmentEvent event)
 	{
 		NullCheck.notNull(event, "event");
 		switch(event.getCode())
 		{
-		case CLOSE:
-			actions.closeApp();
-			return true;
+		case REFRESH:
+		    refresh();
+		    return true;
 		case THREAD_SYNC:
 			if (onThreadSyncEvent(event))
 			return true;
-			//			return super.onEnvironmentEvent(event);
 			return false;
 		default:
-		    //			return super.onEnvironmentEvent(event);
 		    return false;
 		}
 	}
@@ -377,21 +382,6 @@ return;
 		//		setHotPoint(x,y);
     }
 
-    private boolean onOpenUrl()
-    {
-	if (page.isBusy())
-	    return false;
-		String link = Popups.simple(luwrain, "Открыть страницу", "Введите адрес страницы:", "http://");
-		if(link==null || link.trim().isEmpty())
-		    return true;
-		if(!link.matches("^(http|https|ftp)://.*$"))
-		    link="http://"+link;
-		Log.debug("browser", "loading URL " + link);
-		page.load(link);
-		environment.onAreaNewContent(this);
-		return true;
-    }
-
 	private boolean onElementNavigateLeft()
 	{ // prev
 		WebElementPart part = view.getElementByPos(getHotPointX(),getHotPointY());
@@ -519,16 +509,13 @@ return;
 
 	private void refill()
 	{
-		final WebViewBuilder builder = WebViewBuilder.newBuilder(complexMode?WebViewBuilder.Type.COMPLEX:WebViewBuilder.Type.NORMAL, element, luwrain.getAreaVisibleWidth(this));
-		view = builder.build();
-		//**/wView.print();
+	    final WebViewBuilder builder = WebViewBuilder.newBuilder(complexMode?WebViewBuilder.Type.COMPLEX:WebViewBuilder.Type.NORMAL, element, luwrain.getAreaVisibleWidth(this));
+	    view = builder.build();
 		repairHotPoint();
-		//
 		WebElementPart part = view.getElementByPos(getHotPointX(),getHotPointY());
 		if(part!=null)
 		    environment.say(part.toString());
 		environment.onAreaNewContent(this);
-		luwrain.onAreaNewContent(this);
 	}
 
     private boolean onFormEditText(WebElementPart part)

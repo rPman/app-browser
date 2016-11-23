@@ -17,16 +17,17 @@
 package org.luwrain.app.browser;
 
 import org.luwrain.core.*;
+import org.luwrain.core.events.*;
 
-class BrowserApp implements Application, Actions
+class BrowserApp implements Application
 {
 	static public final String STRINGS_NAME = "luwrain.notepad";
 
-
     private Luwrain luwrain;
+    private Actions actions = null;
     private BrowserArea area;
 
-    private String arg = null;
+    private final String arg;
 
     public BrowserApp()
     {
@@ -35,13 +36,13 @@ class BrowserApp implements Application, Actions
 
     public BrowserApp(String arg)
     {
+	NullCheck.notNull(arg, "arg");
 	this.arg = arg;
-	if (arg == null)
-	    throw new NullPointerException("fileName may not be null"); 
     }
 
     @Override public boolean onLaunch(Luwrain luwrain)
     {
+	NullCheck.notNull(luwrain, "luwrain");
 	/*
 	final Object o = luwrain.i18n().getStrings(STRINGS_NAME);
 	if (o == null || !(o instanceof Strings))
@@ -49,6 +50,7 @@ class BrowserApp implements Application, Actions
 	strings = (Strings)o;
 	*/
 	this.luwrain = luwrain;
+	actions = new Actions(luwrain);
 	createArea();
 	return true;
     }
@@ -60,7 +62,44 @@ class BrowserApp implements Application, Actions
 
     private void createArea()
     {
-    	area = new BrowserArea(luwrain, this, luwrain.createBrowser());
+    	area = new BrowserArea(luwrain, luwrain.createBrowser()){
+
+		@Override public boolean onKeyboardEvent(KeyboardEvent event)
+		{
+		    NullCheck.notNull(event, "event");
+		    return super.onKeyboardEvent(event);
+		}
+
+		@Override public boolean onEnvironmentEvent(EnvironmentEvent event)
+		{
+		    NullCheck.notNull(event, "event");
+		    if (event.getType() != EnvironmentEvent.Type.REGULAR)
+			return super.onEnvironmentEvent(event);
+		    switch(event.getCode())
+		    {
+		    case ACTION:
+			return onBrowserAction(event);
+		    case CLOSE:
+			closeApp();
+			return true;
+		    default:
+			return super.onEnvironmentEvent(event);
+		    }
+		}
+
+		    @Override public Action[] getAreaActions()
+		    {
+			return actions.getBrowserActions();
+		    }
+	    };
+    }
+
+    private boolean onBrowserAction(EnvironmentEvent event)
+    {
+	NullCheck.notNull(event, "event");
+	if (ActionEvent.isAction(event, "open-url"))
+	    return actions.onOpenUrl(area);
+	return false;
     }
 
     @Override public AreaLayout getAreasToShow()
@@ -68,7 +107,7 @@ class BrowserApp implements Application, Actions
 	return new AreaLayout(area);
     }
 
-    @Override public void closeApp()
+private void closeApp()
     {
 	luwrain.closeApp();
     }
