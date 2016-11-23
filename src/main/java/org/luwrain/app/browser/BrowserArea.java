@@ -47,8 +47,7 @@ class BrowserArea implements Area
 
     private WebDocument doc = new WebDocument();
     private WebView view = new WebView();
-    /** current element in view */
-    private WebElement element;
+    private WebElement current;
 
     private final Vector<HistoryElement> elementHistory = new Vector<HistoryElement>();
     private boolean complexMode = false;
@@ -90,23 +89,18 @@ class BrowserArea implements Area
     boolean refresh()
     {
 	Log.debug("browser", "starting DOM refreshing");
-	if(state != WebState.SUCCEEDED)
+	if(isEmpty() || isBusy())
 	    return false;
-	if(page.isBusy())
-	{
-	    Log.warning("browser", "trying to refresh DOM with busy browser");
-	    return false;
-	}
 	page.RescanDOM();
 	elementsForScan=page.iterator();
 	textSelectorInvisible=page.selectorText(false,null);
 	doc = new WebDocument();
 	doc.make(page);
 	//wDoc.getRoot().print(1,true);
-	element = doc.getRoot();
+	current = doc.getRoot();
 	complexMode=false;
 	refill();
-	Log.debug("browser", "DOM refreshed");
+	Log.debug("browser", "DOM refreshed successfully");
 	return true;
     }
 
@@ -116,8 +110,8 @@ class BrowserArea implements Area
      */ 
     boolean isEmpty()
     {
-	return false;
-    }
+	return state != WebState.SUCCEEDED;
+	}
 
     /**Checks if the browser is doing any background work (usually fetching
      * and loading the pages). In this state the browser has very limited
@@ -172,45 +166,49 @@ class BrowserArea implements Area
 	return view.getLineByIndex(index);
     }
 
-	@Override public boolean onKeyboardEvent(KeyboardEvent event)
+    @Override public boolean onKeyboardEvent(KeyboardEvent event)
+    {
+	NullCheck.notNull(event, "event");
+	if (event.isSpecial() && !event.isModified())
+	    switch (event.getSpecial())
+	    {
+	    case TAB:
+		return onInfoAction();
+	    case ESCAPE:
+		return onEscape();
+	    case ARROW_LEFT:
+		return onArrowLeft(event);
+	    case ARROW_RIGHT:
+		return onArrowRight(event);
+	    case ARROW_DOWN:
+		return onArrowDown(event);
+	    case ARROW_UP:
+		return onArrowUp(event);
+		/*
+	    case ALTERNATIVE_ARROW_LEFT:
+		return onElementNavigateLeft();
+	    case ALTERNATIVE_ARROW_RIGHT:
+		return onElementNavigateRight();
+		*/
+	    case ENTER:
+		return onClick();
+	    case BACKSPACE:
+		return onBackspace();
+	    case F10:
+		onChangeWebViewVisibility();
+		return true;
+	    case F9:
+		BigSearcherTest.main(doc,luwrain);
+		return true;
+	    }
+	if(!event.isSpecial() && event.getChar()==' ')
 	{
-		NullCheck.notNull(event, "event");
-		if (event.isSpecial() && !event.isModified())
-		switch (event.getSpecial())
-		{
-		case TAB:
-			return onInfoAction();
-		case ESCAPE:
-			onBreakCommand();
-			return true;
-		case F5: 
-		    return refresh();
-		case ALTERNATIVE_ARROW_LEFT:
-			return onElementNavigateLeft();
-		case ALTERNATIVE_ARROW_RIGHT:
-			return onElementNavigateRight();
-		case ENTER:
-			return onClick();
-		case BACKSPACE:
-			return onHistoryBack();
-		case F10:
-			onChangeWebViewVisibility();
-			return true;
-		case F9:
-			BigSearcherTest.main(doc,luwrain);
-			return true;
-		default:
-			break;
-		}
-		if(event.getChar()==' ')
-		{
-			WebElementPart part = view.getElementByPos(getHotPointX(),getHotPointY());
-			if(part!=null)
-			    environment.say(part.toString());
-		}
-		//		return super.onKeyboardEvent(event);
-		return false;
+	    WebElementPart part = view.getElementByPos(getHotPointX(),getHotPointY());
+	    if(part!=null)
+		environment.say(part.toString());
 	}
+	return false;
+    }
 
 	@Override public boolean onEnvironmentEvent(EnvironmentEvent event)
 	{
@@ -339,12 +337,44 @@ return;
 		return false;
 	}
 
-    private void onBreakCommand()
+protected boolean onEscape()
     {
+	if (!isBusy())
+	    return false;
+	Log.debug("browser", "trying to cancel loading");
 	page.stop();
+	return true;
     }
 
-    private void repairHotPoint()
+    protected boolean onArrowLeft(KeyboardEvent event)
+    {
+	if (noContent())
+	    return true;
+	return false;
+    }
+
+    protected boolean onArrowRight(KeyboardEvent event)
+    {
+	if (noContent())
+	    return true;
+	return false;
+    }
+
+    protected boolean onArrowUp(KeyboardEvent event)
+    {
+	if (noContent())
+	    return true;
+	return false;
+    }
+
+    protected boolean onArrowDown(KeyboardEvent event)
+    {
+	if (noContent())
+	    return true;
+	return false;
+    }
+
+    private void fixHotPoint()
     {
 		int x=getHotPointX(),y=getHotPointY();
 		WebElementPart part=null;
@@ -383,10 +413,11 @@ return;
 		//		setHotPoint(x,y);
     }
 
+    /*
 	private boolean onElementNavigateLeft()
 	{ // prev
-		WebElementPart part = view.getElementByPos(getHotPointX(),getHotPointY());
-		Vector<WebElementPart> line = view.getPartsByLineIndex(getHotPointY());
+		final WebElementPart part = view.getElementByPos(getHotPointX(),getHotPointY());
+Vector<WebElementPart> line = view.getPartsByLineIndex(getHotPointY());
 		if(part==null||line==null) return false;
 		int idx=line.indexOf(part);
 		if(idx==0)
@@ -402,6 +433,7 @@ return;
   		environment.onAreaNewContent(this);
   		return true;
 	}
+
 	private boolean onElementNavigateRight()
 	{ // next
 		WebElementPart part = view.getElementByPos(getHotPointX(),getHotPointY());
@@ -420,6 +452,8 @@ return;
   		environment.onAreaNewContent(this);
   		return true;
 	}
+    */
+
 	private void  onNewSelectedElement()
 	{
 		WebElementPart part = view.getElementByPos(getHotPointX(),getHotPointY());
@@ -459,12 +493,12 @@ return;
 	if(part.element.needToBeComplex()||complexMode)
 	{ // select complex element as base for view in navigation area
 	    // store prev element to history
-	    elementHistory.add(new HistoryElement(element,complexMode));
+	    elementHistory.add(new HistoryElement(current,complexMode));
 	    complexMode = !complexMode;
-	    element = part.element;
-	    final WebViewBuilder builder = WebViewBuilder.newBuilder(complexMode?WebViewBuilder.Type.COMPLEX:WebViewBuilder.Type.NORMAL, element,luwrain.getAreaVisibleWidth(this));
+	    current = part.element;
+	    final WebViewBuilder builder = WebViewBuilder.newBuilder(complexMode?WebViewBuilder.Type.COMPLEX:WebViewBuilder.Type.NORMAL, current,luwrain.getAreaVisibleWidth(this));
 	    view = builder.build();
-	    repairHotPoint();
+	    fixHotPoint();
 	    environment.onAreaNewContent(this);
 	    return true;
 	}
@@ -497,22 +531,22 @@ return;
 	return true;
     }
 
-    private boolean onHistoryBack()
+    protected boolean onBackspace()
     {
 	if(elementHistory.isEmpty()) return false;
 	HistoryElement h=elementHistory.lastElement();
 	elementHistory.remove(elementHistory.size()-1);
 	complexMode=h.mode;
-	element=h.element;
+	current = h.element;
 	refill();
 	return true;
     }
 
 	private void refill()
 	{
-	    final WebViewBuilder builder = WebViewBuilder.newBuilder(complexMode?WebViewBuilder.Type.COMPLEX:WebViewBuilder.Type.NORMAL, element, luwrain.getAreaVisibleWidth(this));
+	    final WebViewBuilder builder = WebViewBuilder.newBuilder(complexMode?WebViewBuilder.Type.COMPLEX:WebViewBuilder.Type.NORMAL, current, luwrain.getAreaVisibleWidth(this));
 	    view = builder.build();
-		repairHotPoint();
+		fixHotPoint();
 		WebElementPart part = view.getElementByPos(getHotPointX(),getHotPointY());
 		if(part!=null)
 		    environment.say(part.toString());
@@ -594,6 +628,21 @@ return;
 	{
 		page.setVisibility(!page.getVisibility());
 	}
+
+    protected void noContentMsg()
+    {
+	environment.hint(Hints.NO_CONTENT);
+    }
+
+    protected boolean noContent()
+    {
+	if (isEmpty())
+	{
+	    noContentMsg();
+	    return true;
+	}
+	return false;
+    }
 
 interface Callback
 {
