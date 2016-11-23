@@ -30,7 +30,7 @@ import org.luwrain.app.browser.web.*;
 import org.luwrain.browser.*;
 import org.luwrain.browser.Events.WebState;
 
-class BrowserArea extends NavigationArea
+class BrowserArea implements Area
 {
     //static private final int PAGE_SCANNER_INTERVAL=1000;
     //    static private final int PAGE_SCANNER_INTERVAL_FAST=100;
@@ -61,7 +61,7 @@ class BrowserArea extends NavigationArea
 
     BrowserArea(Luwrain luwrain, Actions actions, Browser browser)
     {
-	super(new DefaultControlEnvironment(luwrain));
+	//	super(new DefaultControlEnvironment(luwrain));
 	NullCheck.notNull(luwrain, "luwrain");
 	NullCheck.notNull(actions, "actions");
 	NullCheck.notNull(browser, "browser");
@@ -132,10 +132,25 @@ class BrowserArea extends NavigationArea
 	return page.isBusy();
     }
 
+    @Override public boolean onAreaQuery(AreaQuery query)
+    {
+	return false;
+    }
+
 
     @Override public String getAreaName()
     {
 	return page.getTitle()+" "+state.name()+" "+progress;
+    }
+
+    @Override public int getHotPointX()
+    {
+	return 0;
+    }
+
+    @Override public int getHotPointY()
+    {
+	return 0;
     }
 
     @Override public int getLineCount()
@@ -186,7 +201,8 @@ class BrowserArea extends NavigationArea
 			if(part!=null)
 			    environment.say(part.toString());
 		}
-		return super.onKeyboardEvent(event);
+		//		return super.onKeyboardEvent(event);
+		return false;
 	}
 	
 	@Override public boolean onEnvironmentEvent(EnvironmentEvent event)
@@ -200,11 +216,18 @@ class BrowserArea extends NavigationArea
 		case THREAD_SYNC:
 			if (onThreadSyncEvent(event))
 			return true;
-			return super.onEnvironmentEvent(event);
+			//			return super.onEnvironmentEvent(event);
+			return false;
 		default:
-			return super.onEnvironmentEvent(event);
+		    //			return super.onEnvironmentEvent(event);
+		    return false;
 		}
 	}
+
+    @Override public Action[]getAreaActions()
+    {
+	return new Action[0];
+    }
 
     private boolean onThreadSyncEvent(EnvironmentEvent event)
     {
@@ -352,7 +375,7 @@ return;
 			} else
 				break;
 		}
-		setHotPoint(x,y);
+		//		setHotPoint(x,y);
     }
 
     private boolean onOpenUrl()
@@ -380,10 +403,10 @@ return;
 		{ // move previous line
 			if(getHotPointY()==0) return false;
 			line=wView.getPartsByLineIndex(getHotPointY()-1);
-			setHotPoint(line.lastElement().pos,getHotPointY()-1);
+			//			setHotPoint(line.lastElement().pos,getHotPointY()-1);
 		} else
 		{ // move inside line
-			setHotPoint(line.get(idx-1).pos,getHotPointY());
+		    //			setHotPoint(line.get(idx-1).pos,getHotPointY());
 		}
   		onNewSelectedElement();
   		environment.onAreaNewContent(this);
@@ -398,10 +421,10 @@ return;
 		if(idx==line.size()-1)
 		{ // move next line
 			if(getHotPointY()+1==wView.getLineCount()) return false;
-			setHotPoint(0,getHotPointY()+1);
+			//			setHotPoint(0,getHotPointY()+1);
 		} else
 		{ // move inside line
-			setHotPoint(line.get(idx+1).pos,getHotPointY());
+		    //			setHotPoint(line.get(idx+1).pos,getHotPointY());
 		}
   		onNewSelectedElement();
   		environment.onAreaNewContent(this);
