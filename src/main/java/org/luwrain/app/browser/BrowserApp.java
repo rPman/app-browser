@@ -55,14 +55,9 @@ class BrowserApp implements Application
 	return true;
     }
 
-    @Override public String getAppName()
-    {
-	return "Веб-браузер";
-    }
-
     private void createArea()
     {
-    	area = new BrowserArea(luwrain, luwrain.createBrowser()){
+    	area = new BrowserArea(luwrain, actions, luwrain.createBrowser()){
 
 		@Override public boolean onKeyboardEvent(KeyboardEvent event)
 		{
@@ -102,13 +97,19 @@ class BrowserApp implements Application
 	return false;
     }
 
-    @Override public AreaLayout getAreasToShow()
-    {
-	return new AreaLayout(area);
-    }
 
 private void closeApp()
     {
 	luwrain.closeApp();
+    }
+
+    @Override public String getAppName()
+    {
+	return "Веб-браузер";
+    }
+
+    @Override public AreaLayout getAreasToShow()
+    {
+	return new AreaLayout(area);
     }
 }

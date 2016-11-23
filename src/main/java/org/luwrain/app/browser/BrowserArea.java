@@ -35,6 +35,7 @@ class BrowserArea implements Area
     static private final int PAGE_SCANNER_AROUND_ELEMENTS_COUNT=10; 
 
     private final Luwrain luwrain;
+    private final Callback callback;
     private final ControlEnvironment environment;
     //    private final Actions actions;
 
@@ -58,13 +59,13 @@ class BrowserArea implements Area
 
 	private int scanPos = -1;
 
-    BrowserArea(Luwrain luwrain, Browser browser)
+    BrowserArea(Luwrain luwrain, Callback callback, Browser browser)
     {
-	//	super(new DefaultControlEnvironment(luwrain));
 	NullCheck.notNull(luwrain, "luwrain");
+	NullCheck.notNull(callback, "callback");
 	NullCheck.notNull(browser, "browser");
 	this.luwrain = luwrain;
-	//	this.actions = actions;
+	this.callback = callback;
 	this.environment = new DefaultControlEnvironment(luwrain);
 	this.page = browser;
 	events = new Events(luwrain, this);
@@ -233,6 +234,33 @@ class BrowserArea implements Area
 	return new Action[0];
     }
 
+    void onPageChangeState(WebState state)
+    {
+	NullCheck.notNull(state, "state");
+	Log.debug("browser", "new page state:" + state);
+	this.state = state;
+	switch(state)
+	{
+	case RUNNING:
+	    callback.onBrowserRunning();
+	    return;
+	case SUCCEEDED:
+	    refresh();
+	    callback.onBrowserSuccess(page.getTitle());
+	    return;
+	case FAILED:
+	    callback.onBrowserFailed();
+	    return;
+	case CANCELLED:
+	case READY:
+	case SCHEDULED:
+	    return;
+	default:
+	    Log.warning("browser", "unexpected new page state:" + state);
+	}
+    }
+
+
     private boolean onThreadSyncEvent(EnvironmentEvent event)
     {
 	NullCheck.notNull(event, "event");
@@ -269,33 +297,6 @@ class BrowserArea implements Area
 	return false;
     }
 
-    void onPageChangeState(WebState state)
-    {
-	NullCheck.notNull(state, "state");
-	this.state=state;
-	switch(state)
-	{
-	case SCHEDULED:
-	    return;
-	case RUNNING:
-	    luwrain.message("Загрузка страницы");
-	    return;
-	case SUCCEEDED:
-	    refresh();
-	    //	    luwrain.message("Страница загружена", Luwrain.MESSAGE_DONE);
-	    luwrain.message(page.getTitle(), Luwrain.MESSAGE_DONE);
-	    return;
-	case READY:
-	    // luwrain.message("Страница загружена", Luwrain.MESSAGE_DONE);
-	    return;
-	case FAILED:
-	    luwrain.message("Страница не может быть загружена", Luwrain.MESSAGE_ERROR);
-	    return;
-	case CANCELLED:
-	    return;
-	}
-	System.out.println("browser:unhandled page state changing:" + state);
-    }
 
     void onProgress(Number progress)
     {
@@ -593,4 +594,11 @@ return;
 	{
 		page.setVisibility(!page.getVisibility());
 	}
+
+interface Callback
+{
+    void onBrowserRunning();
+    void onBrowserSuccess(String title);
+    void onBrowserFailed();
+}
 }
