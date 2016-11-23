@@ -96,9 +96,8 @@ class BrowserArea implements Area
 	textSelectorInvisible=page.selectorText(false,null);
 	doc = new WebDocument();
 	doc.make(page);
-	//wDoc.getRoot().print(1,true);
 	current = doc.getRoot();
-	complexMode=false;
+	complexMode = false;
 	refill();
 	Log.debug("browser", "DOM refreshed successfully");
 	return true;
@@ -283,9 +282,10 @@ class BrowserArea implements Area
 	    if(page.isBusy()) return true;
 	    if(view.getLineCount()==0) return true;
 	    //if(wView.getLinesCount()<=getHotPointY()) return true;
-	    final Vector<WebElementPart> line=view.getPartsByLineIndex(getHotPointY());
-	    if(line==null||line.size()==0) return true;
-	    scanPos=line.get(0).element.getElement().getPos();
+	    final WebElementPart[] line=view.getPartsOnLine(getHotPointY());
+	    if(line == null || line.length == 0) 
+return true;
+	    scanPos=line[0].element.getElement().getPos();
 	    if(elementsForScan.isChangedAround(textSelectorInvisible,scanPos,PAGE_SCANNER_AROUND_ELEMENTS_COUNT))
 	    { // detected changes, add event to rescan page dom
 		refresh();
@@ -418,11 +418,13 @@ protected boolean onEscape()
 	{ // prev
 		final WebElementPart part = view.getElementByPos(getHotPointX(),getHotPointY());
 Vector<WebElementPart> line = view.getPartsByLineIndex(getHotPointY());
-		if(part==null||line==null) return false;
-		int idx=line.indexOf(part);
+		if(part==null||line==null) 
+return false;
+		int idx = line.indexOf(part);
 		if(idx==0)
 		{ // move previous line
-			if(getHotPointY()==0) return false;
+			if(getHotPointY()==0) 
+return false;
 			line = view.getPartsByLineIndex(getHotPointY()-1);
 			//			setHotPoint(line.lastElement().pos,getHotPointY()-1);
 		} else
@@ -433,7 +435,9 @@ Vector<WebElementPart> line = view.getPartsByLineIndex(getHotPointY());
   		environment.onAreaNewContent(this);
   		return true;
 	}
+    */
 
+    /*
 	private boolean onElementNavigateRight()
 	{ // next
 		WebElementPart part = view.getElementByPos(getHotPointX(),getHotPointY());

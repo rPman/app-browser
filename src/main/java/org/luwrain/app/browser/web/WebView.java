@@ -83,11 +83,11 @@ cache = new Vector<String>();
      * @param y is a line number
      * @return list of WebElementPart
      */
-    public Vector<WebElementPart> getPartsByLineIndex(int y)
+    public WebElementPart[] getPartsOnLine(int y)
     {
 	if(y<0||y>=lines.size())
 	    throw new IllegalArgumentException("y = " + y);
-	return lines.get(y);
+	return lines.get(y).toArray(new WebElementPart[lines.get(y).size()]);
     }
 
     public void print()
