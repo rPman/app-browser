@@ -32,21 +32,20 @@ import org.luwrain.browser.Events.WebState;
 
 class BrowserArea implements Area
 {
-    //static private final int PAGE_SCANNER_INTERVAL=1000;
-    //    static private final int PAGE_SCANNER_INTERVAL_FAST=100;
     static private final int PAGE_SCANNER_AROUND_ELEMENTS_COUNT=10; 
 
     private final Luwrain luwrain;
     private final ControlEnvironment environment;
     private final Actions actions;
+
     private final Browser page;
-    private Events browserEvents;
+    private Events events;
 
     private WebState state = WebState.READY;
     private int progress = 0;
 
-    private WebDocument wDoc = new WebDocument();
-    private WebView wView = new WebView();
+    private WebDocument doc = new WebDocument();
+    private WebView view = new WebView();
     /** current element in view */
     private WebElement element;
 
@@ -69,8 +68,8 @@ class BrowserArea implements Area
 	this.actions = actions;
 	this.environment = new DefaultControlEnvironment(luwrain);
 	this.page = browser;
-	browserEvents = new Events(luwrain, this);
-	this.page.init(browserEvents);
+	events = new Events(luwrain, this);
+	this.page.init(events);
 	pageScanner = new AutoPageElementScanner(this);
 	pageScanner.schedule();
     }
@@ -101,10 +100,10 @@ class BrowserArea implements Area
 	page.RescanDOM();
 	elementsForScan=page.iterator();
 	textSelectorInvisible=page.selectorText(false,null);
-	wDoc = new WebDocument();
-	wDoc.make(page);
+	doc = new WebDocument();
+	doc.make(page);
 	//wDoc.getRoot().print(1,true);
-	element = wDoc.getRoot();
+	element = doc.getRoot();
 	complexMode=false;
 	refill();
 	Log.debug("browser", "DOM refreshed");
@@ -155,12 +154,12 @@ class BrowserArea implements Area
 
     @Override public int getLineCount()
     {
-	return wView.getLineCount();
+	return view.getLineCount();
     }
 
     @Override public String getLine(int index)
     {
-	return wView.getLineByIndex(index);
+	return view.getLineByIndex(index);
     }
 
 	@Override public boolean onKeyboardEvent(KeyboardEvent event)
@@ -190,14 +189,14 @@ class BrowserArea implements Area
 			onChangeWebViewVisibility();
 			return true;
 		case F9:
-			BigSearcherTest.main(wDoc,luwrain);
+			BigSearcherTest.main(doc,luwrain);
 			return true;
 		default:
 			break;
 		}
 		if(event.getChar()==' ')
 		{
-			WebElementPart part=wView.getElementByPos(getHotPointX(),getHotPointY());
+			WebElementPart part = view.getElementByPos(getHotPointX(),getHotPointY());
 			if(part!=null)
 			    environment.say(part.toString());
 		}
@@ -251,9 +250,9 @@ class BrowserArea implements Area
 	{
 	    if(state!=WebState.SUCCEEDED) return true;
 	    if(page.isBusy()) return true;
-	    if(wView.getLineCount()==0) return true;
+	    if(view.getLineCount()==0) return true;
 	    //if(wView.getLinesCount()<=getHotPointY()) return true;
-	    final Vector<WebElementPart> line=wView.getPartsByLineIndex(getHotPointY());
+	    final Vector<WebElementPart> line=view.getPartsByLineIndex(getHotPointY());
 	    if(line==null||line.size()==0) return true;
 	    scanPos=line.get(0).element.getElement().getPos();
 	    if(elementsForScan.isChangedAround(textSelectorInvisible,scanPos,PAGE_SCANNER_AROUND_ELEMENTS_COUNT))
@@ -345,13 +344,13 @@ return;
 		WebElementPart part=null;
 		while(true)
 		{ // loop try to select eny element (under cursor, last, first)
-			part=wView.getElementByPos(x,y);
+			part = view.getElementByPos(x,y);
 			if(part==null)
 			{
 				// last try?
 				if(y==0&&x==0) break;
 				// we try to select first element in the last line
-				if(y==wView.getLineCount()-1)
+				if(y==view.getLineCount()-1)
 				{
 					if(x==0)
 					{ // try to get first line
@@ -363,9 +362,9 @@ return;
 						continue;
 					}
 				} else
-				if(y>=wView.getLineCount())
+				if(y >= view.getLineCount())
 				{
-					y=wView.getLineCount()-1;
+					y = view.getLineCount()-1;
 					continue;
 				} else
 				{
@@ -395,14 +394,14 @@ return;
 
 	private boolean onElementNavigateLeft()
 	{ // prev
-		WebElementPart part=wView.getElementByPos(getHotPointX(),getHotPointY());
-		Vector<WebElementPart> line=wView.getPartsByLineIndex(getHotPointY());
+		WebElementPart part = view.getElementByPos(getHotPointX(),getHotPointY());
+		Vector<WebElementPart> line = view.getPartsByLineIndex(getHotPointY());
 		if(part==null||line==null) return false;
 		int idx=line.indexOf(part);
 		if(idx==0)
 		{ // move previous line
 			if(getHotPointY()==0) return false;
-			line=wView.getPartsByLineIndex(getHotPointY()-1);
+			line = view.getPartsByLineIndex(getHotPointY()-1);
 			//			setHotPoint(line.lastElement().pos,getHotPointY()-1);
 		} else
 		{ // move inside line
@@ -414,13 +413,13 @@ return;
 	}
 	private boolean onElementNavigateRight()
 	{ // next
-		WebElementPart part=wView.getElementByPos(getHotPointX(),getHotPointY());
-		final Vector<WebElementPart> line=wView.getPartsByLineIndex(getHotPointY());
+		WebElementPart part = view.getElementByPos(getHotPointX(),getHotPointY());
+		final Vector<WebElementPart> line = view.getPartsByLineIndex(getHotPointY());
 		if(part==null||line==null) return false;
 		int idx=line.indexOf(part);
 		if(idx==line.size()-1)
 		{ // move next line
-			if(getHotPointY()+1==wView.getLineCount()) return false;
+			if(getHotPointY() + 1 == view.getLineCount()) return false;
 			//			setHotPoint(0,getHotPointY()+1);
 		} else
 		{ // move inside line
@@ -432,7 +431,7 @@ return;
 	}
 	private void  onNewSelectedElement()
 	{
-		WebElementPart part=wView.getElementByPos(getHotPointX(),getHotPointY());
+		WebElementPart part = view.getElementByPos(getHotPointX(),getHotPointY());
 		final String type=part.element.getTextShort();
 		final String text=part.element.getTextSay();
 		//final String link=part.element.getLink();
@@ -463,7 +462,7 @@ return;
     {
 	if (isEmpty() || isBusy())
 	    return false;
-	final WebElementPart part=wView.getElementByPos(getHotPointX(),getHotPointY());
+	final WebElementPart part = view.getElementByPos(getHotPointX(),getHotPointY());
 	if(part==null)
 	    return false;
 	if(part.element.needToBeComplex()||complexMode)
@@ -473,7 +472,7 @@ return;
 	    complexMode = !complexMode;
 	    element = part.element;
 	    final WebViewBuilder builder = WebViewBuilder.newBuilder(complexMode?WebViewBuilder.Type.COMPLEX:WebViewBuilder.Type.NORMAL, element,luwrain.getAreaVisibleWidth(this));
-	    wView = builder.build();
+	    view = builder.build();
 	    repairHotPoint();
 	    environment.onAreaNewContent(this);
 	    return true;
@@ -521,11 +520,11 @@ return;
 	private void refill()
 	{
 		final WebViewBuilder builder = WebViewBuilder.newBuilder(complexMode?WebViewBuilder.Type.COMPLEX:WebViewBuilder.Type.NORMAL, element, luwrain.getAreaVisibleWidth(this));
-		wView = builder.build();
+		view = builder.build();
 		//**/wView.print();
 		repairHotPoint();
 		//
-		WebElementPart part=wView.getElementByPos(getHotPointX(),getHotPointY());
+		WebElementPart part = view.getElementByPos(getHotPointX(),getHotPointY());
 		if(part!=null)
 		    environment.say(part.toString());
 		environment.onAreaNewContent(this);
@@ -571,7 +570,7 @@ return;
 
 	private boolean onInfoAction()
 	{
-		WebElementPart part=wView.getElementByPos(getHotPointX(),getHotPointY());
+		WebElementPart part = view.getElementByPos(getHotPointX(),getHotPointY());
 		if(part==null) return false;
 		// first info - is short text
 		String info=part.element.getTextShort()+" ";
