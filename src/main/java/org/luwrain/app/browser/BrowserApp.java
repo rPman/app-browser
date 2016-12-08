@@ -16,6 +16,9 @@
 
 package org.luwrain.app.browser;
 
+import java.net.MalformedURLException;
+import java.net.URL;
+
 import org.luwrain.core.*;
 import org.luwrain.core.events.*;
 
@@ -49,9 +52,26 @@ class BrowserApp implements Application
 	    return false;
 	strings = (Strings)o;
 	*/
+	URL url=null;
+	if(arg!=null)
+	{
+		try
+		{
+			url=new URL(arg);
+		} catch(MalformedURLException e)
+		{
+			Log.error("browser","Can't init URL from argument: "+e.getMessage());
+			return false;
+		}
+	}
 	this.luwrain = luwrain;
 	actions = new Actions(luwrain);
 	createArea();
+	if(arg!=null)
+	{
+		final URL urlfinal=url; 
+		luwrain.runInMainThread(()->area.open(urlfinal));
+	}
 	return true;
     }
 

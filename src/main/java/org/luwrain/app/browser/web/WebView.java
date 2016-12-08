@@ -5,7 +5,7 @@ import java.util.*;
 
 import org.luwrain.core.*;
 
-public class WebView
+public class WebView extends WebIterator
 {
     // have multiline view of selected WebElement
     // contains list of text lines - text representation of ordered web elements
@@ -20,19 +20,20 @@ public class WebView
     // Multiline text web element always start at new line
 
     /** The list of lines, each item is a list of WebElement parts*/
-    private final Vector<Vector<WebElementPart>> lines;
+    private Vector<Vector<WebElementPart>> lines = new Vector<Vector<WebElementPart>>();
 
     /** The text cache, representing web elements view, must be of the same size as a number of lines*/ 
-    private final Vector<String> cache;
+    private Vector<String> cache = new Vector<String>();
 
     public WebView()
     {
-	lines = new Vector<Vector<WebElementPart>>();
-cache = new Vector<String>();
+   	init(this,lines,cache);
     }
 
-    WebView(Vector<Vector<WebElementPart>> lines, Vector<String> cache)
+	//
+	WebView(Vector<Vector<WebElementPart>> lines, Vector<String> cache)
     {
+   	init(this,lines,cache);
 	NullCheck.notNull(lines, "lines");
 	NullCheck.notNull(cache, "cache");
 	this.lines = lines;

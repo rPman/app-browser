@@ -28,7 +28,7 @@ class WebBuilderNormal implements WebViewBuilder
     {
 	NullCheck.notNull(root, "root");
 	this.root = root;
-this.maxWidth = maxWidth;
+	this.maxWidth = maxWidth;
     }
 
     @Override public WebView build()
@@ -44,7 +44,7 @@ this.maxWidth = maxWidth;
 	{
 	    NullCheck.notNull(element, "element");
 		if((!element.needToBeComplex() || element == root) &&
-element.needToBeExpanded() && element.hasChildren())
+			 element.needToBeExpanded() && element.hasChildren())
 		{ // we must expand this web element
 			for(WebElement child: element.getChildren())
 			    build(child);
@@ -79,7 +79,7 @@ element.needToBeExpanded() && element.hasChildren())
 					break;
 				}
 				// check this element designed on html have Y pos not like last element
-Rectangle re=element.getElement().getRect();
+				Rectangle re=element.getElement().getRect();
 				final Rectangle rl=last.getElement().getRect();
 				if(rl.y>=re.y+re.height||re.y>=rl.y+rl.height)
 				{
@@ -89,7 +89,7 @@ Rectangle re=element.getElement().getRect();
 				// check for width limit
 				int newWidth = lastWidth;
 				if(last!=null) 
-newWidth+=last.getSplitter().length();
+					newWidth+=last.getSplitter().length();
 				newWidth+=textLength;
 				if(newWidth > maxWidth)
 				{

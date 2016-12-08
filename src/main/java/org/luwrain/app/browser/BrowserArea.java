@@ -147,12 +147,12 @@ class BrowserArea implements Area
 
     @Override public int getHotPointX()
     {
-	return 0;
+	return view.getPosX();
     }
 
     @Override public int getHotPointY()
     {
-	return 0;
+	return view.getPosY();
     }
 
     @Override public int getLineCount()
@@ -183,12 +183,10 @@ class BrowserArea implements Area
 		return onArrowDown(event);
 	    case ARROW_UP:
 		return onArrowUp(event);
-		/*
 	    case ALTERNATIVE_ARROW_LEFT:
-		return onElementNavigateLeft();
+		return onAlternateLeft(event);
 	    case ALTERNATIVE_ARROW_RIGHT:
-		return onElementNavigateRight();
-		*/
+		return onAlternateRight(event);
 	    case ENTER:
 		return onClick();
 	    case BACKSPACE:
@@ -219,7 +217,7 @@ class BrowserArea implements Area
 		    return true;
 		case THREAD_SYNC:
 			if (onThreadSyncEvent(event))
-			return true;
+				return true;
 			return false;
 		default:
 		    return false;
@@ -284,7 +282,7 @@ class BrowserArea implements Area
 	    //if(wView.getLinesCount()<=getHotPointY()) return true;
 	    final WebElementPart[] line=view.getPartsOnLine(getHotPointY());
 	    if(line == null || line.length == 0) 
-return true;
+	    	return true;
 	    scanPos=line[0].element.getElement().getPos();
 	    if(elementsForScan.isChangedAround(textSelectorInvisible,scanPos,PAGE_SCANNER_AROUND_ELEMENTS_COUNT))
 	    { // detected changes, add event to rescan page dom
@@ -313,7 +311,7 @@ return true;
 	private String onPrompt(String message, String value)
 	{
 		if (message.trim().isEmpty())
-return null;
+			return null;
 		luwrain.message("Выбор: " +message, Luwrain.MESSAGE_OK);
 		return "";//result;
 	}
@@ -322,7 +320,7 @@ return null;
 	{
 	    NullCheck.notNull(message, "message");
 	    if (message.trim().isEmpty())
-return;
+    	return;
    		luwrain.message (message, Luwrain.MESSAGE_ERROR);
 	}
 
@@ -337,7 +335,7 @@ return;
 		return false;
 	}
 
-protected boolean onEscape()
+	protected boolean onEscape()
     {
 	if (!isBusy())
 	    return false;
@@ -350,6 +348,12 @@ protected boolean onEscape()
     {
 	if (noContent())
 	    return true;
+	if(view.moveLeftByChar())
+		return true;
+	luwrain.onAreaNewHotPoint(this);
+	// say current line full
+	char letter = getLine(view.getPosY()).charAt(view.getPosX());
+	luwrain.sayLetter(letter);
 	return false;
     }
 
@@ -357,13 +361,62 @@ protected boolean onEscape()
     {
 	if (noContent())
 	    return true;
+	if(view.moveRightByChar())
+		return true;
+	luwrain.onAreaNewHotPoint(this);
+	// say current line full
+	char letter = getLine(view.getPosY()).charAt(view.getPosX());
+	luwrain.sayLetter(letter);
 	return false;
     }
+
+    private boolean onAlternateRight(KeyboardEvent event)
+	{
+   	if (noContent())
+   	    return true;
+	if(view.moveToNextPart())
+		return true;
+	luwrain.onAreaNewHotPoint(this);
+	// say current line full
+	WebElementPart part=view.getElementByPos(view.getPosX(),view.getPosY());
+	String text=part.toString();
+	if(text.isEmpty())
+		environment.hint(Hints.EMPTY_LINE);
+	else
+		luwrain.say(text);
+	return false;
+	}
+
+	private boolean onAlternateLeft(KeyboardEvent event)
+	{
+	if (noContent())
+	    return true;
+	if(view.moveToPrevPart())
+		return true;
+	luwrain.onAreaNewHotPoint(this);
+	// say current line full
+	WebElementPart part=view.getElementByPos(view.getPosX(),view.getPosY());
+	String text=part.toString();
+	if(text.isEmpty())
+		environment.hint(Hints.EMPTY_LINE);
+	else
+		luwrain.say(text);
+	return false;
+	}
 
     protected boolean onArrowUp(KeyboardEvent event)
     {
 	if (noContent())
 	    return true;
+	if(view.movePrevLine())
+		return true;
+	luwrain.onAreaNewHotPoint(this);
+	// say current line full
+	String text=getLine(view.getPosY());
+	if(text.isEmpty())
+		environment.hint(Hints.EMPTY_LINE);
+	else
+		luwrain.say(text);
 	return false;
     }
 
@@ -371,6 +424,15 @@ protected boolean onEscape()
     {
 	if (noContent())
 	    return true;
+	if(view.moveNextLine())
+		return true;
+	luwrain.onAreaNewHotPoint(this);
+	// say current line full
+	String text=getLine(view.getPosY());
+	if(text.isEmpty())
+		environment.hint(Hints.EMPTY_LINE);
+	else
+		luwrain.say(text);
 	return false;
     }
 
