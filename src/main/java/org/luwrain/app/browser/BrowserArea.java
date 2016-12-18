@@ -1,15 +1,13 @@
 
 package org.luwrain.app.browser;
 
-import java.net.URL;
-import java.util.Vector;
+import java.net.*;
+import java.util.*;
 
 import org.luwrain.core.*;
 import org.luwrain.core.events.*;
 import org.luwrain.controls.*;
 import org.luwrain.popups.*;
-
-//import org.luwrain.app.browser.Events;
 import org.luwrain.browser.*;
 import org.luwrain.app.browser.web.*;
 
@@ -22,7 +20,6 @@ class BrowserArea implements Area
     private final Luwrain luwrain;
     private final Callback callback;
     private final ControlEnvironment environment;
-    //    private final Actions actions;
 
     private final Browser page;
     private Events events;
