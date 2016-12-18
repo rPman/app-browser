@@ -60,18 +60,18 @@ class BrowserArea implements Area
 	doc = new WebDocument();
 	doc.make(page);
 	complexMode = false;
-updateView();
+	updateView();
 	Log.debug("browser", "DOM refreshed successfully");
 	return true;
     }
 
     protected void updateView()
-	{
-	    final WebViewBuilder builder = WebViewBuilder.newBuilder(complexMode?WebViewBuilder.Type.COMPLEX:WebViewBuilder.Type.NORMAL, doc.getRoot(), luwrain.getAreaVisibleWidth(this));
-	    view = builder.build();
-	    it = view.createIterator();
-		environment.onAreaNewContent(this);
-	}
+    {
+	final WebViewBuilder builder = WebViewBuilder.newBuilder(complexMode?WebViewBuilder.Type.COMPLEX:WebViewBuilder.Type.NORMAL, doc.getRoot(), luwrain.getAreaVisibleWidth(this));
+	view = builder.build();
+	it = view.createIterator();
+	environment.onAreaNewContent(this);
+    }
 
     /**Checks if the browser has valid loaded page
      *
@@ -80,7 +80,7 @@ updateView();
     boolean isEmpty()
     {
 	return view == null || it == null || state != WebState.SUCCEEDED;
-	}
+    }
 
     /**Checks if the browser is doing any background work (usually fetching
      * and loading the pages). In this state the browser has very limited
@@ -100,12 +100,12 @@ updateView();
 	if (page.isBusy())
 	    return false;
 	Log.debug("browser", "opening URL " + url.toString());
-	    page.load(url.toString());
+	page.load(url.toString());
 	environment.onAreaNewContent(this);
 	return true;
     }
 
-boolean stop()
+    boolean stop()
     {
 	if (isEmpty() || !isBusy())
 	    return false;
@@ -185,22 +185,22 @@ boolean stop()
 	return false;
     }
 
-	@Override public boolean onEnvironmentEvent(EnvironmentEvent event)
+    @Override public boolean onEnvironmentEvent(EnvironmentEvent event)
+    {
+	NullCheck.notNull(event, "event");
+	switch(event.getCode())
 	{
-		NullCheck.notNull(event, "event");
-		switch(event.getCode())
-		{
-		case REFRESH:
-		    refresh();
-		    return true;
-		case THREAD_SYNC:
-			if (onThreadSyncEvent(event))
-				return true;
-			return false;
-		default:
-		    return false;
-		}
+	case REFRESH:
+	    refresh();
+	    return true;
+	case THREAD_SYNC:
+	    if (onThreadSyncEvent(event))
+		return true;
+	    return false;
+	default:
+	    return false;
 	}
+    }
 
     @Override public Action[]getAreaActions()
     {
@@ -264,8 +264,8 @@ boolean stop()
 	}
 	final String text = it.getText();
 	if(text.isEmpty())
-		environment.hint(Hints.EMPTY_LINE); else
-		luwrain.say(text);
+	    environment.hint(Hints.EMPTY_LINE); else
+	    luwrain.say(text);
 	hotPointX = 0;
 	luwrain.onAreaNewHotPoint(this);
 	return true;
@@ -282,8 +282,8 @@ boolean stop()
 	}
 	final String text = it.getText();
 	if(text.isEmpty())
-		environment.hint(Hints.EMPTY_LINE); else
-		luwrain.say(text);
+	    environment.hint(Hints.EMPTY_LINE); else
+	    luwrain.say(text);
 	hotPointX = 0;
 	luwrain.onAreaNewHotPoint(this);
 	return true;
@@ -296,7 +296,7 @@ boolean stop()
 	elementHistory.remove(elementHistory.size()-1);
 	complexMode=h.mode;
 	//current = h.element;
-updateView();
+	updateView();
 	return true;
     }
 
@@ -333,14 +333,14 @@ updateView();
     protected boolean switchComplexMode(WebElement el)
     {
 	NullCheck.notNull(el, "el");
-	    elementHistory.add(new HistoryElement(el, complexMode));
-	    complexMode  = !complexMode;
-	    final WebViewBuilder builder = WebViewBuilder.newBuilder(complexMode?WebViewBuilder.Type.COMPLEX:WebViewBuilder.Type.NORMAL, el,luwrain.getAreaVisibleWidth(this));
-	    view = builder.build();
-	    it = view.createIterator();
-	    environment.onAreaNewContent(this);
-	    return true;
-	}
+	elementHistory.add(new HistoryElement(el, complexMode));
+	complexMode  = !complexMode;
+	final WebViewBuilder builder = WebViewBuilder.newBuilder(complexMode?WebViewBuilder.Type.COMPLEX:WebViewBuilder.Type.NORMAL, el,luwrain.getAreaVisibleWidth(this));
+	view = builder.build();
+	it = view.createIterator();
+	environment.onAreaNewContent(this);
+	return true;
+    }
 
     /**Asks the browser core to emulate the action which looks like the user
      * clicks on the given element. This operation may be performed only if
@@ -354,7 +354,7 @@ updateView();
 	NullCheck.notNull(el, "el");
 	if (isEmpty() || isBusy())
 	    return false;
-el.getElement().clickEmulate();
+	el.getElement().clickEmulate();
 	return true;
     }
 
@@ -369,7 +369,7 @@ el.getElement().clickEmulate();
 	if (newValue == null) 
 	    return true;
 	e.setText(newValue);
-updateView();
+	updateView();
 	return true;
     }
 
@@ -386,7 +386,7 @@ updateView();
 	if (res == null)
 	    return true;
 	e.setText(res);
-updateView();
+	updateView();
 	return true;
     }
 
@@ -449,34 +449,34 @@ updateView();
 	if (message.trim().isEmpty())
 	    return;
 	luwrain.message("Внимание!" + message, Luwrain.MESSAGE_OK);
-	}
+    }
 
     protected String onPrompt(String message, String value)
-	{
-		if (message.trim().isEmpty())
-			return null;
-		luwrain.message("Выбор: " +message, Luwrain.MESSAGE_OK);
-		return "";//result;
-	}
+    {
+	if (message.trim().isEmpty())
+	    return null;
+	luwrain.message("Выбор: " +message, Luwrain.MESSAGE_OK);
+	return "";//result;
+    }
 
     protected void onError(String message)
-	{
-	    NullCheck.notNull(message, "message");
-	    if (message.trim().isEmpty())
-    	return;
-   		luwrain.message (message, Luwrain.MESSAGE_ERROR);
-	}
+    {
+	NullCheck.notNull(message, "message");
+	if (message.trim().isEmpty())
+	    return;
+	luwrain.message (message, Luwrain.MESSAGE_ERROR);
+    }
 
     protected void onDownloadStart(String url)
     {
 	//FIXME:
-	}
+    }
 
     protected Boolean onConfirm(String message)
-	{
-   		luwrain.message ("Подтверждение: " +message, Luwrain.MESSAGE_OK);
-		return false;
-	}
+    {
+	luwrain.message ("Подтверждение: " +message, Luwrain.MESSAGE_OK);
+	return false;
+    }
 
     protected void noContentMsg()
     {
@@ -493,12 +493,12 @@ updateView();
 	return false;
     }
 
-interface Callback
-{
-    void onBrowserRunning();
-    void onBrowserSuccess(String title);
-    void onBrowserFailed();
-    String askFormTextValue(String currentValue);
-    String askFormListValue(String[] items, boolean fromListOnly);
-}
+    interface Callback
+    {
+	void onBrowserRunning();
+	void onBrowserSuccess(String title);
+	void onBrowserFailed();
+	String askFormTextValue(String currentValue);
+	String askFormListValue(String[] items, boolean fromListOnly);
+    }
 }
