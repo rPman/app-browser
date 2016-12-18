@@ -147,7 +147,9 @@ class BrowserArea implements Area
 
     @Override public String getLine(int index)
     {
-	return view.getLineByIndex(index);
+	if (isEmpty())
+	    return "";
+	return view.getLine(index);
     }
 
     @Override public boolean onKeyboardEvent(KeyboardEvent event)
@@ -185,7 +187,7 @@ class BrowserArea implements Area
 	    }
 	if(!event.isSpecial() && event.getChar()==' ')
 	{
-	    WebElementPart part = view.getElementByPos(getHotPointX(),getHotPointY());
+	    WebElementPart part = view.getPartByPos(getHotPointX(),getHotPointY());
 	    if(part!=null)
 		environment.say(part.toString());
 	}
@@ -363,7 +365,7 @@ class BrowserArea implements Area
 		return true;
 	luwrain.onAreaNewHotPoint(this);
 	// say current line full
-	WebElementPart part=view.getElementByPos(it.getPosX(),it.getPosY());
+	WebElementPart part=view.getPartByPos(it.getPosX(),it.getPosY());
 	String text=part.toString();
 	if(text.isEmpty())
 		environment.hint(Hints.EMPTY_LINE);
@@ -380,7 +382,7 @@ class BrowserArea implements Area
 		return true;
 	luwrain.onAreaNewHotPoint(this);
 	// say current line full
-	WebElementPart part = view.getElementByPos(it.getPosX(), it.getPosY());
+	WebElementPart part = view.getPartByPos(it.getPosX(), it.getPosY());
 	String text=part.toString();
 	if(text.isEmpty())
 		environment.hint(Hints.EMPTY_LINE);
@@ -427,7 +429,7 @@ class BrowserArea implements Area
 		WebElementPart part=null;
 		while(true)
 		{ // loop try to select eny element (under cursor, last, first)
-			part = view.getElementByPos(x,y);
+			part = view.getPartByPos(x,y);
 			if(part==null)
 			{
 				// last try?
@@ -507,7 +509,7 @@ return false;
 
 	private void  onNewSelectedElement()
 	{
-		WebElementPart part = view.getElementByPos(getHotPointX(),getHotPointY());
+		WebElementPart part = view.getPartByPos(getHotPointX(),getHotPointY());
 		final String type=part.element.getTextShort();
 		final String text=part.element.getTextSay();
 		//final String link=part.element.getLink();
@@ -538,7 +540,7 @@ return false;
     {
 	if (isEmpty() || isBusy())
 	    return false;
-	final WebElementPart part = view.getElementByPos(getHotPointX(),getHotPointY());
+	final WebElementPart part = view.getPartByPos(getHotPointX(),getHotPointY());
 	if(part==null)
 	    return false;
 	if(part.element.needToBeComplex()||complexMode)
@@ -597,7 +599,7 @@ return false;
 	    final WebViewBuilder builder = WebViewBuilder.newBuilder(complexMode?WebViewBuilder.Type.COMPLEX:WebViewBuilder.Type.NORMAL, doc.getRoot(), luwrain.getAreaVisibleWidth(this));
 	    view = builder.build();
 		fixHotPoint();
-		WebElementPart part = view.getElementByPos(getHotPointX(),getHotPointY());
+		WebElementPart part = view.getPartByPos(getHotPointX(),getHotPointY());
 		if(part!=null)
 		    environment.say(part.toString());
 		environment.onAreaNewContent(this);
@@ -642,7 +644,7 @@ return false;
 
 	private boolean onInfoAction()
 	{
-		WebElementPart part = view.getElementByPos(getHotPointX(),getHotPointY());
+		WebElementPart part = view.getPartByPos(getHotPointX(),getHotPointY());
 		if(part==null) return false;
 		// first info - is short text
 		String info=part.element.getTextShort()+" ";

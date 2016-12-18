@@ -40,8 +40,8 @@ public WebIterator(WebView view)
 	public void setPosY(int posY)
 	{
 	// limit Y position to lines count
-	    if(posY >= view.getParts().size()) 
-		posY = view.getParts().size();
+	    if(posY >= view.getRows().size()) 
+		posY = view.getRows().size();
 	this.posY=posY;
 	}
 	
@@ -49,7 +49,7 @@ public WebIterator(WebView view)
 	 * @return true if nowhere move */
 	public boolean moveNextLine()
 	{
-	    if(posY >= view.getParts().size()) 
+	    if(posY >= view.getRows().size()) 
 return true;
 	posY++;
 	posX=0;
@@ -90,7 +90,7 @@ return true;
 	public boolean moveToCurrentPart()
 	{
 	// determine current part and all parts in lines
-	WebElementPart part = view.getElementByPos(posX,posY);
+	WebElementPart part = view.getPartByPos(posX,posY);
 	if(part==null) return true;
 	posX=part.pos;
 	return false;
@@ -101,7 +101,7 @@ return true;
 	public boolean moveToPrevPart()
 	{
 	// determine current part and all parts in lines
-	WebElementPart part = view.getElementByPos(posX,posY);
+	WebElementPart part = view.getPartByPos(posX,posY);
 	if(part==null) return true;
 	final WebElementPart[] line = view.getPartsOnLine(posY);
 	if(line==null) return true;
@@ -134,7 +134,7 @@ return true;
 	public boolean moveToNextPart()
 	{
 	// determine current part and all parts in lines
-	WebElementPart part = view.getElementByPos(posX,posY);
+	WebElementPart part = view.getPartByPos(posX,posY);
 	if(part==null) return true;
 	final WebElementPart[] line = view.getPartsOnLine(posY);
 	if(line==null) return true;
@@ -145,7 +145,7 @@ return true;
 		if(i>=line.length-1)
 		{ // last part in line, move down and begin of line
 			// can't move up?
-		    if(posY >= view.getParts().size()) 
+		    if(posY >= view.getRows().size()) 
 return true;
 			// move to begin of next line
 			posY++;

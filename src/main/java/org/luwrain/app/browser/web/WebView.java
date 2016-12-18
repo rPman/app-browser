@@ -19,20 +19,18 @@ public class WebView
     // tips:
     // Multiline text web element always start at new line
 
-    /** The list of lines, each item is a list of WebElement parts*/
-    private Vector<Vector<WebElementPart>> lines = new Vector<Vector<WebElementPart>>();
+    private final Vector<Row> rows;
+    private final Vector<String> lines;
 
-    /** The text cache, representing web elements view, must be of the same size as a number of lines*/ 
-    private Vector<String> cache = new Vector<String>();
-
-	//
-	WebView(Vector<Vector<WebElementPart>> lines, Vector<String> cache)
+	WebView(Vector<Vector<WebElementPart>> parts, Vector<String> lines)
     {
-	//   	init(this,lines,cache);
+	NullCheck.notNull(parts, "parts");
 	NullCheck.notNull(lines, "lines");
-	NullCheck.notNull(cache, "cache");
+	rows = new Vector<Row>();
+	rows.setSize(parts.size());
+	for(int i = 0;i < parts.size();++i)
+	    rows.set(i, new Row(parts.get(i)));
 	this.lines = lines;
-	this.cache = cache;
     }
 
     /**
@@ -46,11 +44,11 @@ public class WebView
     /** return text line from cache
      * @param y line number, counted from 0
      * @return full text of line by number or null, if line number out of bounds */
-    public String getLineByIndex(int y)
+    public String getLine(int y)
     {
-	if(y < 0 || y >= cache.size())
+	if(y < 0 || y >= lines.size())
 	    return "";
-	return cache.get(y);
+	return lines.get(y);
     }
 
     /**
@@ -59,19 +57,11 @@ public class WebView
      * @param y is a line number
      * @return WebElementPart in this position or null 
      */
-    public WebElementPart getElementByPos(int x,int y)
+    public WebElementPart getPartByPos(int x,int y)
     {
-	if(y<0||y>=lines.size())
+	if(y < 0 || y >= rows.size())
 	    throw new IllegalArgumentException("y = " + y);
-	for(WebElementPart wp:lines.get(y))
-	{
-	    if(x>=wp.pos&&x<wp.pos+wp.textLength)
-		return wp;
-	}
-	// we need return first element on line
-	if(lines.get(y).size()==0) 
-	    return null;
-	return lines.get(y).get(0);
+	return rows.get(y).getPartAtPos(x);
     }
 
     /**
@@ -81,11 +71,12 @@ public class WebView
      */
     public WebElementPart[] getPartsOnLine(int y)
     {
-	if(y<0||y>=lines.size())
+	if(y<0||y >= rows.size())
 	    throw new IllegalArgumentException("y = " + y);
-	return lines.get(y).toArray(new WebElementPart[lines.get(y).size()]);
+	return rows.get(y).getParts();
     }
 
+    /*
     public void print()
     {
 	for(int i=0;i<lines.size();i++)
@@ -96,14 +87,15 @@ public class WebView
 	    System.out.println();//" cache:"+cache.get(i));
 	}
     }
+    */
 
     Vector<String> getLines()
     {
-	return cache;
+	return lines;
     }
 
-    Vector<Vector<WebElementPart>> getParts()
+    Vector<Row> getRows()
     {
-	return lines;
+	return rows;
     }
 }
