@@ -47,7 +47,6 @@ class BrowserArea implements Area
 
     private WebDocument doc = new WebDocument();
     private WebView view = new WebView();
-    private WebElement current;
 
     private final Vector<HistoryElement> elementHistory = new Vector<HistoryElement>();
     private boolean complexMode = false;
@@ -96,7 +95,6 @@ class BrowserArea implements Area
 	textSelectorInvisible=page.selectorText(false,null);
 	doc = new WebDocument();
 	doc.make(page);
-	current = doc.getRoot();
 	complexMode = false;
 	refill();
 	Log.debug("browser", "DOM refreshed successfully");
@@ -559,10 +557,9 @@ return false;
 	if(part.element.needToBeComplex()||complexMode)
 	{ // select complex element as base for view in navigation area
 	    // store prev element to history
-	    elementHistory.add(new HistoryElement(current,complexMode));
+	    elementHistory.add(new HistoryElement(part.element,complexMode));
 	    complexMode = !complexMode;
-	    current = part.element;
-	    final WebViewBuilder builder = WebViewBuilder.newBuilder(complexMode?WebViewBuilder.Type.COMPLEX:WebViewBuilder.Type.NORMAL, current,luwrain.getAreaVisibleWidth(this));
+	    final WebViewBuilder builder = WebViewBuilder.newBuilder(complexMode?WebViewBuilder.Type.COMPLEX:WebViewBuilder.Type.NORMAL, part.element,luwrain.getAreaVisibleWidth(this));
 	    view = builder.build();
 	    fixHotPoint();
 	    environment.onAreaNewContent(this);
@@ -603,14 +600,14 @@ return false;
 	HistoryElement h=elementHistory.lastElement();
 	elementHistory.remove(elementHistory.size()-1);
 	complexMode=h.mode;
-	current = h.element;
+	//current = h.element;
 	refill();
 	return true;
     }
 
 	private void refill()
 	{
-	    final WebViewBuilder builder = WebViewBuilder.newBuilder(complexMode?WebViewBuilder.Type.COMPLEX:WebViewBuilder.Type.NORMAL, current, luwrain.getAreaVisibleWidth(this));
+	    final WebViewBuilder builder = WebViewBuilder.newBuilder(complexMode?WebViewBuilder.Type.COMPLEX:WebViewBuilder.Type.NORMAL, doc.getRoot(), luwrain.getAreaVisibleWidth(this));
 	    view = builder.build();
 		fixHotPoint();
 		WebElementPart part = view.getElementByPos(getHotPointX(),getHotPointY());
