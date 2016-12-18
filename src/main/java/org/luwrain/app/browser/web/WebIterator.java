@@ -32,16 +32,16 @@ public WebIterator(WebView view)
 	public void setPosX(int posX)
 	{
 	// limit X position to current line string size +1 (we can move cursor out of element part)
-	    if(posX > view.getLines().get(posY).length()) 
-		posX = view.getLines().get(posY).length();
+	    if(posX > view.getLine(posY).length()) 
+		posX = view.getLine(posY).length();
 	this.posX=posX;
 	}
 
 	public void setPosY(int posY)
 	{
 	// limit Y position to lines count
-	    if(posY >= view.getRows().size()) 
-		posY = view.getRows().size();
+	    if(posY >= view.getLineCount())
+		posY = view.getLineCount();
 	this.posY=posY;
 	}
 	
@@ -49,7 +49,7 @@ public WebIterator(WebView view)
 	 * @return true if nowhere move */
 	public boolean moveNextLine()
 	{
-	    if(posY >= view.getRows().size()) 
+	    if(posY >= view.getLineCount())
 return true;
 	posY++;
 	posX=0;
@@ -79,7 +79,7 @@ return true;
 	 * @return true if nowhere move */
 	public boolean moveRightByChar()
 	{
-	    if(posX > view.getLines().get(posY).length()) 
+	    if(posX > view.getLine(posY).length()) 
 return true;
 	posX++;
 	return false;
@@ -116,7 +116,7 @@ return true;
 			if(posY==0) return true;
 			// move to and end of previous line
 			posY--;
-			posX = view.getLines().get(posY).length();
+			posX = view.getLine(posY).length();
 			return moveToCurrentPart();
 		} else
 		{ // prev part on this line
@@ -145,7 +145,7 @@ return true;
 		if(i>=line.length-1)
 		{ // last part in line, move down and begin of line
 			// can't move up?
-		    if(posY >= view.getRows().size()) 
+		    if(posY >= view.getLineCount())
 return true;
 			// move to begin of next line
 			posY++;

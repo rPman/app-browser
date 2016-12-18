@@ -5,13 +5,17 @@ import java.util.*;
 
 import org.luwrain.core.*;
 
-public class Row
+public class WebLine
 {
     private final Vector<WebElementPart> parts;
+    private final String text;
 
-    Row(Vector<WebElementPart> parts)
+    WebLine(Vector<WebElementPart> parts, String text)
     {
+	NullCheck.notNull(parts, "parts");
+	NullCheck.notNull(text, "text");
 	this.parts = parts;
+	this.text = text;
     }
 
     WebElementPart getPartAtPos(int pos)
@@ -28,5 +32,15 @@ public class Row
     WebElementPart[] getParts()
     {
 	return parts.toArray(new WebElementPart[parts.size()]);
+    }
+
+    String getText()
+    {
+	return text;
+    }
+
+    @Override public String toString()
+    {
+	return text;
     }
 }

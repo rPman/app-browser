@@ -19,18 +19,16 @@ public class WebView
     // tips:
     // Multiline text web element always start at new line
 
-    private final Vector<Row> rows;
-    private final Vector<String> lines;
+    private final Vector<WebLine> lines;
 
 	WebView(Vector<Vector<WebElementPart>> parts, Vector<String> lines)
     {
 	NullCheck.notNull(parts, "parts");
 	NullCheck.notNull(lines, "lines");
-	rows = new Vector<Row>();
-	rows.setSize(parts.size());
+	this.lines = new Vector<WebLine>();
+	this.lines.setSize(parts.size());
 	for(int i = 0;i < parts.size();++i)
-	    rows.set(i, new Row(parts.get(i)));
-	this.lines = lines;
+	    this.lines.set(i, new WebLine(parts.get(i), lines.get(i)));
     }
 
     /**
@@ -48,7 +46,7 @@ public class WebView
     {
 	if(y < 0 || y >= lines.size())
 	    return "";
-	return lines.get(y);
+	return lines.get(y).getText();
     }
 
     /**
@@ -57,11 +55,11 @@ public class WebView
      * @param y is a line number
      * @return WebElementPart in this position or null 
      */
-    public WebElementPart getPartByPos(int x,int y)
+    public WebElementPart getPartByPos(int x, int y)
     {
-	if(y < 0 || y >= rows.size())
+	if(y < 0 || y >= lines.size())
 	    throw new IllegalArgumentException("y = " + y);
-	return rows.get(y).getPartAtPos(x);
+	return lines.get(y).getPartAtPos(x);
     }
 
     /**
@@ -69,33 +67,23 @@ public class WebView
      * @param y is a line number
      * @return list of WebElementPart
      */
-    public WebElementPart[] getPartsOnLine(int y)
+    public WebElementPart[] getPartsOnLine(int index)
     {
-	if(y<0||y >= rows.size())
-	    throw new IllegalArgumentException("y = " + y);
-	return rows.get(y).getParts();
+	if(index < 0 || index >= lines.size())
+	    throw new IllegalArgumentException("index = " + index);
+	return lines.get(index).getParts();
     }
 
-    /*
-    public void print()
+    String[] getLines()
     {
-	for(int i=0;i<lines.size();i++)
-	{
-	    System.out.print("parts: ");
-	    for(WebElementPart part:lines.get(i))
-		System.out.print(part.element.getTextShort()+"["+part.element.hashCode()+"]{"+part.text.replace('\n',' ')+"} ");
-	    System.out.println();//" cache:"+cache.get(i));
-	}
-    }
-    */
-
-    Vector<String> getLines()
-    {
-	return lines;
+	final String[] res = new String[lines.size()];
+	for(int i = 0;i < lines.size();++i)
+	    res[i] = lines.get(i).getText();
+	return res;
     }
 
-    Vector<Row> getRows()
+    WebLine[] getWebLines()
     {
-	return rows;
+	return lines.toArray(new WebLine[lines.size()]);
     }
 }
