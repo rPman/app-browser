@@ -13,23 +13,23 @@ import org.luwrain.app.browser.web.*;
 
 class BrowserArea implements Area
 {
-    private final Luwrain luwrain;
-    private final Callback callback;
-    private final ControlEnvironment environment;
+    protected final Luwrain luwrain;
+    protected final Callback callback;
+    protected final ControlEnvironment environment;
 
-    private final Browser page;
-    private Events events;
+    protected final Browser page;
+    protected Events events;
 
-    private WebState state = WebState.READY;
-    private int progress = 0;
+    protected WebState state = WebState.READY;
+    protected int progress = 0;
 
-    private WebDocument doc = new WebDocument();
-    private WebView view = null;
-    private WebIterator it = null;
-    private int hotPointX = 0;
+    protected WebDocument doc = new WebDocument();
+    protected WebView view = null;
+    protected WebIterator it = null;
+    protected int hotPointX = 0;
 
-    private final Vector<HistoryElement> elementHistory = new Vector<HistoryElement>();
-    private boolean complexMode = false;
+    protected final Vector<HistoryElement> elementHistory = new Vector<HistoryElement>();
+    protected boolean complexMode = false;
 
     BrowserArea(Luwrain luwrain, Callback callback, Browser browser)
     {
