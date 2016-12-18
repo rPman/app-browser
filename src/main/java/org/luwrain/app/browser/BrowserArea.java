@@ -30,6 +30,7 @@ class BrowserArea implements Area
     private WebDocument doc = new WebDocument();
     private WebView view = null;
     private WebIterator it = null;
+    private int hotPointX = 0;
 
     private final Vector<HistoryElement> elementHistory = new Vector<HistoryElement>();
     private boolean complexMode = false;
@@ -71,7 +72,7 @@ class BrowserArea implements Area
     boolean refresh()
     {
 	Log.debug("browser", "starting DOM refreshing");
-	if(isEmpty() || isBusy())
+	if(isBusy())
 	    return false;
 	page.RescanDOM();
 	elementsForScan=page.iterator();
@@ -79,7 +80,7 @@ class BrowserArea implements Area
 	doc = new WebDocument();
 	doc.make(page);
 	complexMode = false;
-	refill();
+prepareView();
 	Log.debug("browser", "DOM refreshed successfully");
 	return true;
     }
@@ -142,6 +143,8 @@ class BrowserArea implements Area
 
     @Override public int getLineCount()
     {
+	if (isEmpty())
+	    return 1;
 	return view.getLineCount();
     }
 
@@ -242,7 +245,6 @@ class BrowserArea implements Area
 	}
     }
 
-
     private boolean onThreadSyncEvent(EnvironmentEvent event)
     {
 	NullCheck.notNull(event, "event");
@@ -279,7 +281,6 @@ class BrowserArea implements Area
 	}
 	return false;
     }
-
 
     void onProgress(Number progress)
     {
@@ -335,32 +336,53 @@ class BrowserArea implements Area
     {
 	if (noContent())
 	    return true;
-	if(it.moveLeftByChar())
-		return true;
+	final String text = it.getText();
+	if (text.isEmpty())
+	{
+	    environment.hint(Hints.EMPTY_LINE);
+	    return true;
+	}
+	if (hotPointX == 0)
+	{
+	    environment.hint(Hints.BEGIN_OF_LINE);
+	    return true;
+	}
+	--hotPointX;
+	if (hotPointX < text.length())
+	    environment.sayLetter(text.charAt(hotPointX)); else
+	    environment.hint(Hints.END_OF_LINE);
 	luwrain.onAreaNewHotPoint(this);
-	// say current line full
-	char letter = getLine(it.getPosY()).charAt(it.getPosX());
-	luwrain.sayLetter(letter);
-	return false;
+	return true;
     }
 
     protected boolean onArrowRight(KeyboardEvent event)
     {
 	if (noContent())
 	    return true;
-	if(it.moveRightByChar())
-		return true;
+	final String text = it.getText();
+	if (text.isEmpty())
+	{
+	    environment.hint(Hints.EMPTY_LINE);
+	    return true;
+	}
+	if (hotPointX >= text.length())
+	{
+	    environment.hint(Hints.END_OF_LINE);
+	    return true;
+	}
+	++hotPointX;
+	if (hotPointX < text.length())
+	    environment.sayLetter(text.charAt(hotPointX)); else
+	    environment.hint(Hints.END_OF_LINE);
 	luwrain.onAreaNewHotPoint(this);
-	// say current line full
-	char letter = getLine(it.getPosY()).charAt(it.getPosX());
-	luwrain.sayLetter(letter);
-	return false;
+	return true;
     }
 
     private boolean onAlternateRight(KeyboardEvent event)
 	{
    	if (noContent())
    	    return true;
+	/*
 	if(it.moveToNextPart())
 		return true;
 	luwrain.onAreaNewHotPoint(this);
@@ -371,6 +393,7 @@ class BrowserArea implements Area
 		environment.hint(Hints.EMPTY_LINE);
 	else
 		luwrain.say(text);
+	*/
 	return false;
 	}
 
@@ -378,6 +401,7 @@ class BrowserArea implements Area
 	{
 	if (noContent())
 	    return true;
+	/*
 	if(it.moveToPrevPart())
 		return true;
 	luwrain.onAreaNewHotPoint(this);
@@ -388,6 +412,7 @@ class BrowserArea implements Area
 		environment.hint(Hints.EMPTY_LINE);
 	else
 		luwrain.say(text);
+	*/
 	return false;
 	}
 
@@ -395,117 +420,37 @@ class BrowserArea implements Area
     {
 	if (noContent())
 	    return true;
-	if(it.movePrevLine())
-		return true;
-	luwrain.onAreaNewHotPoint(this);
-	// say current line full
-	String text=getLine(it.getPosY());
+	if(!it.movePrev())
+	{
+	    environment.hint(Hints.NO_LINES_ABOVE);
+	    return true;
+	}
+	final String text = it.getText();
 	if(text.isEmpty())
-		environment.hint(Hints.EMPTY_LINE);
-	else
+		environment.hint(Hints.EMPTY_LINE); else
 		luwrain.say(text);
-	return false;
+	hotPointX = 0;
+	luwrain.onAreaNewHotPoint(this);
+	return true;
     }
 
     protected boolean onArrowDown(KeyboardEvent event)
     {
 	if (noContent())
 	    return true;
-	if(it.moveNextLine())
-		return true;
-	luwrain.onAreaNewHotPoint(this);
-	// say current line full
-	String text=getLine(it.getPosY());
+	if(!it.moveNext())
+	{
+	    environment.hint(Hints.NO_LINES_BELOW);
+	    return true;
+	}
+	final String text = it.getText();
 	if(text.isEmpty())
-		environment.hint(Hints.EMPTY_LINE);
-	else
+		environment.hint(Hints.EMPTY_LINE); else
 		luwrain.say(text);
-	return false;
+	hotPointX = 0;
+	luwrain.onAreaNewHotPoint(this);
+	return true;
     }
-
-    private void fixHotPoint()
-    {
-		int x=getHotPointX(),y=getHotPointY();
-		WebElementPart part=null;
-		while(true)
-		{ // loop try to select eny element (under cursor, last, first)
-			part = view.getPartByPos(x,y);
-			if(part==null)
-			{
-				// last try?
-				if(y==0&&x==0) break;
-				// we try to select first element in the last line
-				if(y==view.getLineCount()-1)
-				{
-					if(x==0)
-					{ // try to get first line
-						y=0;
-						continue;
-					} else
-					{ // try to get first element in line
-						x=0;
-						continue;
-					}
-				} else
-				if(y >= view.getLineCount())
-				{
-					y = view.getLineCount()-1;
-					continue;
-				} else
-				{
-					x=0;
-					break;
-				}
-			} else
-				break;
-		}
-		//		setHotPoint(x,y);
-    }
-
-    /*
-	private boolean onElementNavigateLeft()
-	{ // prev
-		final WebElementPart part = view.getElementByPos(getHotPointX(),getHotPointY());
-Vector<WebElementPart> line = view.getPartsByLineIndex(getHotPointY());
-		if(part==null||line==null) 
-return false;
-		int idx = line.indexOf(part);
-		if(idx==0)
-		{ // move previous line
-			if(getHotPointY()==0) 
-return false;
-			line = view.getPartsByLineIndex(getHotPointY()-1);
-			//			setHotPoint(line.lastElement().pos,getHotPointY()-1);
-		} else
-		{ // move inside line
-		    //			setHotPoint(line.get(idx-1).pos,getHotPointY());
-		}
-  		onNewSelectedElement();
-  		environment.onAreaNewContent(this);
-  		return true;
-	}
-    */
-
-    /*
-	private boolean onElementNavigateRight()
-	{ // next
-		WebElementPart part = view.getElementByPos(getHotPointX(),getHotPointY());
-		final Vector<WebElementPart> line = view.getPartsByLineIndex(getHotPointY());
-		if(part==null||line==null) return false;
-		int idx=line.indexOf(part);
-		if(idx==line.size()-1)
-		{ // move next line
-			if(getHotPointY() + 1 == view.getLineCount()) return false;
-			//			setHotPoint(0,getHotPointY()+1);
-		} else
-		{ // move inside line
-		    //			setHotPoint(line.get(idx+1).pos,getHotPointY());
-		}
-  		onNewSelectedElement();
-  		environment.onAreaNewContent(this);
-  		return true;
-	}
-    */
 
 	private void  onNewSelectedElement()
 	{
@@ -550,7 +495,6 @@ return false;
 	    complexMode = !complexMode;
 	    final WebViewBuilder builder = WebViewBuilder.newBuilder(complexMode?WebViewBuilder.Type.COMPLEX:WebViewBuilder.Type.NORMAL, part.element,luwrain.getAreaVisibleWidth(this));
 	    view = builder.build();
-	    fixHotPoint();
 	    environment.onAreaNewContent(this);
 	    return true;
 	}
@@ -590,18 +534,15 @@ return false;
 	elementHistory.remove(elementHistory.size()-1);
 	complexMode=h.mode;
 	//current = h.element;
-	refill();
+	prepareView();
 	return true;
     }
 
-	private void refill()
+	private void prepareView()
 	{
 	    final WebViewBuilder builder = WebViewBuilder.newBuilder(complexMode?WebViewBuilder.Type.COMPLEX:WebViewBuilder.Type.NORMAL, doc.getRoot(), luwrain.getAreaVisibleWidth(this));
 	    view = builder.build();
-		fixHotPoint();
-		WebElementPart part = view.getPartByPos(getHotPointX(),getHotPointY());
-		if(part!=null)
-		    environment.say(part.toString());
+	    it = view.createIterator();
 		environment.onAreaNewContent(this);
 	}
 
@@ -618,7 +559,7 @@ return false;
 	if (newValue == null) 
 	    return true;
 	e.setText(newValue);
-	refill();
+prepareView();
 	return true;
     }
 
@@ -638,7 +579,7 @@ return false;
 	if(popup.closing.cancelled()) 
 	    return true;
 	e.setText(popup.text());
-	refill();
+	prepareView();
 	return true;
     }
 
