@@ -143,7 +143,7 @@ public class WebDocument
 		//System.out.println("replace: "+element.getType()+" "+element.getText());
 		if(element.getParent()!=null&&element.getChildren().size()==1)
 		{
-			switch(element.getElement().getType())
+			switch(element.getNode().getType())
 			{
 				// ignore important tags for this optimization
 				case "li":
@@ -152,7 +152,7 @@ public class WebDocument
 				case "th":
 					break;
 				default:
-					ElementIterator e=element.getParent().getElement();
+					ElementIterator e=element.getParent().getNode();
 					//System.out.println("REPLACE: "+e.getType()+" "+e.getText());
 					// keep attributes from removed parent in element
 					element.mixAttributes(element.getParent());

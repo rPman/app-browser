@@ -31,7 +31,7 @@ public class WebTable extends WebEdit
 	{
 		for(WebElement child:e.getChildren())
 		{
-			String t=child.getElement().getType();
+			String t=child.getNode().getType();
 			switch(t)
 			{
 				case "th":

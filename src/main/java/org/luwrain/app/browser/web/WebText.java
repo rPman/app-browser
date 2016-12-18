@@ -40,7 +40,7 @@ public class WebText implements WebElement
     // WebView related attributes
     protected boolean needToBeExpanded=true;
     protected boolean needToBeHidden=false;
-    protected boolean needBeginLine=false;
+    protected boolean needBeginLine =false;
     protected boolean needEndLine=false;
     protected boolean needToBeComplex=false;
 
@@ -128,7 +128,7 @@ public class WebText implements WebElement
 	return children;
     }
 
-    @Override public boolean needToBeComplex()
+    @Override public boolean isComplex()
     {
 	return needToBeComplex;
     }
@@ -143,7 +143,7 @@ public class WebText implements WebElement
 	return needToBeHidden;
     }
 
-    @Override public boolean needBeginLine()
+    @Override public boolean alwaysFromNewLine()
     {
 	return needBeginLine;
     }
@@ -193,11 +193,6 @@ public class WebText implements WebElement
     @Override public LinkedHashMap<String,String> getAttributes()
     {
 	return attributes;
-    }
-
-    @Override public ElementIterator getElement()
-    {
-	return nodeIt;
     }
 
     @Override public void print(int lvl,boolean printChildren)

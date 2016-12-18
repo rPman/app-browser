@@ -43,7 +43,7 @@ class WebBuilderNormal implements WebViewBuilder
 	private void build(WebElement element)
 	{
 	    NullCheck.notNull(element, "element");
-		if((!element.needToBeComplex() || element == root) &&
+		if((!element.isComplex() || element == root) &&
 			 element.needToBeExpanded() && element.hasChildren())
 		{ // we must expand this web element
 			for(WebElement child: element.getChildren())
@@ -52,7 +52,7 @@ class WebBuilderNormal implements WebViewBuilder
 		{ // we must use root element if it must not expanded or have no childs
 			// get element text before (optimization - we need known text line length before using it)
 			final String text;
-			if(element.needToBeComplex())
+			if(element.isComplex())
 				text = element.getTextShort(); else
 				text = element.getTextSay();
 			final int textLength = text.length();
@@ -73,14 +73,14 @@ class WebBuilderNormal implements WebViewBuilder
 					break;
 				}
 				// check this element must not first at line
-				if(element.needBeginLine())
+				if(element.alwaysFromNewLine())
 				{
 					newline=true;
 					break;
 				}
 				// check this element designed on html have Y pos not like last element
-				Rectangle re=element.getElement().getRect();
-				final Rectangle rl=last.getElement().getRect();
+				Rectangle re=element.getNode().getRect();
+				final Rectangle rl=last.getNode().getRect();
 				if(rl.y>=re.y+re.height||re.y>=rl.y+rl.height)
 				{
 					newline=true;

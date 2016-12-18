@@ -317,9 +317,9 @@ class BrowserArea implements Area
 	final WebElement el = it.getElementAtPos(hotPointX);
 	if(el == null)
 	    return false;
-	if(el.needToBeComplex()||complexMode)
+	if(el.isComplex() || complexMode)
 	    return switchComplexMode(el);
-	if(el.getElement().isEditable())
+	if(el.getNode().isEditable())
 	{ // editable element, edit it
 	    if(el instanceof WebRadio || el instanceof WebCheckbox)
 		return emulateClick(el);
@@ -354,7 +354,7 @@ class BrowserArea implements Area
 	NullCheck.notNull(el, "el");
 	if (isEmpty() || isBusy())
 	    return false;
-	el.getElement().clickEmulate();
+	el.getNode().clickEmulate();
 	return true;
     }
 
@@ -363,7 +363,7 @@ class BrowserArea implements Area
 	NullCheck.notNull(el, "el");
 	if (isEmpty() || isBusy())
 	    return false;
-	final ElementIterator e = el.getElement();
+	final ElementIterator e = el.getNode();
 	final String oldValue = e.getText();
 	final String newValue = callback.askFormTextValue(oldValue != null?oldValue:"");
 	if (newValue == null) 
@@ -378,7 +378,7 @@ class BrowserArea implements Area
 	NullCheck.notNull(el, "el");
 	if (isEmpty() || isBusy())
 	    return false;
-	final ElementIterator e = el.getElement();
+	final ElementIterator e = el.getNode();
 	final String[] items = e.getMultipleText();
 	if (items == null || items.length==0) 
 	    return true; // FIXME:

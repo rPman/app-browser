@@ -25,7 +25,7 @@ public class Weight
 	{
 		@Override public long calcWeightFor(WebElement element)
 		{
-			final Rectangle r = element.getElement().getRect();
+			final Rectangle r = element.getNode().getRect();
 			return r.width * r.height;
 		}
 	}
@@ -35,7 +35,7 @@ public class Weight
 	{
 		@Override public long calcWeightFor(WebElement element)
 		{
-			ElementIterator e=element.getElement();
+			ElementIterator e=element.getNode();
 			long len=e.getText().length();
 			// if it link, add href length too
 			String href=e.getAttributeProperty("href");

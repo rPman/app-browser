@@ -12,23 +12,15 @@ public interface WebElement
 	/** called after all node init after cleanup TODO: conduct research - after or before cleanup */
 	void init();
 
-	/** @return String simple name of element's base type */
 	Type getType();
-
-	/** @return elementIterator for root node element, must be used only for read or clone */
 	ElementIterator getNode();
-
 	boolean hasChildren();
-
 	Vector<WebElement> getChildren();
 	WebElement getParent();
-	ElementIterator getElement();
-
 	/** @return	true, if element can have navigation structure like Table or List, and text on screen short representation of it */
-	boolean needToBeComplex();
-
+	boolean isComplex();
 	/** @return true, if this element must be used only new begin on WebView line */
-	boolean needBeginLine();
+	boolean alwaysFromNewLine();
 
 	/** @return true, if this element must have not any elements after on WebView line */
 	boolean needEndLine();
@@ -42,9 +34,7 @@ public interface WebElement
 	/** @return splitter text, used after this web element in single line in WebView to split next, usual it is a single space or empty string */
 	String getSplitter();
 
-	/** @return element text representation */
 	String getTextSay();
-
 	String getTextView();
 
 	String getTextShort();
@@ -55,10 +45,8 @@ public interface WebElement
 
 	/** visible root element */
 	boolean isVisible();
-	
-	/** return item weight */
+
 	long getWeight();
-	/** */
 	void incWeight(long weight);
 
 	/** set element attribute name, for example href  */
