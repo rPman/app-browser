@@ -12,12 +12,9 @@ public class WebRadio extends WebEdit
 	{
 		return Type.Radio;
 	}
-	@Override public String getTextSay()
+
+	@Override public String getText()
 	{
-		return nodeIt.getText();
-	}
-	@Override public String getTextView()
-	{
-		return "["+getType().name()+" " + nodeIt.getText() + "]";
+		return "(" + nodeIt.getText() + ")";
 	}
 }

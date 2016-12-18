@@ -52,10 +52,19 @@ class BrowserApp implements Application
 	this.luwrain = luwrain;
 	actions = new Actions(luwrain);
 	createArea();
+	/*
 	if(arg!=null)
 	{
 		final URL urlfinal=url; 
 		luwrain.runInMainThread(()->area.open(urlfinal));
+	}
+	*/
+	try {
+	area.open(new URL("http://luwrain.org"));
+	}
+	catch(MalformedURLException e)
+	{
+	    e.printStackTrace();
 	}
 	return true;
     }

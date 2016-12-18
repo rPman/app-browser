@@ -14,12 +14,9 @@ public class WebSelect extends WebEdit
 	{
 		return Type.Select;
 	}
-	@Override public String getTextSay()
+
+	@Override public String getText()
 	{
-		return getType().name()+" " + nodeIt.getText();
-	}
-	@Override public String getTextView()
-	{
-		return "["+getType().name()+" " + nodeIt.getText()+"]";
+		return "[" + nodeIt.getText() + "]";
 	}
 }

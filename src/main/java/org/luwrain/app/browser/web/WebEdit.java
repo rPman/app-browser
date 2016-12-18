@@ -17,13 +17,8 @@ class WebEdit extends WebText
 	return Type.Edit;
     }
 
-    @Override public String getTextSay()
+    @Override public String getText()
     {
-	return "Поле для ввода " + nodeIt.getText();
-    }
-
-    @Override public String getTextView()
-    {
-	return "["+getType().name()+" " + nodeIt.getText()+"]";
+	return "[" + nodeIt.getText() + "]";
     }
 }

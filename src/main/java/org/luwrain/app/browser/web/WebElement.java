@@ -21,8 +21,7 @@ public interface WebElement
     boolean needToBeExpanded();
     boolean needToBeHidden();
     String getSplitter();
-    String getTextSay();
-    String getTextView();
+    String getText();
     String getTextShort();
     void toDelete();
     boolean isDeleted();

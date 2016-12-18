@@ -17,14 +17,12 @@ public class WebTableRow extends WebText
 	{
 		return Type.TableRow;
 	}
-	@Override public String getTextSay()
+
+	@Override public String getText()
 	{
 		return nodeIt.getText();
 	}
-	@Override public String getTextView()
-	{
-		return nodeIt.getText();
-	}
+
 	@Override public String getTextShort()
 	{
 		return name;

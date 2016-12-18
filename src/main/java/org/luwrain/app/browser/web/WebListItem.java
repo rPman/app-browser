@@ -17,14 +17,12 @@ public class WebListItem extends WebText
 	{
 		return Type.ListElement;
 	}
-	@Override public String getTextSay()
+
+	@Override public String getText()
 	{
-		return nodeIt.getText();
+		return "*" + nodeIt.getText();
 	}
-	@Override public String getTextView()
-	{
-		return nodeIt.getText();
-	}
+
 	@Override public String getTextShort()
 	{
 		return name;

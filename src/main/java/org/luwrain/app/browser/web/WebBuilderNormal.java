@@ -54,7 +54,7 @@ class WebBuilderNormal implements WebViewBuilder
 			final String text;
 			if(element.isComplex())
 				text = element.getTextShort(); else
-				text = element.getTextSay();
+				text = element.getText();
 			final int textLength = text.length();
 			final String[] splitted = Utils.splitTextForScreen(maxWidth, text);
 			// new line or not?

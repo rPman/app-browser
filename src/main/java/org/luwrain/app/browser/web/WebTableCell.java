@@ -15,14 +15,12 @@ public class WebTableCell extends WebText
 	{
 		return Type.TableCell;
 	}
-	@Override public String getTextSay()
+
+	@Override public String getText()
 	{
 		return nodeIt.getText();
 	}
-	@Override public String getTextView()
-	{
-		return nodeIt.getText();
-	}
+
 	@Override public String getTextShort()
 	{
 		return name;

@@ -91,21 +91,9 @@ public class WebText implements WebElement
 	this.needEndLine=needEndLine;
     }
 
-    @Override public String getTextSay()
+    @Override public String getText()
     {
-	// FIXME: make link sayble in Navigation area but not in WebElement
-	String res=nodeIt.getText();
-	if(attributes.containsKey("href"))
-	    res="Ссылка "+nodeIt.getText();
-	return res;
-    }
-
-    @Override public String getTextView()
-    {
-	String res=nodeIt.getText();
-	if(attributes.containsKey("href"))
-	    res="[Link: "+nodeIt.getText()+"]";
-	return res;
+	return nodeIt.getText();
     }
 
     @Override public String getTextShort()

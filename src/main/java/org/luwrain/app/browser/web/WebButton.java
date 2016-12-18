@@ -14,13 +14,8 @@ class WebButton extends WebText
 	return Type.Button;
     }
 
-    @Override public String getTextSay()
+    @Override public String getText()
     {
-	return "Кнопка " + nodeIt.getText();
-    }
-
-    @Override public String getTextView()
-    {
-	return "["+getType()+" " + nodeIt.getText() + "]";
+	return "{" + nodeIt.getText() + "}";
     }
 }

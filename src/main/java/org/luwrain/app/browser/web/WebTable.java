@@ -69,13 +69,10 @@ public class WebTable extends WebEdit
 	{
 		return Type.Table;
 	}
-	@Override public String getTextSay()
+
+	@Override public String getText()
 	{
-		return nodeIt.getText();
-	}
-	@Override public String getTextView()
-	{
-		return "["+getType().name()+" " + nodeIt.getText() + "]";
+		return "<" + nodeIt.getText() + ">";
 	}
 	@Override public String getTextShort()
 	{

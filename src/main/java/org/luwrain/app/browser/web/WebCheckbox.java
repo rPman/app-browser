@@ -12,12 +12,9 @@ public class WebCheckbox extends WebEdit
 	{
 		return Type.Checkbox;
 	}
-	@Override public String getTextSay()
+
+	@Override public String getText()
 	{
-		return nodeIt.getText();
-	}
-	@Override public String getTextView()
-	{
-		return "["+getType()+" " + nodeIt.getText()+"]";
+		return "[" + nodeIt.getText() + "]";
 	}
 }
