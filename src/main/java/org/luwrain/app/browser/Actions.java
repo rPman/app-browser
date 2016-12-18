@@ -60,4 +60,14 @@ class Actions implements BrowserArea.Callback
     {
 	luwrain.message("Страница не может быть загружена", Luwrain.MESSAGE_ERROR);
     }
+
+    @Override public String askFormTextValue(String oldValue)
+    {
+	return Popups.simple(luwrain, "Редактирование формы", "Новое значение:", oldValue);
+    }
+
+    @Override public String askFormListValue(String[] items, boolean fromListOnly)
+    {
+	return (String)Popups.fixedList(luwrain, "Выберите значение из списка:", items);
+    }
 }

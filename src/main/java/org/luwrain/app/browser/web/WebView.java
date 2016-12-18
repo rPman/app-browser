@@ -31,6 +31,13 @@ public class WebView
 	return lines.get(y).getText();
     }
 
+    public WebLine getWebLine(int index)
+    {
+	if(index < 0 || index >= lines.size())
+	    throw new IllegalArgumentException("index = " + index);
+	return lines.get(index);
+    }
+
     public WebElementPart getPartByPos(int x, int y)
     {
 	if(y < 0 || y >= lines.size())

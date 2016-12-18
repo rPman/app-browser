@@ -7,11 +7,9 @@ import java.util.*;
 import org.luwrain.core.*;
 import org.luwrain.core.events.*;
 import org.luwrain.controls.*;
-import org.luwrain.popups.*;
 import org.luwrain.browser.*;
-import org.luwrain.app.browser.web.*;
-
 import org.luwrain.browser.Events.WebState;
+import org.luwrain.app.browser.web.*;
 
 class BrowserArea implements Area
 {
@@ -80,7 +78,7 @@ class BrowserArea implements Area
 	doc = new WebDocument();
 	doc.make(page);
 	complexMode = false;
-prepareView();
+updateView();
 	Log.debug("browser", "DOM refreshed successfully");
 	return true;
     }
@@ -161,8 +159,6 @@ prepareView();
 	if (event.isSpecial() && !event.isModified())
 	    switch (event.getSpecial())
 	    {
-	    case TAB:
-		return onInfoAction();
 	    case ESCAPE:
 		return onEscape();
 	    case ARROW_LEFT:
@@ -181,9 +177,6 @@ prepareView();
 		return onClick();
 	    case BACKSPACE:
 		return onBackspace();
-	    case F10:
-		onChangeWebViewVisibility();
-		return true;
 	    case F9:
 		BigSearcherTest.main(doc,luwrain);
 		return true;
@@ -460,6 +453,7 @@ prepareView();
 		//final String link=part.element.getLink();
 		luwrain.say(elementTypeTranslation(type) + " "+text);
 	}
+
 	private String elementTypeTranslation(String type)
 	{
 		switch(type.toLowerCase().trim())
@@ -472,7 +466,7 @@ prepareView();
 	}
 
     /**Performs some default action relevant to the element under the hot
-     * point. What exact action will be done is dependent on the type of the
+     * point. What the exact action will be done is dependent on the type of the
      * element under the hot point. If there is a form input edit, the user
      * will get an offer to enter some text. If there is a form list, the
      * user will get a popup to choose some item from the list and so
@@ -481,33 +475,37 @@ prepareView();
      *
      * @return true if the operation has been done, false otherwise (usually the browser is busy or doesn't have a loaded page)
      */
-    private boolean onClick()
+    protected boolean onClick()
     {
 	if (isEmpty() || isBusy())
 	    return false;
-	final WebElementPart part = view.getPartByPos(getHotPointX(),getHotPointY());
-	if(part==null)
+	final WebElement el = it.getElementAtPos(hotPointX);
+	if(el == null)
 	    return false;
-	if(part.element.needToBeComplex()||complexMode)
-	{ // select complex element as base for view in navigation area
-	    // store prev element to history
-	    elementHistory.add(new HistoryElement(part.element,complexMode));
-	    complexMode = !complexMode;
-	    final WebViewBuilder builder = WebViewBuilder.newBuilder(complexMode?WebViewBuilder.Type.COMPLEX:WebViewBuilder.Type.NORMAL, part.element,luwrain.getAreaVisibleWidth(this));
+	if(el.needToBeComplex()||complexMode)
+	    return switchComplexMode(el);
+	if(el.getElement().isEditable())
+	{ // editable element, edit it
+	    if(el instanceof WebRadio || el instanceof WebCheckbox)
+		return emulateClick(el);
+	    if(el instanceof WebSelect)
+		return onFormSelectFromList(el);
+	    return onFormEditText(el);
+	}
+	return emulateClick(el);
+    }
+
+    protected boolean switchComplexMode(WebElement el)
+    {
+	NullCheck.notNull(el, "el");
+	    elementHistory.add(new HistoryElement(el, complexMode));
+	    complexMode  = !complexMode;
+	    final WebViewBuilder builder = WebViewBuilder.newBuilder(complexMode?WebViewBuilder.Type.COMPLEX:WebViewBuilder.Type.NORMAL, el,luwrain.getAreaVisibleWidth(this));
 	    view = builder.build();
+	    it = view.createIterator();
 	    environment.onAreaNewContent(this);
 	    return true;
 	}
-	if(part.element.getElement().isEditable())
-	{ // editable element, edit it
-	    if(part.element instanceof WebRadio||part.element instanceof WebCheckbox)
-		return emulateClick(part);
-	    if(part.element instanceof WebSelect)
-		return onFormSelectFromList(part);
-	    return onFormEditText(part);
-	}
-	return emulateClick(part);
-    }
 
     /**Asks the browser core to emulate the action which looks like the user
      * clicks on the given element. This operation may be performed only if
@@ -516,14 +514,12 @@ prepareView();
      * @param part The element to emulate click on
      * @return true if the operation has been done, false otherwise (usually the browser is busy or doesn't have a loaded page)
      */
-    private boolean emulateClick(WebElementPart part)
+    protected boolean emulateClick(WebElement el)
     {
-	NullCheck.notNull(part, "part");
+	NullCheck.notNull(el, "el");
 	if (isEmpty() || isBusy())
 	    return false;
-	part.element.getElement().clickEmulate();
-	onTimerElementScan();
-	//pageScanner.fast();
+el.getElement().clickEmulate();
 	return true;
     }
 
@@ -534,11 +530,11 @@ prepareView();
 	elementHistory.remove(elementHistory.size()-1);
 	complexMode=h.mode;
 	//current = h.element;
-	prepareView();
+updateView();
 	return true;
     }
 
-	private void prepareView()
+    protected void updateView()
 	{
 	    final WebViewBuilder builder = WebViewBuilder.newBuilder(complexMode?WebViewBuilder.Type.COMPLEX:WebViewBuilder.Type.NORMAL, doc.getRoot(), luwrain.getAreaVisibleWidth(this));
 	    view = builder.build();
@@ -546,43 +542,39 @@ prepareView();
 		environment.onAreaNewContent(this);
 	}
 
-    private boolean onFormEditText(WebElementPart part)
+    protected boolean onFormEditText(WebElement el)
     {
-	NullCheck.notNull(part, "part");
+	NullCheck.notNull(el, "el");
 	if (isEmpty() || isBusy())
 	    return false;
-	final ElementIterator e = part.element.getElement();
-	String oldValue = e.getText();
-	if (oldValue == null)
-	    oldValue = "";
-	String newValue = Popups.simple(luwrain, "Редактирование формы", "Введите новое значение текстового поля формы:", oldValue);
+	final ElementIterator e = el.getElement();
+	final String oldValue = e.getText();
+	final String newValue = callback.askFormTextValue(oldValue != null?oldValue:"");
 	if (newValue == null) 
 	    return true;
 	e.setText(newValue);
-prepareView();
+updateView();
 	return true;
     }
 
-    private boolean onFormSelectFromList(WebElementPart part)
+    protected boolean onFormSelectFromList(WebElement el)
     {
-	NullCheck.notNull(part, "part");
+	NullCheck.notNull(el, "el");
 	if (isEmpty() || isBusy())
 	    return false;
-	final ElementIterator e=part.element.getElement();
-	final String[] listValues = e.getMultipleText();
-	if (listValues.length==0) 
+	final ElementIterator e = el.getElement();
+	final String[] items = e.getMultipleText();
+	if (items == null || items.length==0) 
 	    return true; // FIXME:
-	EditListPopup popup=new EditListPopup(luwrain,
-					      new EditListPopupUtils.FixedModel(listValues),
-					      "Редактирование формы","Выберите значение из списка",e.getText(), Popups.DEFAULT_POPUP_FLAGS);
-	luwrain.popup(popup);
-	if(popup.closing.cancelled()) 
+	final String res = callback.askFormListValue(items, true);
+	if (res == null)
 	    return true;
-	e.setText(popup.text());
-	prepareView();
+	e.setText(res);
+updateView();
 	return true;
     }
 
+    /*
 	private boolean onInfoAction()
 	{
 		WebElementPart part = view.getPartByPos(getHotPointX(),getHotPointY());
@@ -617,10 +609,14 @@ prepareView();
 		environment.say(info);
 		return true;
 	}
+    */
+
+    /*
 	private void onChangeWebViewVisibility()
 	{
 		page.setVisibility(!page.getVisibility());
 	}
+    */
 
     protected void noContentMsg()
     {
@@ -642,5 +638,7 @@ interface Callback
     void onBrowserRunning();
     void onBrowserSuccess(String title);
     void onBrowserFailed();
+    String askFormTextValue(String currentValue);
+    String askFormListValue(String[] items, boolean fromListOnly);
 }
 }

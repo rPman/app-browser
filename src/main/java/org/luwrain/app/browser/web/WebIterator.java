@@ -128,4 +128,10 @@ public class WebIterator
 	*/
 	return true;
     }
+
+    public WebElement getElementAtPos(int pos)
+    {
+	final WebElementPart part = view.getWebLine(index).getPartAtPos(pos);
+	return part != null?part.element:null;
+    }
 }
