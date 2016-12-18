@@ -70,4 +70,49 @@ class Actions implements BrowserArea.Callback
     {
 	return (String)Popups.fixedList(luwrain, "Выберите значение из списка:", items);
     }
+
+    /*
+	private boolean onInfoAction()
+	{
+		WebElementPart part = view.getPartByPos(getHotPointX(),getHotPointY());
+		if(part==null) return false;
+		// first info - is short text
+		String info=part.element.getTextShort()+" ";
+		// second info - nearest parent  of complrx view item
+		WebElement e=part.element;
+		if(e instanceof WebText)
+		{
+			// FIXME:
+			String cssfont=e.getElement().getComputedStyleProperty("font-weight");
+			if(cssfont!=null&&!cssfont.equals("normal"))
+			{
+				info+=" font "+cssfont;
+			}
+			if(e.getAttributes().containsKey("href"))
+			{
+				info+=" link "+e.getAttributes().get("href");
+			}
+		}
+		// scan for parent complex
+		while(e!=null)
+		{
+			if(e instanceof WebListItem)
+			{
+				info+=" list item "+e.getTextShort();
+				break;
+			}
+			e=e.getParent();
+		}
+		environment.say(info);
+		return true;
+	}
+    */
+
+    /*
+	private void onChangeWebViewVisibility()
+	{
+		page.setVisibility(!page.getVisibility());
+	}
+    */
+
 }

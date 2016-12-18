@@ -1,0 +1,48 @@
+
+    static private final int PAGE_SCANNER_AROUND_ELEMENTS_COUNT=10; 
+
+    //	private final AutoPageElementScanner pageScanner;
+    //private ElementIterator elementsForScan = null;
+    //    private SelectorText textSelectorInvisible = null;
+
+    //private int scanPos = -1;
+
+	//	pageScanner = new AutoPageElementScanner(this);
+	//	pageScanner.schedule();
+
+
+
+
+
+
+
+
+	//	elementsForScan=page.iterator();
+	//	textSelectorInvisible=page.selectorText(false,null);
+
+
+	if(event instanceof CheckChangesEvent)
+	{
+	    if(state!=WebState.SUCCEEDED) return true;
+	    if(page.isBusy()) 
+return true;
+	    if(view.getLineCount()==0) return true;
+	    //if(wView.getLinesCount()<=getHotPointY()) return true;
+	    final WebElementPart[] line=view.getPartsOnLine(getHotPointY());
+	    if(line == null || line.length == 0) 
+	    	return true;
+	    scanPos=line[0].element.getElement().getPos();
+	    if(elementsForScan.isChangedAround(textSelectorInvisible,scanPos,PAGE_SCANNER_AROUND_ELEMENTS_COUNT))
+	    { // detected changes, add event to rescan page dom
+		refresh();
+	    }
+	    return true;
+	}
+
+
+
+    void onTimerElementScan()
+    {
+	if(state!=WebState.SUCCEEDED) return;
+	luwrain.enqueueEvent(new CheckChangesEvent(this));
+    }

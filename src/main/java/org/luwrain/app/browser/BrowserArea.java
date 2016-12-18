@@ -13,8 +13,6 @@ import org.luwrain.app.browser.web.*;
 
 class BrowserArea implements Area
 {
-    static private final int PAGE_SCANNER_AROUND_ELEMENTS_COUNT=10; 
-
     private final Luwrain luwrain;
     private final Callback callback;
     private final ControlEnvironment environment;
@@ -33,12 +31,6 @@ class BrowserArea implements Area
     private final Vector<HistoryElement> elementHistory = new Vector<HistoryElement>();
     private boolean complexMode = false;
 
-	private final AutoPageElementScanner pageScanner;
-    private ElementIterator elementsForScan = null;
-    private SelectorText textSelectorInvisible = null;
-
-	private int scanPos = -1;
-
     BrowserArea(Luwrain luwrain, Callback callback, Browser browser)
     {
 	NullCheck.notNull(luwrain, "luwrain");
@@ -50,14 +42,6 @@ class BrowserArea implements Area
 	this.page = browser;
 	events = new Events(luwrain, this);
 	this.page.init(events);
-	pageScanner = new AutoPageElementScanner(this);
-	pageScanner.schedule();
-    }
-
-    void onTimerElementScan()
-    {
-	if(state!=WebState.SUCCEEDED) return;
-	luwrain.enqueueEvent(new CheckChangesEvent(this));
     }
 
     /**
@@ -73,8 +57,6 @@ class BrowserArea implements Area
 	if(isBusy())
 	    return false;
 	page.RescanDOM();
-	elementsForScan=page.iterator();
-	textSelectorInvisible=page.selectorText(false,null);
 	doc = new WebDocument();
 	doc.make(page);
 	complexMode = false;
@@ -82,6 +64,14 @@ updateView();
 	Log.debug("browser", "DOM refreshed successfully");
 	return true;
     }
+
+    protected void updateView()
+	{
+	    final WebViewBuilder builder = WebViewBuilder.newBuilder(complexMode?WebViewBuilder.Type.COMPLEX:WebViewBuilder.Type.NORMAL, doc.getRoot(), luwrain.getAreaVisibleWidth(this));
+	    view = builder.build();
+	    it = view.createIterator();
+		environment.onAreaNewContent(this);
+	}
 
     /**Checks if the browser has valid loaded page
      *
@@ -112,6 +102,15 @@ updateView();
 	Log.debug("browser", "opening URL " + url.toString());
 	    page.load(url.toString());
 	environment.onAreaNewContent(this);
+	return true;
+    }
+
+boolean stop()
+    {
+	if (isEmpty() || !isBusy())
+	    return false;
+	Log.debug("browser", "trying to cancel loading");
+	page.stop();
 	return true;
     }
 
@@ -160,7 +159,7 @@ updateView();
 	    switch (event.getSpecial())
 	    {
 	    case ESCAPE:
-		return onEscape();
+		return stop();
 	    case ARROW_LEFT:
 		return onArrowLeft(event);
 	    case ARROW_RIGHT:
@@ -169,10 +168,6 @@ updateView();
 		return onArrowDown(event);
 	    case ARROW_UP:
 		return onArrowUp(event);
-	    case ALTERNATIVE_ARROW_LEFT:
-		return onAlternateLeft(event);
-	    case ALTERNATIVE_ARROW_RIGHT:
-		return onAlternateRight(event);
 	    case ENTER:
 		return onClick();
 	    case BACKSPACE:
@@ -210,119 +205,6 @@ updateView();
     @Override public Action[]getAreaActions()
     {
 	return new Action[0];
-    }
-
-    void onPageChangeState(WebState state)
-    {
-	NullCheck.notNull(state, "state");
-	Log.debug("browser", "new page state:" + state);
-	this.state = state;
-	switch(state)
-	{
-	case RUNNING:
-	    callback.onBrowserRunning();
-	    return;
-	case SUCCEEDED:
-	    refresh();
-	    callback.onBrowserSuccess(page.getTitle());
-	    return;
-	case FAILED:
-	    callback.onBrowserFailed();
-	    return;
-	case CANCELLED:
-	case READY:
-	case SCHEDULED:
-	    return;
-	default:
-	    Log.warning("browser", "unexpected new page state:" + state);
-	}
-    }
-
-    private boolean onThreadSyncEvent(EnvironmentEvent event)
-    {
-	NullCheck.notNull(event, "event");
-	if (event instanceof PromptEvent)
-	{
-	    Log.debug("web","t:"+Thread.currentThread().getId()+" PROMPT event inside area");
-	    final PromptEvent prompt = (PromptEvent)event;
-	    final String answer = onPrompt(prompt.message(), prompt.value());
-	    prompt.setAnswer (answer);
-	    return true;
-	}
-	if (event instanceof ConfirmEvent)
-	{
-	    final ConfirmEvent confirm = (ConfirmEvent)event;
-	    final boolean answer = onConfirm(confirm.message());
-	    confirm.setAnswer(answer);
-	    return true;
-	}
-	if(event instanceof CheckChangesEvent)
-	{
-	    if(state!=WebState.SUCCEEDED) return true;
-	    if(page.isBusy()) return true;
-	    if(view.getLineCount()==0) return true;
-	    //if(wView.getLinesCount()<=getHotPointY()) return true;
-	    final WebElementPart[] line=view.getPartsOnLine(getHotPointY());
-	    if(line == null || line.length == 0) 
-	    	return true;
-	    scanPos=line[0].element.getElement().getPos();
-	    if(elementsForScan.isChangedAround(textSelectorInvisible,scanPos,PAGE_SCANNER_AROUND_ELEMENTS_COUNT))
-	    { // detected changes, add event to rescan page dom
-		refresh();
-	    }
-	    return true;
-	}
-	return false;
-    }
-
-    void onProgress(Number progress)
-    {
-	NullCheck.notNull(progress, "progress");
-	this.progress = (int)(progress==null?0:Math.floor(progress.doubleValue()*100));
-    }
-
-    void onAlert(final String message)
-    {
-	NullCheck.notNull(message, "message");
-	if (message.trim().isEmpty())
-	    return;
-	luwrain.message("Внимание!" + message, Luwrain.MESSAGE_OK);
-	}
-
-	private String onPrompt(String message, String value)
-	{
-		if (message.trim().isEmpty())
-			return null;
-		luwrain.message("Выбор: " +message, Luwrain.MESSAGE_OK);
-		return "";//result;
-	}
-
-    void onError(String message)
-	{
-	    NullCheck.notNull(message, "message");
-	    if (message.trim().isEmpty())
-    	return;
-   		luwrain.message (message, Luwrain.MESSAGE_ERROR);
-	}
-
-    void onDownloadStart(String url)
-    {
-	//FIXME:
-	}
-
-	private  Boolean onConfirm(String message)
-	{
-   		luwrain.message ("Подтверждение: " +message, Luwrain.MESSAGE_OK);
-		return false;
-	}
-
-	protected boolean onEscape()
-    {
-	if (!isBusy())
-	    return false;
-	Log.debug("browser", "trying to cancel loading");
-	page.stop();
-	return true;
     }
 
     protected boolean onArrowLeft(KeyboardEvent event)
@@ -371,44 +253,6 @@ updateView();
 	return true;
     }
 
-    private boolean onAlternateRight(KeyboardEvent event)
-	{
-   	if (noContent())
-   	    return true;
-	/*
-	if(it.moveToNextPart())
-		return true;
-	luwrain.onAreaNewHotPoint(this);
-	// say current line full
-	WebElementPart part=view.getPartByPos(it.getPosX(),it.getPosY());
-	String text=part.toString();
-	if(text.isEmpty())
-		environment.hint(Hints.EMPTY_LINE);
-	else
-		luwrain.say(text);
-	*/
-	return false;
-	}
-
-	private boolean onAlternateLeft(KeyboardEvent event)
-	{
-	if (noContent())
-	    return true;
-	/*
-	if(it.moveToPrevPart())
-		return true;
-	luwrain.onAreaNewHotPoint(this);
-	// say current line full
-	WebElementPart part = view.getPartByPos(it.getPosX(), it.getPosY());
-	String text=part.toString();
-	if(text.isEmpty())
-		environment.hint(Hints.EMPTY_LINE);
-	else
-		luwrain.say(text);
-	*/
-	return false;
-	}
-
     protected boolean onArrowUp(KeyboardEvent event)
     {
 	if (noContent())
@@ -445,25 +289,16 @@ updateView();
 	return true;
     }
 
-	private void  onNewSelectedElement()
-	{
-		WebElementPart part = view.getPartByPos(getHotPointX(),getHotPointY());
-		final String type=part.element.getTextShort();
-		final String text=part.element.getTextSay();
-		//final String link=part.element.getLink();
-		luwrain.say(elementTypeTranslation(type) + " "+text);
-	}
-
-	private String elementTypeTranslation(String type)
-	{
-		switch(type.toLowerCase().trim())
-		{
-		case "link":
-			return "Ссылка";
-		default:
-			return type;
-		}
-	}
+    protected boolean onBackspace()
+    {
+	if(elementHistory.isEmpty()) return false;
+	HistoryElement h=elementHistory.lastElement();
+	elementHistory.remove(elementHistory.size()-1);
+	complexMode=h.mode;
+	//current = h.element;
+updateView();
+	return true;
+    }
 
     /**Performs some default action relevant to the element under the hot
      * point. What the exact action will be done is dependent on the type of the
@@ -523,25 +358,6 @@ el.getElement().clickEmulate();
 	return true;
     }
 
-    protected boolean onBackspace()
-    {
-	if(elementHistory.isEmpty()) return false;
-	HistoryElement h=elementHistory.lastElement();
-	elementHistory.remove(elementHistory.size()-1);
-	complexMode=h.mode;
-	//current = h.element;
-updateView();
-	return true;
-    }
-
-    protected void updateView()
-	{
-	    final WebViewBuilder builder = WebViewBuilder.newBuilder(complexMode?WebViewBuilder.Type.COMPLEX:WebViewBuilder.Type.NORMAL, doc.getRoot(), luwrain.getAreaVisibleWidth(this));
-	    view = builder.build();
-	    it = view.createIterator();
-		environment.onAreaNewContent(this);
-	}
-
     protected boolean onFormEditText(WebElement el)
     {
 	NullCheck.notNull(el, "el");
@@ -574,49 +390,93 @@ updateView();
 	return true;
     }
 
-    /*
-	private boolean onInfoAction()
+    protected void onPageChangeState(WebState state)
+    {
+	NullCheck.notNull(state, "state");
+	Log.debug("browser", "new page state:" + state);
+	this.state = state;
+	switch(state)
 	{
-		WebElementPart part = view.getPartByPos(getHotPointX(),getHotPointY());
-		if(part==null) return false;
-		// first info - is short text
-		String info=part.element.getTextShort()+" ";
-		// second info - nearest parent  of complrx view item
-		WebElement e=part.element;
-		if(e instanceof WebText)
-		{
-			// FIXME:
-			String cssfont=e.getElement().getComputedStyleProperty("font-weight");
-			if(cssfont!=null&&!cssfont.equals("normal"))
-			{
-				info+=" font "+cssfont;
-			}
-			if(e.getAttributes().containsKey("href"))
-			{
-				info+=" link "+e.getAttributes().get("href");
-			}
-		}
-		// scan for parent complex
-		while(e!=null)
-		{
-			if(e instanceof WebListItem)
-			{
-				info+=" list item "+e.getTextShort();
-				break;
-			}
-			e=e.getParent();
-		}
-		environment.say(info);
-		return true;
+	case RUNNING:
+	    callback.onBrowserRunning();
+	    return;
+	case SUCCEEDED:
+	    refresh();
+	    callback.onBrowserSuccess(page.getTitle());
+	    return;
+	case FAILED:
+	    callback.onBrowserFailed();
+	    return;
+	case CANCELLED:
+	case READY:
+	case SCHEDULED:
+	    return;
+	default:
+	    Log.warning("browser", "unexpected new page state:" + state);
 	}
-    */
+    }
 
-    /*
-	private void onChangeWebViewVisibility()
+    protected boolean onThreadSyncEvent(EnvironmentEvent event)
+    {
+	NullCheck.notNull(event, "event");
+	if (event instanceof PromptEvent)
 	{
-		page.setVisibility(!page.getVisibility());
+	    Log.debug("web","t:"+Thread.currentThread().getId()+" PROMPT event inside area");
+	    final PromptEvent prompt = (PromptEvent)event;
+	    final String answer = onPrompt(prompt.message(), prompt.value());
+	    prompt.setAnswer (answer);
+	    return true;
 	}
-    */
+	if (event instanceof ConfirmEvent)
+	{
+	    final ConfirmEvent confirm = (ConfirmEvent)event;
+	    final boolean answer = onConfirm(confirm.message());
+	    confirm.setAnswer(answer);
+	    return true;
+	}
+	return false;
+    }
+
+    protected void onProgress(Number progress)
+    {
+	NullCheck.notNull(progress, "progress");
+	this.progress = (int)(progress==null?0:Math.floor(progress.doubleValue()*100));
+    }
+
+    protected void onAlert(final String message)
+    {
+	NullCheck.notNull(message, "message");
+	if (message.trim().isEmpty())
+	    return;
+	luwrain.message("Внимание!" + message, Luwrain.MESSAGE_OK);
+	}
+
+    protected String onPrompt(String message, String value)
+	{
+		if (message.trim().isEmpty())
+			return null;
+		luwrain.message("Выбор: " +message, Luwrain.MESSAGE_OK);
+		return "";//result;
+	}
+
+    protected void onError(String message)
+	{
+	    NullCheck.notNull(message, "message");
+	    if (message.trim().isEmpty())
+    	return;
+   		luwrain.message (message, Luwrain.MESSAGE_ERROR);
+	}
+
+    protected void onDownloadStart(String url)
+    {
+	//FIXME:
+	}
+
+    protected Boolean onConfirm(String message)
+	{
+   		luwrain.message ("Подтверждение: " +message, Luwrain.MESSAGE_OK);
+		return false;
+	}
 
     protected void noContentMsg()
     {

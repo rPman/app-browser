@@ -19,7 +19,7 @@ class AutoPageElementScanner extends TimerTask
 
     @Override public void run()
     {
-	browser.onTimerElementScan();
+	//	browser.onTimerElementScan();
     }
 
     void schedule()
