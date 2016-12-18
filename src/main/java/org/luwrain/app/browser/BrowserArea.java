@@ -28,7 +28,8 @@ class BrowserArea implements Area
     private int progress = 0;
 
     private WebDocument doc = new WebDocument();
-    private WebView view = new WebView();
+    private WebView view = null;
+    private WebIterator it = null;
 
     private final Vector<HistoryElement> elementHistory = new Vector<HistoryElement>();
     private boolean complexMode = false;
@@ -89,7 +90,7 @@ class BrowserArea implements Area
      */ 
     boolean isEmpty()
     {
-	return state != WebState.SUCCEEDED;
+	return view == null || it == null || state != WebState.SUCCEEDED;
 	}
 
     /**Checks if the browser is doing any background work (usually fetching
@@ -127,12 +128,16 @@ class BrowserArea implements Area
 
     @Override public int getHotPointX()
     {
-	return view.getPosX();
+	if (isEmpty())
+	    return 0;
+	return it.getPosX();
     }
 
     @Override public int getHotPointY()
     {
-	return view.getPosY();
+	if (isEmpty())
+	    return 0;
+	return it.getPosY();
     }
 
     @Override public int getLineCount()
@@ -328,11 +333,11 @@ class BrowserArea implements Area
     {
 	if (noContent())
 	    return true;
-	if(view.moveLeftByChar())
+	if(it.moveLeftByChar())
 		return true;
 	luwrain.onAreaNewHotPoint(this);
 	// say current line full
-	char letter = getLine(view.getPosY()).charAt(view.getPosX());
+	char letter = getLine(it.getPosY()).charAt(it.getPosX());
 	luwrain.sayLetter(letter);
 	return false;
     }
@@ -341,11 +346,11 @@ class BrowserArea implements Area
     {
 	if (noContent())
 	    return true;
-	if(view.moveRightByChar())
+	if(it.moveRightByChar())
 		return true;
 	luwrain.onAreaNewHotPoint(this);
 	// say current line full
-	char letter = getLine(view.getPosY()).charAt(view.getPosX());
+	char letter = getLine(it.getPosY()).charAt(it.getPosX());
 	luwrain.sayLetter(letter);
 	return false;
     }
@@ -354,11 +359,11 @@ class BrowserArea implements Area
 	{
    	if (noContent())
    	    return true;
-	if(view.moveToNextPart())
+	if(it.moveToNextPart())
 		return true;
 	luwrain.onAreaNewHotPoint(this);
 	// say current line full
-	WebElementPart part=view.getElementByPos(view.getPosX(),view.getPosY());
+	WebElementPart part=view.getElementByPos(it.getPosX(),it.getPosY());
 	String text=part.toString();
 	if(text.isEmpty())
 		environment.hint(Hints.EMPTY_LINE);
@@ -371,11 +376,11 @@ class BrowserArea implements Area
 	{
 	if (noContent())
 	    return true;
-	if(view.moveToPrevPart())
+	if(it.moveToPrevPart())
 		return true;
 	luwrain.onAreaNewHotPoint(this);
 	// say current line full
-	WebElementPart part=view.getElementByPos(view.getPosX(),view.getPosY());
+	WebElementPart part = view.getElementByPos(it.getPosX(), it.getPosY());
 	String text=part.toString();
 	if(text.isEmpty())
 		environment.hint(Hints.EMPTY_LINE);
@@ -388,11 +393,11 @@ class BrowserArea implements Area
     {
 	if (noContent())
 	    return true;
-	if(view.movePrevLine())
+	if(it.movePrevLine())
 		return true;
 	luwrain.onAreaNewHotPoint(this);
 	// say current line full
-	String text=getLine(view.getPosY());
+	String text=getLine(it.getPosY());
 	if(text.isEmpty())
 		environment.hint(Hints.EMPTY_LINE);
 	else
@@ -404,11 +409,11 @@ class BrowserArea implements Area
     {
 	if (noContent())
 	    return true;
-	if(view.moveNextLine())
+	if(it.moveNextLine())
 		return true;
 	luwrain.onAreaNewHotPoint(this);
 	// say current line full
-	String text=getLine(view.getPosY());
+	String text=getLine(it.getPosY());
 	if(text.isEmpty())
 		environment.hint(Hints.EMPTY_LINE);
 	else

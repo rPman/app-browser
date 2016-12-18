@@ -1,24 +1,22 @@
 package org.luwrain.app.browser.web;
 
-import java.util.Vector;
+import java.util.*;
 
-import org.luwrain.core.Log;
+import org.luwrain.core.*;
 
 public class WebIterator
 {
-    private WebView webView;
-	private Vector<Vector<WebElementPart>> lines;
-    private Vector<String> cache;
-	
+    private final WebView view;
+    //	private Vector<Vector<WebElementPart>> lines;
+    //    private Vector<String> cache;
+
     /** current position */
 	private int posX=0;
     private int posY=0;
 
-	public void init(WebView webView, Vector<Vector<WebElementPart>> lines,Vector<String> cache)
+public WebIterator(WebView view)
     {
-		this.webView=webView;
-    	this.lines=lines;
-    	this.cache=cache;
+	this.view = view;
     }
     
     public int getPosX()
@@ -34,14 +32,16 @@ public class WebIterator
 	public void setPosX(int posX)
 	{
 	// limit X position to current line string size +1 (we can move cursor out of element part)
-	if(posX>cache.get(posY).length()) posX=cache.get(posY).length();
+	    if(posX > view.getLines().get(posY).length()) 
+		posX = view.getLines().get(posY).length();
 	this.posX=posX;
 	}
 
 	public void setPosY(int posY)
 	{
 	// limit Y position to lines count
-	if(posY>=lines.size()) posY=lines.size()-1;
+	    if(posY >= view.getParts().size()) 
+		posY = view.getParts().size();
 	this.posY=posY;
 	}
 	
@@ -49,11 +49,13 @@ public class WebIterator
 	 * @return true if nowhere move */
 	public boolean moveNextLine()
 	{
-	if(posY>=lines.size()) return true;
+	    if(posY >= view.getParts().size()) 
+return true;
 	posY++;
 	posX=0;
 	return false;
 	}
+
 	/** move position to previous line 
 	 * @return true if nowhere move */
 	public boolean movePrevLine()
@@ -63,6 +65,7 @@ public class WebIterator
 	posX=0;
 	return false;
 	}
+
 	/** move position left for one char
 	 *  @return true if nowhere move */
 	public boolean moveLeftByChar()
@@ -71,11 +74,13 @@ public class WebIterator
 	posX--;
 	return false;
 	}
+
 	/** move position right for one char
 	 * @return true if nowhere move */
 	public boolean moveRightByChar()
 	{
-	if(posX>cache.get(posY).length()) return true;
+	    if(posX > view.getLines().get(posY).length()) 
+return true;
 	posX++;
 	return false;
 	}
@@ -85,7 +90,7 @@ public class WebIterator
 	public boolean moveToCurrentPart()
 	{
 	// determine current part and all parts in lines
-	WebElementPart part=webView.getElementByPos(posX,posY);
+	WebElementPart part = view.getElementByPos(posX,posY);
 	if(part==null) return true;
 	posX=part.pos;
 	return false;
@@ -96,9 +101,9 @@ public class WebIterator
 	public boolean moveToPrevPart()
 	{
 	// determine current part and all parts in lines
-	WebElementPart part=webView.getElementByPos(posX,posY);
+	WebElementPart part = view.getElementByPos(posX,posY);
 	if(part==null) return true;
-	final WebElementPart[] line = webView.getPartsOnLine(posY);
+	final WebElementPart[] line = view.getPartsOnLine(posY);
 	if(line==null) return true;
 	// line.indexOf(part)
 	for(int i=0;i<line.length;i++)
@@ -111,7 +116,7 @@ public class WebIterator
 			if(posY==0) return true;
 			// move to and end of previous line
 			posY--;
-			posX=cache.get(posY).length();
+			posX = view.getLines().get(posY).length();
 			return moveToCurrentPart();
 		} else
 		{ // prev part on this line
@@ -129,9 +134,9 @@ public class WebIterator
 	public boolean moveToNextPart()
 	{
 	// determine current part and all parts in lines
-	WebElementPart part=webView.getElementByPos(posX,posY);
+	WebElementPart part = view.getElementByPos(posX,posY);
 	if(part==null) return true;
-	final WebElementPart[] line = webView.getPartsOnLine(posY);
+	final WebElementPart[] line = view.getPartsOnLine(posY);
 	if(line==null) return true;
 	// line.indexOf(part)
 	for(int i=0;i<line.length;i++)
@@ -140,7 +145,8 @@ public class WebIterator
 		if(i>=line.length-1)
 		{ // last part in line, move down and begin of line
 			// can't move up?
-			if(posY>=lines.size()) return true;
+		    if(posY >= view.getParts().size()) 
+return true;
 			// move to begin of next line
 			posY++;
 			posX=0;

@@ -5,7 +5,7 @@ import org.luwrain.core.*;
 
 /**
  * A fragment of a text representation of WebElement, purposed to be able
- * to split in case the line doesn't have a necessary length.
+ * to split in the case the line doesn't have a necessary length.
  *
  * @see WebElement WebView WebViewBuilder
  */
