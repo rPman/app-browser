@@ -1,120 +1,127 @@
 package org.luwrain.app.browser.webdoc;
 
-import java.util.Iterator;
+import java.lang.reflect.Array;
+import java.util.ArrayList;
 import java.util.LinkedList;
+import java.util.Vector;
 
-import org.luwrain.app.browser.web.ByFairDistrib;
+import org.luwrain.app.browser.web.WebCheckbox;
+import org.luwrain.app.browser.web.WebDocument;
+import org.luwrain.app.browser.web.WebEdit;
 import org.luwrain.app.browser.web.WebElement;
+import org.luwrain.app.browser.web.WebList;
+import org.luwrain.app.browser.web.WebListItem;
+import org.luwrain.app.browser.web.WebRadio;
+import org.luwrain.app.browser.web.WebSelect;
+import org.luwrain.app.browser.web.WebTable;
+import org.luwrain.app.browser.web.WebTableCell;
+import org.luwrain.app.browser.web.WebTableRow;
 import org.luwrain.app.browser.web.WebText;
-import org.luwrain.app.browser.web.Weight;
-import org.luwrain.app.browser.web.WeightSortedSet;
 import org.luwrain.browser.Browser;
-import org.luwrain.browser.ElementIterator;
-import org.luwrain.browser.Selector;
-import org.luwrain.browser.SelectorChildren;
-import org.luwrain.core.Log;
-import org.luwrain.core.NullCheck;
 import org.luwrain.doctree.Document;
 import org.luwrain.doctree.Node;
 import org.luwrain.doctree.NodeFactory;
+import org.luwrain.doctree.Paragraph;
+import org.luwrain.doctree.Run;
+import org.luwrain.doctree.TextRun;
 
-/** make doctree Document from current state of browser  */
 public class WebDocBuilder
 {
     private Node root = null;
-
-    public Node getRoot()
-    {
-	return root;
-    }
+    //private Paragraph curParagraph = null;
+    private Vector<Run> curParaRuns = null;
 
     public Document make(Browser page)
 	{
-		NullCheck.notNull(page, "page");
-		// get all children without parent, there should be only one like this
-		final SelectorChildren selector = page.rootChildren(false);
-		final ElementIterator it = page.iterator();
-		selector.moveFirst(it);
+    	// make WebDocument structure
+    	WebDocument doc = new WebDocument();
+    	doc.make(page);
+    	// make doctree Document from WebDocument
 	    root = NodeFactory.newNode(Node.Type.ROOT);
 	    final LinkedList<Node> subnodes = new LinkedList<Node>();
-
-
-	    //Enumerating all children
-		do {
-		    make_(page, root, it.getChildren(false));
-		} while(selector.moveNext(it));
-		cleanup(root);
-		// calculate weight and mark BIG elements in sorted set
-		elementInit(root,new Weight.ByTextLen());
-		WeightSortedSet result=new WeightSortedSet();
-		
+	    make_(subnodes,doc.getRoot());
 		root.setSubnodes(subnodes.toArray(new Node[subnodes.size()]));
 		return new Document(root);
+    	
 	}
-
-	private void make_(Browser page, Node parent, Selector selector)
+    
+    /** convert WebElement children to doctree subnodes */
+    void make_(LinkedList<Node> subnodes,WebElement element)
     {
-		final ElementIterator nodeIt = page.iterator();
-		if(!selector.moveFirst(nodeIt))
-		    return;
-		//Enumerating all children
-		do {
-		    final Node element;
-		    Log.debug("browser", "new element:" + nodeIt.getType() + ":" + nodeIt.getText());
-		    
-		} while(selector.moveNext(nodeIt));
+    	for(WebElement child:element.getChildren())
+    	{
+    		Node node = null;
+    		if(child instanceof WebTable)
+    		{
+    			node = NodeFactory.newNode(Node.Type.TABLE);
+    		} else
+    		if(child instanceof WebTableRow)
+    		{
+    			node = NodeFactory.newNode(Node.Type.TABLE_ROW);
+    		} else
+    		if(child instanceof WebTableCell)
+    		{
+    			node = NodeFactory.newNode(Node.Type.TABLE_CELL);
+    		} else
+    		if(child instanceof WebList)
+    		{
+    			node = NodeFactory.newNode(child.getNode().getType().equals("ol")?Node.Type.ORDERED_LIST:Node.Type.UNORDERED_LIST);
+    		} else
+    		if(child instanceof WebEdit)
+    		{ // WebEdit, WebCheckbox, WebRadio, WebSelect
+    			// add this element to current paragraph
+    			if(curParaRuns==null)
+    			{ // make new current paragraph 
+    				curParaRuns = new Vector<Run>();
+    			}
+    			// make text line to curParagraph FIXME: make many other runs for WebEdit variants
+    			String txt = "Unknown " + child.getText();
+    			if(child instanceof WebEdit)
+    			{
+    				txt = "Edit " + child.getText();
+    			} else
+    			if(child instanceof WebCheckbox)
+    			{
+    				txt = "Checkbox " + child.getText();
+    			} else
+    			if(child instanceof WebRadio)
+    			{
+    				txt = "Radiobutton " + child.getText();
+    			} else
+    			if(child instanceof WebSelect)
+    			{
+    				txt = "Select " + child.getText();
+    			}
+    				
+    			Run run = new TextRun(txt);
+    			curParaRuns.add(run);
+    			// we must break to avoid to come to code, only for section elements
+    			break;
+    		} else
+   			if(child instanceof WebText&&!child.hasChildren())
+    		{ // has children, it is section
+    			String txt = child.getText();
+    			if(curParaRuns==null)
+    			{ // make new current paragraph 
+    				curParaRuns = new Vector<Run>();
+    			}
+    			Run run = new TextRun(txt);
+    			curParaRuns.add(run);
+    		}
+    		// add current non empty paragraph and make it null
+    		if(curParaRuns!=null)
+    		{
+    			Paragraph para=NodeFactory.newPara();
+    			para.runs=curParaRuns.toArray(new Run[curParaRuns.size()]);
+    			subnodes.add(para);
+    			curParaRuns=null;
+    		}
+    		// recursive add subchildren to node (table/list/section) 	
+			subnodes.add(node);
+    		final LinkedList<Node> subchildren = new LinkedList<Node>();
+    		make_(subchildren,child);
+    		node.setSubnodes(subchildren.toArray(new Node[subchildren.size()]));
+    	}
     }
 	
-    /** clean Node element from single children and empty non text elements */
-	private void cleanup(Node element)
-    {
-	// clean childs
-		int cnt = 0;
-		for(Node child:element.getSubnodes())
-		{
-			child.
-		    cleanup(child);
-		    if(!child.isDeleted())
-			cnt++;
-		}
-		// remove this if have no child and invisible
-		if(cnt==0&&!element.isVisible())
-		    element.toDelete();
-		// remove marked
-		Iterator<WebElement> i=element.getChildren().iterator();
-		while (i.hasNext())
-		{
-			WebElement child=i.next();
-			if(child.isDeleted())
-				i.remove();
-		}
-		// replace single child with its parent
-		//System.out.println("replace: "+element.getType()+" "+element.getText());
-		if(element.getParent()!=null&&element.getChildren().size()==1)
-		{
-			switch(element.getNode().getType())
-			{
-				// ignore important tags for this optimization
-				case "li":
-				case "tr":
-				case "td":
-				case "th":
-					break;
-				default:
-					ElementIterator e=element.getParent().getNode();
-					//System.out.println("REPLACE: "+e.getType()+" "+e.getText());
-					// keep attributes from removed parent in element
-					element.mixAttributes(element.getParent());
-					// replace by idx
-					int idx=element.getParent().getChildren().indexOf(element);
-					if(idx!=-1)
-					{ // idx can't be -1 but we check
-						// replace element in parent childs to first child of element (loose element at all)
-						element.getParent().getChildren().set(idx,element.getChildren().get(0));
-					}
-				break;
-			}
-		}
-	}
-
 }
