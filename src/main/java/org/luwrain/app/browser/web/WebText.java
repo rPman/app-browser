@@ -4,10 +4,9 @@ package org.luwrain.app.browser.web;
 import java.awt.Rectangle;
 import java.util.*;
 
+import org.luwrain.core.*;
 import org.luwrain.browser.Browser;
 import org.luwrain.browser.ElementIterator;
-
-import org.luwrain.core.*;
 
 /* WebText is a parent of all web elements */
 public class WebText implements WebElement

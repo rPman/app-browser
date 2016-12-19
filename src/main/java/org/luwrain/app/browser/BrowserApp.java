@@ -60,7 +60,7 @@ class BrowserApp implements Application
 	}
 	*/
 	try {
-	area.open(new URL("http://luwrain.org"));
+	area.open(new URL("http://google.com"));
 	}
 	catch(MalformedURLException e)
 	{

@@ -1,23 +1,20 @@
 
 package org.luwrain.app.browser.web;
 
-import java.util.Comparator;
-import java.util.Iterator;
-import java.util.Vector;
+import java.util.*;
 
+import org.luwrain.core.*;
 import org.luwrain.browser.Browser;
 import org.luwrain.browser.ElementIterator;
 import org.luwrain.browser.Selector;
 import org.luwrain.browser.SelectorChildren;
-
-import org.luwrain.core.*;
 
 public class WebDocument
 {
     // make WebDocument structure for web page, more simple than html document, i.e.  only visible elements and without element with single child
     // only visible elements
     private WebElement root = null;
-    
+
     public WebElement getRoot()
     {
 	return root;
@@ -30,7 +27,7 @@ public class WebDocument
     public void make(Browser page)
     {
 	NullCheck.notNull(page, "page");
-	// get all childs without parent (it must have only one)
+	// get all children without parent, there should be only one like this
 	final SelectorChildren selector = page.rootChildren(false);
 	final ElementIterator it = page.iterator();
 	selector.moveFirst(it);
@@ -52,7 +49,7 @@ public class WebDocument
 	System.out.println("BIG result END");
     }
 
-	private void make_(Browser page,WebElement parent,Selector selector)
+	private void make_(Browser page, WebElement parent, Selector selector)
     {
 	NullCheck.notNull(page, "page");
 	NullCheck.notNull(parent, "parent");
@@ -63,6 +60,7 @@ public class WebDocument
 	//Enumerating all children
 	do {
 	    final WebElement element;
+	    Log.debug("browser", "new element:" + nodeIt.getType() + ":" + nodeIt.getText());
 	    if(nodeIt.isEditable())
 	    {
 		switch(nodeIt.getType())
