@@ -3,9 +3,13 @@ package org.luwrain.app.browser;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.io.*;
 
 import org.luwrain.core.*;
 import org.luwrain.core.events.*;
+import org.luwrain.controls.*;
+import org.luwrain.controls.doctree.*;
+import org.luwrain.doctree.loading.*;
 
 class BrowserApp implements Application
 {
@@ -71,7 +75,10 @@ class BrowserApp implements Application
 
     private void createArea()
     {
-    	area = new BrowserArea(luwrain, actions, luwrain.createBrowser()){
+	final org.luwrain.controls.doctree.Strings announcementStrings = (org.luwrain.controls.doctree.Strings)luwrain.i18n().getStrings("luwrain.doctree");
+	final Announcement announcement = new Announcement(new DefaultControlEnvironment(luwrain), announcementStrings);
+
+    	area = new BrowserArea(luwrain, actions, luwrain.createBrowser(), announcement){
 
 		@Override public boolean onKeyboardEvent(KeyboardEvent event)
 		{
@@ -101,6 +108,17 @@ class BrowserApp implements Application
 			return actions.getBrowserActions();
 		    }
 	    };
+
+	try {
+	final UrlLoader loader = new UrlLoader(new URL("http://bash.org.ru"));
+	final UrlLoader.Result res = loader.load();
+	res.doc.commit();
+	area.setDocument(res.doc, 80);
+	}
+	catch(IOException e)
+	{
+	    e.printStackTrace();
+	}
     }
 
     private boolean onBrowserAction(EnvironmentEvent event)

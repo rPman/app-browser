@@ -7,11 +7,13 @@ import java.util.*;
 import org.luwrain.core.*;
 import org.luwrain.core.events.*;
 import org.luwrain.controls.*;
+import org.luwrain.controls.doctree.*;
+import org.luwrain.doctree.*;
 import org.luwrain.browser.*;
 import org.luwrain.browser.Events.WebState;
 import org.luwrain.app.browser.web.*;
 
-class BrowserArea implements Area
+class BrowserArea extends DoctreeArea
 {
     protected final Luwrain luwrain;
     protected final Callback callback;
@@ -31,8 +33,9 @@ class BrowserArea implements Area
     protected final Vector<HistoryElement> elementHistory = new Vector<HistoryElement>();
     protected boolean complexMode = false;
 
-    BrowserArea(Luwrain luwrain, Callback callback, Browser browser)
+    BrowserArea(Luwrain luwrain, Callback callback, Browser browser, Announcement announcement)
     {
+	super(new DefaultControlEnvironment(luwrain), announcement);
 	NullCheck.notNull(luwrain, "luwrain");
 	NullCheck.notNull(callback, "callback");
 	NullCheck.notNull(browser, "browser");
@@ -77,7 +80,7 @@ class BrowserArea implements Area
      *
      * @return true if there is any successfully loaded page, false otherwise
      */ 
-    boolean isEmpty()
+    boolean noWebContent()
     {
 	return view == null || it == null || state != WebState.SUCCEEDED;
     }
@@ -152,39 +155,6 @@ class BrowserArea implements Area
 	return view.getLine(index);
     }
 
-    @Override public boolean onKeyboardEvent(KeyboardEvent event)
-    {
-	NullCheck.notNull(event, "event");
-	if (event.isSpecial() && !event.isModified())
-	    switch (event.getSpecial())
-	    {
-	    case ESCAPE:
-		return stop();
-	    case ARROW_LEFT:
-		return onArrowLeft(event);
-	    case ARROW_RIGHT:
-		return onArrowRight(event);
-	    case ARROW_DOWN:
-		return onArrowDown(event);
-	    case ARROW_UP:
-		return onArrowUp(event);
-	    case ENTER:
-		return onClick();
-	    case BACKSPACE:
-		return onBackspace();
-	    case F9:
-		BigSearcherTest.main(doc,luwrain);
-		return true;
-	    }
-	if(!event.isSpecial() && event.getChar()==' ')
-	{
-	    WebElementPart part = view.getPartByPos(getHotPointX(),getHotPointY());
-	    if(part!=null)
-		environment.say(part.toString());
-	}
-	return false;
-    }
-
     @Override public boolean onEnvironmentEvent(EnvironmentEvent event)
     {
 	NullCheck.notNull(event, "event");
@@ -198,95 +168,8 @@ class BrowserArea implements Area
 		return true;
 	    return false;
 	default:
-	    return false;
+	    return super.onEnvironmentEvent(event);
 	}
-    }
-
-    @Override public Action[]getAreaActions()
-    {
-	return new Action[0];
-    }
-
-    protected boolean onArrowLeft(KeyboardEvent event)
-    {
-	if (noContent())
-	    return true;
-	final String text = it.getText();
-	if (text.isEmpty())
-	{
-	    environment.hint(Hints.EMPTY_LINE);
-	    return true;
-	}
-	if (hotPointX == 0)
-	{
-	    environment.hint(Hints.BEGIN_OF_LINE);
-	    return true;
-	}
-	--hotPointX;
-	if (hotPointX < text.length())
-	    environment.sayLetter(text.charAt(hotPointX)); else
-	    environment.hint(Hints.END_OF_LINE);
-	luwrain.onAreaNewHotPoint(this);
-	return true;
-    }
-
-    protected boolean onArrowRight(KeyboardEvent event)
-    {
-	if (noContent())
-	    return true;
-	final String text = it.getText();
-	if (text.isEmpty())
-	{
-	    environment.hint(Hints.EMPTY_LINE);
-	    return true;
-	}
-	if (hotPointX >= text.length())
-	{
-	    environment.hint(Hints.END_OF_LINE);
-	    return true;
-	}
-	++hotPointX;
-	if (hotPointX < text.length())
-	    environment.sayLetter(text.charAt(hotPointX)); else
-	    environment.hint(Hints.END_OF_LINE);
-	luwrain.onAreaNewHotPoint(this);
-	return true;
-    }
-
-    protected boolean onArrowUp(KeyboardEvent event)
-    {
-	if (noContent())
-	    return true;
-	if(!it.movePrev())
-	{
-	    environment.hint(Hints.NO_LINES_ABOVE);
-	    return true;
-	}
-	final String text = it.getText();
-	if(text.isEmpty())
-	    environment.hint(Hints.EMPTY_LINE); else
-	    luwrain.say(text);
-	hotPointX = 0;
-	luwrain.onAreaNewHotPoint(this);
-	return true;
-    }
-
-    protected boolean onArrowDown(KeyboardEvent event)
-    {
-	if (noContent())
-	    return true;
-	if(!it.moveNext())
-	{
-	    environment.hint(Hints.NO_LINES_BELOW);
-	    return true;
-	}
-	final String text = it.getText();
-	if(text.isEmpty())
-	    environment.hint(Hints.EMPTY_LINE); else
-	    luwrain.say(text);
-	hotPointX = 0;
-	luwrain.onAreaNewHotPoint(this);
-	return true;
     }
 
     protected boolean onBackspace()
