@@ -3,7 +3,7 @@ package org.luwrain.app.browser.web;
 
 import org.luwrain.browser.ElementIterator;
 
-class WebEdit extends WebText
+public class WebEdit extends WebText
 {
     WebEdit(WebElement parent, ElementIterator element)
     {

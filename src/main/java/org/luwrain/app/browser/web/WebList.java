@@ -5,7 +5,7 @@ import java.util.Vector;
 
 import org.luwrain.browser.ElementIterator;
 
-class WebList extends WebEdit
+public class WebList extends WebText
 {
     private int liCount;
     private boolean isMultilevel;
