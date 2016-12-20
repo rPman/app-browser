@@ -12,7 +12,7 @@ public class WebDocBuilder
 {
     private Node root = null;
     //private Paragraph curParagraph = null;
-    private Vector<Run> curParaRuns = null;
+    private final LinkedList<Run> curParaRuns = new LinkedList<Run>();
 
     public Document make(Browser page)
     {
@@ -33,78 +33,100 @@ public class WebDocBuilder
     {
 	NullCheck.notNull(subnodes, "subnodes");
 	NullCheck.notNull(element, "element");
+	Log.debug("browser", "transforming " + element.getType() + " (" + element.getClass().getName() + ")");
+	Log.debug("browser", "element has " + element.getChildren().size() + " children");
     	for(WebElement child: element.getChildren())
     	{
-	    Node node = null;
-	    if(child instanceof WebTable)
+	    Log.debug("browser", "child of type " + child.getType() + " with " + child.getChildren().size() + " children");
+	    final Node blockNode = createBlockNode(child);
+	    if (blockNode != null)
 	    {
-		node = NodeFactory.newNode(Node.Type.TABLE);
-	    } else
-    		if(child instanceof WebTableRow)
-    		{
-		    node = NodeFactory.newNode(Node.Type.TABLE_ROW);
-    		} else
-		    if(child instanceof WebTableCell)
-		    {
-    			node = NodeFactory.newNode(Node.Type.TABLE_CELL);
-		    } else
-			if(child instanceof WebList)
-			{
-			    node = NodeFactory.newNode(child.getNode().getType().equals("ol")?Node.Type.ORDERED_LIST:Node.Type.UNORDERED_LIST);
-			} else
-			    if(child instanceof WebEdit)
-			    { // WebEdit, WebCheckbox, WebRadio, WebSelect
-				// add this element to current paragraph
-				if(curParaRuns==null)
-				{ // make new current paragraph 
-				    curParaRuns = new Vector<Run>();
-				}
-				// make text line to curParagraph FIXME: make many other runs for WebEdit variants
-				String txt = "Unknown " + child.getText();
-				if(child instanceof WebEdit)
-				{
-				    txt = "Edit " + child.getText();
-				} else
-				    if(child instanceof WebCheckbox)
-				    {
-					txt = "Checkbox " + child.getText();
-				    } else
-					if(child instanceof WebRadio)
-					{
-					    txt = "Radiobutton " + child.getText();
-					} else
-					    if(child instanceof WebSelect)
-					    {
-						txt = "Select " + child.getText();
-					    }
-				final Run run = new TextRun(txt);
-				curParaRuns.add(run);
-				// we must break to avoid to come to code, only for section elements
-				break;
-			    } else
-				if(child instanceof WebText&&!child.hasChildren())
-				{ // has children, it is section
-				    String txt = child.getText();
-				    if(curParaRuns==null)
-				    { // make new current paragraph 
-					curParaRuns = new Vector<Run>();
-				    }
-				    Run run = new TextRun(txt);
-				    curParaRuns.add(run);
-				}
-	    // add current non empty paragraph and make it null
-	    if(curParaRuns!=null)
-	    {
-		Paragraph para=NodeFactory.newPara();
-		para.runs=curParaRuns.toArray(new Run[curParaRuns.size()]);
-		subnodes.add(para);
-		curParaRuns=null;
+		if(!curParaRuns.isEmpty())
+		{
+		    final Paragraph para = NodeFactory.newPara();
+		    para.runs=curParaRuns.toArray(new Run[curParaRuns.size()]);
+		    subnodes.add(para);
+		    curParaRuns.clear();
+		}
+		subnodes.add(blockNode);
+		final LinkedList<Node> newNodes = new LinkedList<Node>();
+		make_(newNodes, child);
+		blockNode.setSubnodes(newNodes.toArray(new Node[newNodes.size()]));
+		continue;
 	    }
-	    // recursive add subchildren to node (table/list/section) 	
-	    subnodes.add(node);
-	    final LinkedList<Node> subchildren = new LinkedList<Node>();
-	    make_(subchildren,child);
-	    node.setSubnodes(subchildren.toArray(new Node[subchildren.size()]));
-    	}
+	    if(child instanceof WebText)
+	    {
+		final String txt = child.getText();
+		final Run run = new TextRun(txt);
+		curParaRuns.add(run);
+		if (child.hasChildren())
+		{
+		final LinkedList<Node> newNodes = new LinkedList<Node>();
+		for(WebElement cc: child.getChildren())
+		make_(newNodes, cc);
+		if (!newNodes.isEmpty())
+		{
+		if(!curParaRuns.isEmpty())
+		{
+		    final Paragraph para = NodeFactory.newPara();
+		    para.runs=curParaRuns.toArray(new Run[curParaRuns.size()]);
+		    subnodes.add(para);
+		    curParaRuns.clear();
+		}
+		for(Node n: newNodes)
+		    subnodes.add(n);
+		} //has newNodes
+		continue;
+		}
+	    } //WebText
+	    final String txt;
+	    if(child instanceof WebEdit)
+		txt = "Edit " + child.getText(); else
+		if(child instanceof WebCheckbox)
+		    txt = "Checkbox " + child.getText(); else
+		    if(child instanceof WebRadio)
+			txt = "Radiobutton " + child.getText(); else
+			if(child instanceof WebSelect)
+			    txt = "Select " + child.getText(); else
+			    continue;
+	    final Run run = new TextRun(txt);
+	    curParaRuns.add(run);
+	}
+	if(!curParaRuns.isEmpty())
+	{
+	    final Paragraph para = NodeFactory.newPara();
+	    para.runs=curParaRuns.toArray(new Run[curParaRuns.size()]);
+	    subnodes.add(para);
+	    curParaRuns.clear();
+	}
+	Log.debug("browser", "prepared " + subnodes.size() + " subnodes");
+    }
+
+    private Node createBlockNode(WebElement el)
+    {
+	NullCheck.notNull(el, "el");
+	/*
+	if(el instanceof WebTable)
+	    return NodeFactory.newNode(Node.Type.TABLE);
+	if(el instanceof WebTableRow)
+	    return NodeFactory.newNode(Node.Type.TABLE_ROW);
+	if(el instanceof WebTableCell)
+	    return NodeFactory.newNode(Node.Type.TABLE_CELL);
+	if(el instanceof WebList)
+	    return NodeFactory.newNode(el.getNode().getType().equals("ol")?Node.Type.ORDERED_LIST:Node.Type.UNORDERED_LIST);
+	return null;
+	*/
+
+	if(el instanceof WebTable)
+	    return NodeFactory.newSection(1);
+	if(el instanceof WebTableRow)
+	    return NodeFactory.newSection(1);
+	if(el instanceof WebTableCell)
+	    return NodeFactory.newSection(1);
+	if(el instanceof WebList)
+	    return NodeFactory.newSection(1);
+	return null;
+
+
     }
 }

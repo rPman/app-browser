@@ -60,7 +60,7 @@ public class WebDocument
 	//Enumerating all children
 	do {
 	    final WebElement element;
-	    Log.debug("browser", "new element:" + nodeIt.getType() + ":" + nodeIt.getText());
+	    //	    Log.debug("browser", "new element:" + nodeIt.getType() + ":" + nodeIt.getText());
 	    if(nodeIt.isEditable())
 	    {
 		switch(nodeIt.getType())
