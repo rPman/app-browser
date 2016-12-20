@@ -54,11 +54,15 @@ public class WebDocBuilder
 		blockNode.setSubnodes(newNodes.toArray(new Node[newNodes.size()]));
 		continue;
 	    }
-	    if(child instanceof WebText)
-	    {
+if(child instanceof WebText)
+{
+    //		if (!child.hasChildren())
+    //		{
 		final String txt = child.getText();
 		final Run run = new TextRun(txt);
 		curParaRuns.add(run);
+		//		}
+
 		if (child.hasChildren())
 		{
 		final LinkedList<Node> newNodes = new LinkedList<Node>();
