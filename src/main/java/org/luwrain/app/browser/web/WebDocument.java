@@ -37,6 +37,7 @@ public class WebDocument
 	    make_(page, root, it.getChildren(false));
 	} while(selector.moveNext(it));
 	cleanup(root);
+	/*
 	// calculate weight and mark BIG elements in sorted set
 	elementInit(root,new Weight.ByTextLen());
 	WeightSortedSet result=new WeightSortedSet();
@@ -47,6 +48,7 @@ public class WebDocument
 	for(WebElement e:result)
 		e.print(0,false);
 	System.out.println("BIG result END");
+	*/
     }
 
 	private void make_(Browser page, WebElement parent, Selector selector)
@@ -60,7 +62,7 @@ public class WebDocument
 	//Enumerating all children
 	do {
 	    final WebElement element;
-	    Log.debug("browser", "new element:" + nodeIt.getType() + ":" + nodeIt.getText());
+	    //	    Log.debug("browser", "new element:" + nodeIt.getType() + ":" + nodeIt.getText());
 	    if(nodeIt.isEditable())
 	    {
 		switch(nodeIt.getType())

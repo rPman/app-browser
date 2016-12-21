@@ -7,11 +7,15 @@ import java.util.*;
 import org.luwrain.core.*;
 import org.luwrain.core.events.*;
 import org.luwrain.controls.*;
+import org.luwrain.controls.doctree.*;
+import org.luwrain.doctree.*;
 import org.luwrain.browser.*;
 import org.luwrain.browser.Events.WebState;
 import org.luwrain.app.browser.web.*;
+import org.luwrain.app.browser.webdoc.BrowserToDocumentConverter;
+import org.luwrain.app.browser.webdoc.WebDocBuilder;
 
-class BrowserArea implements Area
+class BrowserArea extends DoctreeArea
 {
     protected final Luwrain luwrain;
     protected final Callback callback;
@@ -24,15 +28,16 @@ class BrowserArea implements Area
     protected int progress = 0;
 
     protected WebDocument doc = new WebDocument();
-    protected WebView view = null;
-    protected WebIterator it = null;
-    protected int hotPointX = 0;
+    //    protected WebView view = null;
+    //    protected WebIterator it = null;
+    //    protected int hotPointX = 0;
 
     protected final Vector<HistoryElement> elementHistory = new Vector<HistoryElement>();
     protected boolean complexMode = false;
 
-    BrowserArea(Luwrain luwrain, Callback callback, Browser browser)
+    BrowserArea(Luwrain luwrain, Callback callback, Browser browser, Announcement announcement)
     {
+	super(new DefaultControlEnvironment(luwrain), announcement);
 	NullCheck.notNull(luwrain, "luwrain");
 	NullCheck.notNull(callback, "callback");
 	NullCheck.notNull(browser, "browser");
@@ -67,19 +72,21 @@ class BrowserArea implements Area
 
     protected void updateView()
     {
-	final WebViewBuilder builder = WebViewBuilder.newBuilder(complexMode?WebViewBuilder.Type.COMPLEX:WebViewBuilder.Type.NORMAL, doc.getRoot(), luwrain.getAreaVisibleWidth(this));
-	view = builder.build();
-	it = view.createIterator();
-	environment.onAreaNewContent(this);
+	//final WebDocBuilder builder = new WebDocBuilder();
+	//final Document doc = builder.make(page);
+	//doc.commit();
+	//setDocument(doc, luwrain.getAreaVisibleWidth(this));
+   	final BrowserToDocumentConverter builder = new BrowserToDocumentConverter();
+   	setDocument(builder.go(page), luwrain.getAreaVisibleWidth(this));
     }
 
     /**Checks if the browser has valid loaded page
      *
      * @return true if there is any successfully loaded page, false otherwise
      */ 
-    boolean isEmpty()
+    boolean noWebContent()
     {
-	return view == null || it == null || state != WebState.SUCCEEDED;
+	return state != WebState.SUCCEEDED;
     }
 
     /**Checks if the browser is doing any background work (usually fetching
@@ -124,67 +131,6 @@ class BrowserArea implements Area
 	return page.getTitle()+" "+state.name()+" "+progress;
     }
 
-    @Override public int getHotPointX()
-    {
-	if (isEmpty())
-	    return 0;
-	return it.getPosX();
-    }
-
-    @Override public int getHotPointY()
-    {
-	if (isEmpty())
-	    return 0;
-	return it.getPosY();
-    }
-
-    @Override public int getLineCount()
-    {
-	if (isEmpty())
-	    return 1;
-	return view.getLineCount();
-    }
-
-    @Override public String getLine(int index)
-    {
-	if (isEmpty())
-	    return "";
-	return view.getLine(index);
-    }
-
-    @Override public boolean onKeyboardEvent(KeyboardEvent event)
-    {
-	NullCheck.notNull(event, "event");
-	if (event.isSpecial() && !event.isModified())
-	    switch (event.getSpecial())
-	    {
-	    case ESCAPE:
-		return stop();
-	    case ARROW_LEFT:
-		return onArrowLeft(event);
-	    case ARROW_RIGHT:
-		return onArrowRight(event);
-	    case ARROW_DOWN:
-		return onArrowDown(event);
-	    case ARROW_UP:
-		return onArrowUp(event);
-	    case ENTER:
-		return onClick();
-	    case BACKSPACE:
-		return onBackspace();
-	    case F9:
-		BigSearcherTest.main(doc,luwrain);
-		return true;
-	    }
-	if(!event.isSpecial() && event.getChar()==' ')
-	{
-	    WebElementPart part = view.getPartByPos(getHotPointX(),getHotPointY());
-	    if(part!=null)
-		environment.say(part.toString());
-	}
-	return false;
-    }
-
     @Override public boolean onEnvironmentEvent(EnvironmentEvent event)
     {
 	NullCheck.notNull(event, "event");
@@ -198,95 +144,8 @@ class BrowserArea implements Area
 		return true;
 	    return false;
 	default:
-	    return false;
+	    return super.onEnvironmentEvent(event);
 	}
-    }
-
-    @Override public Action[]getAreaActions()
-    {
-	return new Action[0];
-    }
-
-    protected boolean onArrowLeft(KeyboardEvent event)
-    {
-	if (noContent())
-	    return true;
-	final String text = it.getText();
-	if (text.isEmpty())
-	{
-	    environment.hint(Hints.EMPTY_LINE);
-	    return true;
-	}
-	if (hotPointX == 0)
-	{
-	    environment.hint(Hints.BEGIN_OF_LINE);
-	    return true;
-	}
-	--hotPointX;
-	if (hotPointX < text.length())
-	    environment.sayLetter(text.charAt(hotPointX)); else
-	    environment.hint(Hints.END_OF_LINE);
-	luwrain.onAreaNewHotPoint(this);
-	return true;
-    }
-
-    protected boolean onArrowRight(KeyboardEvent event)
-    {
-	if (noContent())
-	    return true;
-	final String text = it.getText();
-	if (text.isEmpty())
-	{
-	    environment.hint(Hints.EMPTY_LINE);
-	    return true;
-	}
-	if (hotPointX >= text.length())
-	{
-	    environment.hint(Hints.END_OF_LINE);
-	    return true;
-	}
-	++hotPointX;
-	if (hotPointX < text.length())
-	    environment.sayLetter(text.charAt(hotPointX)); else
-	    environment.hint(Hints.END_OF_LINE);
-	luwrain.onAreaNewHotPoint(this);
-	return true;
-    }
-
-    protected boolean onArrowUp(KeyboardEvent event)
-    {
-	if (noContent())
-	    return true;
-	if(!it.movePrev())
-	{
-	    environment.hint(Hints.NO_LINES_ABOVE);
-	    return true;
-	}
-	final String text = it.getText();
-	if(text.isEmpty())
-	    environment.hint(Hints.EMPTY_LINE); else
-	    luwrain.say(text);
-	hotPointX = 0;
-	luwrain.onAreaNewHotPoint(this);
-	return true;
-    }
-
-    protected boolean onArrowDown(KeyboardEvent event)
-    {
-	if (noContent())
-	    return true;
-	if(!it.moveNext())
-	{
-	    environment.hint(Hints.NO_LINES_BELOW);
-	    return true;
-	}
-	final String text = it.getText();
-	if(text.isEmpty())
-	    environment.hint(Hints.EMPTY_LINE); else
-	    luwrain.say(text);
-	hotPointX = 0;
-	luwrain.onAreaNewHotPoint(this);
-	return true;
     }
 
     protected boolean onBackspace()
@@ -312,6 +171,7 @@ class BrowserArea implements Area
      */
     protected boolean onClick()
     {
+	/*
 	if (isEmpty() || isBusy())
 	    return false;
 	final WebElement el = it.getElementAtPos(hotPointX);
@@ -328,18 +188,8 @@ class BrowserArea implements Area
 	    return onFormEditText(el);
 	}
 	return emulateClick(el);
-    }
-
-    protected boolean switchComplexMode(WebElement el)
-    {
-	NullCheck.notNull(el, "el");
-	elementHistory.add(new HistoryElement(el, complexMode));
-	complexMode  = !complexMode;
-	final WebViewBuilder builder = WebViewBuilder.newBuilder(complexMode?WebViewBuilder.Type.COMPLEX:WebViewBuilder.Type.NORMAL, el,luwrain.getAreaVisibleWidth(this));
-	view = builder.build();
-	it = view.createIterator();
-	environment.onAreaNewContent(this);
-	return true;
+	*/
+	return false;
     }
 
     /**Asks the browser core to emulate the action which looks like the user
