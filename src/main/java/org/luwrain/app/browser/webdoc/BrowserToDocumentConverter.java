@@ -5,6 +5,8 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Vector;
 
+import org.luwrain.app.browser.selector.SelectorAll;
+import org.luwrain.app.browser.selector.SelectorAllImpl;
 import org.luwrain.app.browser.web.WebCheckbox;
 import org.luwrain.app.browser.web.WebEdit;
 import org.luwrain.app.browser.web.WebElement;
@@ -17,7 +19,6 @@ import org.luwrain.app.browser.web.WebTableRow;
 import org.luwrain.app.browser.web.WebText;
 import org.luwrain.browser.Browser;
 import org.luwrain.browser.ElementIterator;
-import org.luwrain.browser.SelectorAll;
 import org.luwrain.core.Log;
 import org.luwrain.core.NullCheck;
 import org.luwrain.doctree.Document;
@@ -153,7 +154,7 @@ public class BrowserToDocumentConverter
 		index = new HashMap<Integer, NodeInfo>();
 		// fill temporary tree from current Browser structure as fast as possible
 		// selector all for any visible nodes, include non text images and so on
-		SelectorAll allVisibleNodes = browser.selectorAll(true);
+		SelectorAll allVisibleNodes = new SelectorAllImpl(true);
 		ElementIterator e = browser.iterator();
 		// node count without root node (it not exist in SelectorAll enumerator)
 		int count = 0;

@@ -4,10 +4,11 @@ package org.luwrain.app.browser.web;
 import java.util.*;
 
 import org.luwrain.core.*;
+import org.luwrain.app.browser.selector.Selector;
+import org.luwrain.app.browser.selector.SelectorChildren;
+import org.luwrain.app.browser.selector.SelectorChildrenImpl;
 import org.luwrain.browser.Browser;
 import org.luwrain.browser.ElementIterator;
-import org.luwrain.browser.Selector;
-import org.luwrain.browser.SelectorChildren;
 
 public class WebDocument
 {
@@ -28,13 +29,13 @@ public class WebDocument
     {
 	NullCheck.notNull(page, "page");
 	// get all children without parent, there should be only one like this
-	final SelectorChildren selector = page.rootChildren(false);
+	final SelectorChildren selector = new SelectorChildrenImpl(page,false);//page.rootChildren(false);
 	final ElementIterator it = page.iterator();
 	selector.moveFirst(it);
 	root = new WebText(null, it.clone());
 	//Enumerating all children
 	do {
-	    make_(page, root, it.getChildren(false));
+	    make_(page, root, new SelectorChildrenImpl(it,false));
 	} while(selector.moveNext(it));
 	cleanup(root);
 	/*
@@ -113,7 +114,7 @@ public class WebDocument
 		    break;
 		}
 	    if(!nodeIt.forTEXT())
-		make_(page,element,nodeIt.getChildren(false));
+		make_(page,element, new SelectorChildrenImpl(nodeIt,false));
 	    parent.getChildren().add(element);
 	} while(selector.moveNext(nodeIt));
     }

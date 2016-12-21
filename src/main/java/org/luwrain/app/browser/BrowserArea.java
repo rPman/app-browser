@@ -13,7 +13,6 @@ import org.luwrain.browser.*;
 import org.luwrain.browser.Events.WebState;
 import org.luwrain.app.browser.web.*;
 import org.luwrain.app.browser.webdoc.BrowserToDocumentConverter;
-import org.luwrain.app.browser.webdoc.WebDocBuilder;
 
 class BrowserArea extends DoctreeArea
 {
