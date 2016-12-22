@@ -11,8 +11,9 @@ import org.luwrain.controls.doctree.*;
 import org.luwrain.doctree.*;
 import org.luwrain.browser.*;
 import org.luwrain.browser.Events.WebState;
-import org.luwrain.app.browser.web.*;
+//import org.luwrain.app.browser.web.*;
 import org.luwrain.app.browser.webdoc.BrowserToDocumentConverter;
+import org.luwrain.app.browser.webdoc.ElementAction;
 
 class BrowserArea extends DoctreeArea
 {
@@ -26,7 +27,6 @@ class BrowserArea extends DoctreeArea
     protected WebState state = WebState.READY;
     protected int progress = 0;
 
-    protected WebDocument doc = new WebDocument();
     //    protected WebView view = null;
     //    protected WebIterator it = null;
     //    protected int hotPointX = 0;
@@ -61,8 +61,10 @@ class BrowserArea extends DoctreeArea
 	if(isBusy())
 	    return false;
 	page.RescanDOM();
-	doc = new WebDocument();
-	doc.make(page);
+	//doc = new WebDocument();
+	//doc.make(page);
+   	final BrowserToDocumentConverter builder = new BrowserToDocumentConverter();
+   	setDocument(builder.go(page), luwrain.getAreaVisibleWidth(this));
 	complexMode = false;
 	updateView();
 	Log.debug("browser", "DOM refreshed successfully");
@@ -75,8 +77,6 @@ class BrowserArea extends DoctreeArea
 	//final Document doc = builder.make(page);
 	//doc.commit();
 	//setDocument(doc, luwrain.getAreaVisibleWidth(this));
-   	final BrowserToDocumentConverter builder = new BrowserToDocumentConverter();
-   	setDocument(builder.go(page), luwrain.getAreaVisibleWidth(this));
     }
 
     /**Checks if the browser has valid loaded page
@@ -130,6 +130,12 @@ class BrowserArea extends DoctreeArea
 	return page.getTitle()+" "+state.name()+" "+progress;
     }
 
+    @Override protected boolean onSpace(KeyboardEvent event)
+    {
+    	onClick();
+    	return super.onSpace(event);
+    }
+    
     @Override public boolean onEnvironmentEvent(EnvironmentEvent event)
     {
 	NullCheck.notNull(event, "event");
@@ -170,9 +176,34 @@ class BrowserArea extends DoctreeArea
      */
     protected boolean onClick()
     {
+    	if (isEmpty() || isBusy())
+    	    return false;
+    	Run run=this.getCurrentRun();
+    	if(run instanceof TextRun)
+    	{
+    		Object t=((TextRun)run).getAssociatedObject();
+    		if(t instanceof ElementAction)
+    		{
+    			ElementAction action=(ElementAction)t;
+    			switch(action.type)
+    			{
+					case CLICK:
+						return emulateClick(action.element);
+					case EDIT:
+						return onFormEditText(action.element);
+					case SELECT:
+						return onFormSelectFromList(action.element);
+					default:
+						Log.error("web-browser","unknown action type: "+action.type.name());
+						return false;
+    			}
+    		} else
+    		{
+    			Log.error("web-browser","current TextRun have unknown associated object, type "+t.getClass());
+    		}
+    	}
+    	//System.out.println(run.getClass());
 	/*
-	if (isEmpty() || isBusy())
-	    return false;
 	final WebElement el = it.getElementAtPos(hotPointX);
 	if(el == null)
 	    return false;
@@ -198,43 +229,41 @@ class BrowserArea extends DoctreeArea
      * @param part The element to emulate click on
      * @return true if the operation has been done, false otherwise (usually the browser is busy or doesn't have a loaded page)
      */
-    protected boolean emulateClick(WebElement el)
+    protected boolean emulateClick(ElementIterator el)
     {
 	NullCheck.notNull(el, "el");
 	if (isEmpty() || isBusy())
 	    return false;
-	el.getNode().clickEmulate();
+	el.clickEmulate();
 	return true;
     }
 
-    protected boolean onFormEditText(WebElement el)
+    protected boolean onFormEditText(ElementIterator el)
     {
 	NullCheck.notNull(el, "el");
 	if (isEmpty() || isBusy())
 	    return false;
-	final ElementIterator e = el.getNode();
-	final String oldValue = e.getText();
+	final String oldValue = el.getText();
 	final String newValue = callback.askFormTextValue(oldValue != null?oldValue:"");
 	if (newValue == null) 
 	    return true;
-	e.setText(newValue);
+	el.setText(newValue);
 	updateView();
 	return true;
     }
 
-    protected boolean onFormSelectFromList(WebElement el)
+    protected boolean onFormSelectFromList(ElementIterator el)
     {
 	NullCheck.notNull(el, "el");
 	if (isEmpty() || isBusy())
 	    return false;
-	final ElementIterator e = el.getNode();
-	final String[] items = e.getMultipleText();
+	final String[] items = el.getMultipleText();
 	if (items == null || items.length==0) 
 	    return true; // FIXME:
 	final String res = callback.askFormListValue(items, true);
 	if (res == null)
 	    return true;
-	e.setText(res);
+	el.setText(res);
 	updateView();
 	return true;
     }

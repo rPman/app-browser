@@ -1,5 +1,6 @@
 package org.luwrain.app.browser.webdoc;
 
+import java.awt.Rectangle;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -7,16 +8,6 @@ import java.util.Vector;
 
 import org.luwrain.app.browser.selector.SelectorAll;
 import org.luwrain.app.browser.selector.SelectorAllImpl;
-import org.luwrain.app.browser.web.WebCheckbox;
-import org.luwrain.app.browser.web.WebEdit;
-import org.luwrain.app.browser.web.WebElement;
-import org.luwrain.app.browser.web.WebList;
-import org.luwrain.app.browser.web.WebRadio;
-import org.luwrain.app.browser.web.WebSelect;
-import org.luwrain.app.browser.web.WebTable;
-import org.luwrain.app.browser.web.WebTableCell;
-import org.luwrain.app.browser.web.WebTableRow;
-import org.luwrain.app.browser.web.WebText;
 import org.luwrain.browser.Browser;
 import org.luwrain.browser.ElementIterator;
 import org.luwrain.core.Log;
@@ -103,6 +94,32 @@ public class BrowserToDocumentConverter
 					e.debug(lvl+1,true);
 		};
 	}
+	
+	/** structure for temporary lists of prepared doctree Run's and linked info about each */
+	class RunInfo
+	{
+		public Run run=null;
+		public Node node=null;
+		public NodeInfo info;
+		public RunInfo(Run run, NodeInfo info)
+		{
+			this.run=run;
+			this.info=info;
+		}
+		public RunInfo(Node node, NodeInfo info)
+		{
+			this.node=node;
+			this.info=info;
+		}
+		boolean isRun()
+		{
+			return run!=null;
+		}
+		boolean isNode()
+		{
+			return node!=null;
+		}
+	}
 	/** reverse index for accessing NodeInfo by its ElementIterator's pos */
 	HashMap<Integer,NodeInfo> index;
 	final NodeInfo tempRoot = new NodeInfo();
@@ -135,17 +152,183 @@ public class BrowserToDocumentConverter
 		return null;
 	}
 
+	/** make doctree Document
+	 * any leaf elements added as Run but
+	 * -  different screen positon by Y make each node to new paragraph
+	 * - same parent + same Y screen position - threat as the same paragraph
+	 * - TODO: same parent + same X screen position - thread as block and added as new table row
+	 *   block detection algorithm called before creating Nodes
+	 *   //
+	 * - table, list and form - start new section (or table/list node)
+	 *  */
 	private Document makeDocument()
 	{
-		// make root subnodes list to make doctree Document
+		// scan full tree for block detection, tables, lists and so on
+		// make planar list of Run's
 		Node root=NodeFactory.newNode(Node.Type.ROOT);
-		// fill subnodes recursive
-		final LinkedList<Node> subnodes=make_(tempRoot);
+		LinkedList<Node> subnodes = makeNodes(tempRoot);
 		root.setSubnodes(subnodes.toArray(new Node[subnodes.size()]));
-		//
 		Document doc = new Document(root);
 		doc.commit();
 		return doc;
+	}
+	
+	/** make doctree Node list for node and children */
+	private LinkedList<Node> makeNodes(NodeInfo base)
+	{
+//**/System.out.print("makeNodes: ");base.debug(0,false);		
+		LinkedList<Node> subnodes=new LinkedList<Node>();
+		final Vector<RunInfo> runList = makeRuns(base);
+		
+		// TODO: search elements with same X screen (equals for x pos) and different Y - same group
+		// TODO: search elements with different Y and same X (intersect intervals! not equal like for X)
+
+		Paragraph node=NodeFactory.newPara();
+		
+		LinkedList<Run> subruns=new LinkedList<Run>();
+		Rectangle rect=null;
+		for(RunInfo r:runList)
+		{
+			if(r.isNode())
+			{
+				subnodes.add(r.node);
+				continue;
+			}
+			// first rect compare with itself
+			if(rect==null) rect=r.info.element.getRect();
+			// check, if next r in the same Y interval like previous
+			Rectangle curRect=r.info.element.getRect();
+			if((curRect.y>=rect.y&&curRect.y<rect.y+rect.height)
+			 ||(rect.y>=curRect.y&&rect.y<curRect.y+curRect.height))
+			{ // prev and current run in the same line on screen
+				// keep this runs on line
+			} else
+			{ // next line = new paragraph (list and tables detected in other place)
+				node.runs=subruns.toArray(new Run[subruns.size()]);
+				subruns.clear();
+				subnodes.add(node);
+				node=NodeFactory.newPara();
+			}
+			subruns.add(r.run);
+			rect=curRect;
+		}
+		node.runs=subruns.toArray(new Run[subruns.size()]);
+		subruns.clear();
+		subnodes.add(node);
+		node=NodeFactory.newPara();
+		
+		return subnodes;
+	}
+
+	/** recursive method to collect Run's for each leaf element in NodeInfo tree */
+	private Vector<RunInfo> makeRuns(NodeInfo node)
+	{
+//**/System.out.print("makeRuns: ");node.debug(0,false);
+		ElementAction action=null;
+		Vector<RunInfo> runList=new Vector<RunInfo>();
+		final ElementIterator n=node.element;
+		String tagName = n.getHtmlTagName().toLowerCase();;
+		if(node.children.isEmpty())
+		{
+			String txt = "";
+			switch(tagName)
+			{
+				case "input":
+					String type=n.getAttributeProperty("type");
+					if(type==null) type="";
+					switch(type)
+					{
+						case "image":
+						case "button":
+						case "submit":
+							txt="Button: "+n.getText();
+							action=new ElementAction(ElementAction.Type.CLICK,node.element);
+						break;
+						case "radio":
+							txt="Radio: "+n.getText();
+							action=new ElementAction(ElementAction.Type.EDIT,node.element);
+						break;
+						case "checkbox":
+							txt="Checkbox: "+n.getText();
+							action=new ElementAction(ElementAction.Type.EDIT,node.element);
+						break;
+						case "text":
+						default:
+							txt="Edit: "+n.getText();
+							action=new ElementAction(ElementAction.Type.EDIT,node.element);
+						break;
+					}
+				break;
+				case "button":
+					txt="Button: "+n.getText();
+					action=new ElementAction(ElementAction.Type.CLICK,node.element);
+				break;
+				case "select":
+					txt="Select: "+n.getText();
+					action=new ElementAction(ElementAction.Type.SELECT,node.element);
+				break;
+				default:
+					txt=n.getText();
+				break;
+			}
+			if(!node.mixed.isEmpty())
+			{ // check for A tag inside mixed
+				for(ElementIterator e:node.getMixedinfo())
+				{
+					String etag = e.getHtmlTagName().toLowerCase();;
+					if(etag.equals("a"))
+					{
+						// FIXME: here we have href attribute
+						txt="Link: "+txt;
+						action=new ElementAction(ElementAction.Type.CLICK,node.element);
+						break;
+					} else
+					if(etag.equals("button"))
+					{
+						txt="Button: "+txt;
+						action=new ElementAction(ElementAction.Type.CLICK,node.element);
+						break;
+					}
+				}
+			}
+			final TextRun run = new TextRun(txt.trim()+" ");
+			if(action!=null) run.setAssociatedObject(action);
+			runList.add(new RunInfo(run,node));
+
+		} else
+		{
+			switch(tagName)
+			{
+				// list
+				case "ol":
+				case "ul": // li element can be mixed with contents, but each child of node is a li
+					System.out.println("Found list: "+node.children.size());
+					Node listNode=NodeFactory.newNode(tagName.equals("ol")?Node.Type.ORDERED_LIST:Node.Type.UNORDERED_LIST);
+					LinkedList<Node> listItems=new LinkedList<Node>();
+					for(NodeInfo child:node.children)
+					{
+						Node listItem=NodeFactory.newNode(Node.Type.LIST_ITEM);
+						LinkedList<Node> listItemNodes = makeNodes(child);
+						listItem.setSubnodes(listItemNodes.toArray(new Node[listItemNodes.size()]));
+						listItems.add(listItem);
+					}
+					listNode.setSubnodes(listItems.toArray(new Node[listItems.size()]));
+					runList.add(new RunInfo(listNode,node));
+					System.out.println("List end");
+				break;
+				// table
+				case "table": // table can be mixed with any other element, for example parent form
+				case "tbody": // but if tbody not exist, table would exist as single, because tr/td/th can't be mixed
+					
+				//break;
+				default:
+					// unknown group mixed to run list, it would be splited to paragraphs later
+					for(NodeInfo child:node.children)
+						runList.addAll(makeRuns(child));
+				break;
+			}
+		}
+		return runList;
 	}
 
 	void fillTemporaryTree()
@@ -297,6 +480,14 @@ public class BrowserToDocumentConverter
 		return count;
 	}
 
+	LinkedList<Node> makeRecursive(NodeInfo node)
+	{
+		final LinkedList<Node> subnodes = new LinkedList<Node>();
+		
+		
+		return subnodes;
+	}
+	
 	LinkedList<Node> make_(NodeInfo node)
 	{
 		final LinkedList<Node> subnodes = new LinkedList<Node>();
