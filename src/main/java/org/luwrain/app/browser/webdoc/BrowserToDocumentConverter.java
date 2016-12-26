@@ -29,7 +29,7 @@ public class BrowserToDocumentConverter
 	private final LinkedList<Run> curParaRuns = new LinkedList<Run>();
 
 	/** private temporary structure to story node tree for cleaning up before make document */
-	class NodeInfo
+	public class NodeInfo
 	{
 		/** create root node */
 		public NodeInfo()
@@ -96,7 +96,7 @@ public class BrowserToDocumentConverter
 	}
 	
 	/** structure for temporary lists of prepared doctree Run's and linked info about each */
-	class RunInfo
+	public class RunInfo
 	{
 		public Run run=null;
 		public Node node=null;
@@ -121,12 +121,20 @@ public class BrowserToDocumentConverter
 		}
 	}
 	/** reverse index for accessing NodeInfo by its ElementIterator's pos */
-	HashMap<Integer,NodeInfo> index;
-	final NodeInfo tempRoot = new NodeInfo();
+	public HashMap<Integer,NodeInfo> index;
+	public NodeInfo tempRoot;// = new NodeInfo();
+	
+	/** list node position to watch it's content in Browser */
+	public LinkedList<Integer> watch=new LinkedList<Integer>();
 	
 	/** create new doctree Document from current state of Browser */
 	public Document go(Browser browser)
 	{
+		curParaRuns.clear();
+		index=new HashMap<Integer,NodeInfo>();
+		tempRoot = new NodeInfo();
+		watch.clear();
+		//
 		this.browser = browser;
 		// fill temporary tree of Browser's nodes information
 		fillTemporaryTree();
@@ -134,7 +142,7 @@ public class BrowserToDocumentConverter
 		while(cleanup(tempRoot)!=0){};
 		splitSingleChildrenNodes(tempRoot);
 		// now we have compact NodeInfo's tree
-		tempRoot.debug(1,true);
+		/**/tempRoot.debug(1,true);
 		// make document
 		Document doc = makeDocument();
 		return doc;
@@ -174,7 +182,7 @@ public class BrowserToDocumentConverter
 	}
 	
 	/** make doctree Node list for node and children */
-	private LinkedList<Node> makeNodes(NodeInfo base)
+	public LinkedList<Node> makeNodes(NodeInfo base)
 	{
 //**/System.out.print("makeNodes: ");base.debug(0,false);		
 		LinkedList<Node> subnodes=new LinkedList<Node>();
@@ -221,7 +229,7 @@ public class BrowserToDocumentConverter
 	}
 
 	/** recursive method to collect Run's for each leaf element in NodeInfo tree */
-	private Vector<RunInfo> makeRuns(NodeInfo node)
+	public Vector<RunInfo> makeRuns(NodeInfo node)
 	{
 //**/System.out.print("makeRuns: ");node.debug(0,false);
 		ElementAction action=null;
@@ -246,11 +254,11 @@ public class BrowserToDocumentConverter
 						break;
 						case "radio":
 							txt="Radio: "+n.getText();
-							action=new ElementAction(ElementAction.Type.EDIT,node.element);
+							action=new ElementAction(ElementAction.Type.CLICK,node.element);
 						break;
 						case "checkbox":
 							txt="Checkbox: "+n.getText();
-							action=new ElementAction(ElementAction.Type.EDIT,node.element);
+							action=new ElementAction(ElementAction.Type.CLICK,node.element);
 						break;
 						case "text":
 						default:
@@ -291,9 +299,15 @@ public class BrowserToDocumentConverter
 					}
 				}
 			}
+			// any non edit elements was UNKNOWN
+			if(action==null)
+			{
+				action=new ElementAction(ElementAction.Type.UNKNOWN,node.element);
+			}
 			final TextRun run = new TextRun(txt.trim()+" ");
 			if(action!=null) run.setAssociatedObject(action);
 			runList.add(new RunInfo(run,node));
+			watch.add(node.element.getPos());
 
 		} else
 		{
@@ -319,8 +333,82 @@ public class BrowserToDocumentConverter
 				// table
 				case "table": // table can be mixed with any other element, for example parent form
 				case "tbody": // but if tbody not exist, table would exist as single, because tr/td/th can't be mixed
-					
-				//break;
+					System.out.println("Found table: "+node.children.size()+" rows");
+					LinkedList<LinkedList<Node>> table=new LinkedList<LinkedList<Node>>();
+					// any child is a rows! we can do not check it
+					for(NodeInfo child:node.children)
+					{ // each rows contains a table cell or header cell, but also we can see tbody, tfoor, thead, we must enter into
+						LinkedList<Node> row=new LinkedList<Node>();
+						// detect thead, tbody, tfoot
+						NodeInfo child_=child;
+						String tagName3=child.element.getHtmlTagName().toLowerCase();
+						switch(tagName3)
+						{
+							case "thead":
+							case "tfoot":
+							case "tbody":
+								// check child exist, if not, skip this row at all
+								if(!child.children.isEmpty())
+									child_=child.children.firstElement();
+								// we must go out here but we can pass this alone child next without errors 
+							break;
+						}
+						// list of cells
+						for(NodeInfo cellChild:child_.children)
+						{
+							// detect collspan
+							String tagName2=cellChild.element.getHtmlTagName().toLowerCase();
+							String collSpanStr=null;
+							switch(tagName2)
+							{
+								case "td":
+								case "th":
+									collSpanStr=cellChild.element.getAttributeProperty("colspan");
+								//break; // no we can skip this check becouse we don't known what to do if we detect errors here
+								default:
+									Integer collSpan=null;
+									if(collSpanStr!=null) try
+									{
+										collSpan=Integer.parseInt(collSpanStr);
+									} catch(Exception e)
+									{} // we can skip this error
+									// add node
+									Node cellNode=NodeFactory.newNode(Node.Type.TABLE_CELL);
+									// mak recursive call makeNodes
+									LinkedList<Node> cellNodes = makeNodes(cellChild);
+									row.addAll(cellNodes);
+									// emulate collspan FIXME: make Document table element usable with it
+									if(collSpan!=null)
+									{ // we have colspan, add empty colls to table row
+										for(;collSpan>0;collSpan--)
+										{
+											Node emptyCellNode=NodeFactory.newNode(Node.Type.TABLE_CELL);
+											Paragraph emptyPar=NodeFactory.newPara("");
+											emptyCellNode.setSubnodes(new Node[]{emptyPar});
+											row.add(emptyCellNode);
+										}
+									}
+								break;	
+							}
+						}
+						table.add(row);
+
+					}
+					// add empty cells to make table balanced by equal numbers of colls each row
+					// TODO:
+					// call setSubnodes each one row
+					Node tableNode=NodeFactory.newNode(Node.Type.TABLE);
+					LinkedList<Node> tableRowNodes=new LinkedList<Node>();
+					for(LinkedList<Node> rows:table)
+					{
+						Node tableRowNode=NodeFactory.newNode(Node.Type.TABLE_ROW);
+						tableRowNode.setSubnodes(rows.toArray(new Node[rows.size()]));
+						tableRowNodes.add(tableRowNode);
+					}
+					tableNode.setSubnodes(tableRowNodes.toArray(new Node[tableRowNodes.size()]));
+					//
+					runList.add(new RunInfo(tableNode,node));
+				break;
 				default:
 					// unknown group mixed to run list, it would be splited to paragraphs later
 					for(NodeInfo child:node.children)

@@ -21,7 +21,7 @@ class Events implements org.luwrain.browser.Events
     {
 	if (state == null)
 	    return;
-	luwrain.runInMainThread(()->area.			onPageChangeState(state));
+	luwrain.runInMainThread(()->area.onPageChangeState(state));
     }
 
     @Override public void onProgress(Number progress)
@@ -75,4 +75,10 @@ class Events implements org.luwrain.browser.Events
 		//event.waitForBeProcessed();
 		return event.answer();
     }
+
+	@Override public void onPageChanged()
+	{
+		// FIXME: make new method in area
+		area.onContentChanged();
+	}
 };

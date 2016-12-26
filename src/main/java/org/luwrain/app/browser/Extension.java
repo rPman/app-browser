@@ -13,7 +13,7 @@ public class Extension extends org.luwrain.core.extensions.EmptyExtension
 	    new Command(){
 		@Override public String getName()
 		{
-		    return "b"; // FIXME: browser
+		    return "browser";
 		}
 		@Override public void onCommand(Luwrain luwrain)
 		{

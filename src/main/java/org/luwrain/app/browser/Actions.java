@@ -2,6 +2,7 @@
 package org.luwrain.app.browser;
 
 import java.net.*;
+import java.util.Date;
 
 import org.luwrain.core.*;
 import org.luwrain.core.events.*;
@@ -10,6 +11,10 @@ import org.luwrain.popups.*;
 class Actions implements BrowserArea.Callback
 {
     private final Luwrain luwrain;
+    
+    /** time in milliseconds betwiin page updates to notify user */
+    static final int UPDATE_NOTIFY_MIN_INTERVAL=1000;
+    private long lastTimeChanged=0;
 
     Actions(Luwrain luwrain)
     {
@@ -70,6 +75,23 @@ class Actions implements BrowserArea.Callback
     {
 	return (String)Popups.fixedList(luwrain, "Выберите значение из списка:", items);
     }
+
+	@Override public void onBrowserContentChanged(long lastTimeChanged)
+	{
+		// TODO: make message about content changed
+		if(lastTimeChanged-this.lastTimeChanged>UPDATE_NOTIFY_MIN_INTERVAL)
+		{
+			luwrain.message("Страница обновлена", Luwrain.MESSAGE_REGULAR);
+		} else
+		{
+			luwrain.playSound(Sounds.INTRO_REGULAR);
+		}
+		this.lastTimeChanged=lastTimeChanged;
+	}
+	public void skipNextContentChangedNotify()
+	{
+		this.lastTimeChanged=new Date().getTime();
+	}
 
     /*
 	private boolean onInfoAction()

@@ -7,6 +7,7 @@ import java.io.*;
 
 import org.luwrain.core.*;
 import org.luwrain.core.events.*;
+import org.luwrain.core.events.KeyboardEvent.Special;
 import org.luwrain.controls.*;
 import org.luwrain.controls.doctree.*;
 import org.luwrain.doctree.loading.*;
@@ -64,7 +65,7 @@ class BrowserApp implements Application
 	}
 	*/
 	try {
-	area.open(new URL("http://rpserver/1.html"));
+	area.open(new URL("http://rpserver/a.htm"));
 	//area.open(new URL("http://google.ru"));
 	}
 	catch(MalformedURLException e)
@@ -84,7 +85,20 @@ class BrowserApp implements Application
 		@Override public boolean onKeyboardEvent(KeyboardEvent event)
 		{
 		    NullCheck.notNull(event, "event");
-		    return super.onKeyboardEvent(event);
+		    Special s=event.getSpecial();
+		    if(s!=null)
+		    switch(s)
+		    {
+	   		case BACKSPACE:
+				return area.onPressBackspace();
+			case ENTER:
+				return area.onPressEnter();
+			case F10:
+				return area.onChangeBrowserVisibility();
+			default:
+				break;
+		    }
+			return super.onKeyboardEvent(event);
 		}
 
 		@Override public boolean onEnvironmentEvent(EnvironmentEvent event)

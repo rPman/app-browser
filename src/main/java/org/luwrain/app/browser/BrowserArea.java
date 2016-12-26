@@ -6,13 +6,16 @@ import java.util.*;
 
 import org.luwrain.core.*;
 import org.luwrain.core.events.*;
+import org.luwrain.core.events.KeyboardEvent.Special;
 import org.luwrain.controls.*;
 import org.luwrain.controls.doctree.*;
 import org.luwrain.doctree.*;
+
 import org.luwrain.browser.*;
 import org.luwrain.browser.Events.WebState;
 //import org.luwrain.app.browser.web.*;
 import org.luwrain.app.browser.webdoc.BrowserToDocumentConverter;
+import org.luwrain.app.browser.webdoc.BrowserToDocumentConverter.RunInfo;
 import org.luwrain.app.browser.webdoc.ElementAction;
 
 class BrowserArea extends DoctreeArea
@@ -24,6 +27,9 @@ class BrowserArea extends DoctreeArea
     protected final Browser page;
     protected Events events;
 
+    final BrowserToDocumentConverter builder = new BrowserToDocumentConverter();
+    Document doc=null;
+
     protected WebState state = WebState.READY;
     protected int progress = 0;
 
@@ -33,7 +39,7 @@ class BrowserArea extends DoctreeArea
 
     protected final Vector<HistoryElement> elementHistory = new Vector<HistoryElement>();
     protected boolean complexMode = false;
-
+    
     BrowserArea(Luwrain luwrain, Callback callback, Browser browser, Announcement announcement)
     {
 	super(new DefaultControlEnvironment(luwrain), announcement);
@@ -60,23 +66,89 @@ class BrowserArea extends DoctreeArea
 	Log.debug("browser", "starting DOM refreshing");
 	if(isBusy())
 	    return false;
+	long t1=new Date().getTime();
 	page.RescanDOM();
 	//doc = new WebDocument();
 	//doc.make(page);
-   	final BrowserToDocumentConverter builder = new BrowserToDocumentConverter();
-   	setDocument(builder.go(page), luwrain.getAreaVisibleWidth(this));
 	complexMode = false;
 	updateView();
-	Log.debug("browser", "DOM refreshed successfully");
+	Log.debug("browser", "DOM refreshed successfully "+(t1-new Date().getTime()+"ms"));
 	return true;
+    }
+
+    /** update only what needed, now unused*/
+    void updateView(Run run,ElementAction action)
+    {
+       	// store current position
+       	int x=getHotPointX(),y=getHotPointY();
+		// make new RunInfo for this node element
+		Vector<RunInfo> runs=builder.makeRuns(builder.index.get(action.element.getPos()));
+		if(runs.size()!=1)
+		{
+			Log.error("web=browser","can't found updated runs in regenerated list, count:"+runs.size());
+			return;
+		}
+		// get run as TextRun
+		RunInfo runinfo = runs.get(0);
+		if(!(runinfo.run instanceof TextRun))
+		{
+			Log.error("web=browser","can't found updated runs in regenerated list, count:"+runs.size());
+			return;
+		}
+		TextRun nrun=(TextRun)runinfo.run;
+		// get parent Node as Paragraph
+		Node node=run.getParentNode();
+		if(!(node instanceof Paragraph))
+		{
+			Log.error("web=browser","Run's node are not Paragraph, but:"+node.getClass().getName());
+			return;
+		}
+		// found run in pargraph
+		Paragraph par=(Paragraph)node;
+		int i=0;
+		boolean found=false;
+		for(Run r:par.runs)
+		{
+			if(r==run)
+			{
+				found=true;
+				break;
+			}
+			i++;
+		}
+		if(!found)
+		{
+			Log.error("web=browser","Run not found in parent node, it's bug");
+			return;
+		}
+		// i - index of replaced node
+		par.runs[i]=nrun;
+		// update document view
+		doc.commit();
+		setDocument(doc, luwrain.getAreaVisibleWidth(this));
+		// restore hot point
+		this.onMoveHotPoint(new MoveHotPointEvent(x,y,false));
     }
 
     protected void updateView()
     {
-	//final WebDocBuilder builder = new WebDocBuilder();
-	//final Document doc = builder.make(page);
-	//doc.commit();
-	//setDocument(doc, luwrain.getAreaVisibleWidth(this));
+   	// store current position
+   	int x=getHotPointX(),y=getHotPointY();
+   	// regenerate full document from 
+   	doc=builder.go(page);
+   	page.setWatchNodes(builder.watch);
+    // recreate view
+	doc.commit();
+	
+	setDocument(doc, luwrain.getAreaVisibleWidth(this));
+	// restore pos
+	/*
+	this.setHotPointX(x);
+	this.setHotPointY(y);
+	*/
+	this.onMoveHotPoint(new MoveHotPointEvent(x,y,false));
+	
+	//luwrain.onAreaNewHotPoint(this);
     }
 
     /**Checks if the browser has valid loaded page
@@ -152,8 +224,15 @@ class BrowserArea extends DoctreeArea
 	    return super.onEnvironmentEvent(event);
 	}
     }
+    
+    protected boolean onPressBackspace()
+	{
+    	page.executeScript("history.go(-1);");
+		return true;
+	}
 
-    protected boolean onBackspace()
+    /*
+	protected boolean onBackspace()
     {
 	if(elementHistory.isEmpty()) return false;
 	HistoryElement h=elementHistory.lastElement();
@@ -163,6 +242,7 @@ class BrowserArea extends DoctreeArea
 	updateView();
 	return true;
     }
+    */
 
     /**Performs some default action relevant to the element under the hot
      * point. What the exact action will be done is dependent on the type of the
@@ -182,46 +262,57 @@ class BrowserArea extends DoctreeArea
     	if(run instanceof TextRun)
     	{
     		Object t=((TextRun)run).getAssociatedObject();
+    		if(t==null) return false;
     		if(t instanceof ElementAction)
     		{
     			ElementAction action=(ElementAction)t;
+    			Boolean result=null;
     			switch(action.type)
     			{
+    				case UNKNOWN:
 					case CLICK:
-						return emulateClick(action.element);
+						result = emulateClick(action.element);
+						break;
 					case EDIT:
-						return onFormEditText(action.element);
+						result = onFormEditText(action.element);
+						break;
 					case SELECT:
-						return onFormSelectFromList(action.element);
+						result = onFormSelectFromList(action.element);
+						break;
 					default:
 						Log.error("web-browser","unknown action type: "+action.type.name());
 						return false;
     			}
+				((Actions)callback).skipNextContentChangedNotify();
+				page.doFastUpdate();
     		} else
     		{
     			Log.error("web-browser","current TextRun have unknown associated object, type "+t.getClass());
     		}
     	}
     	//System.out.println(run.getClass());
-	/*
-	final WebElement el = it.getElementAtPos(hotPointX);
-	if(el == null)
-	    return false;
-	if(el.isComplex() || complexMode)
-	    return switchComplexMode(el);
-	if(el.getNode().isEditable())
-	{ // editable element, edit it
-	    if(el instanceof WebRadio || el instanceof WebCheckbox)
-		return emulateClick(el);
-	    if(el instanceof WebSelect)
-		return onFormSelectFromList(el);
-	    return onFormEditText(el);
-	}
-	return emulateClick(el);
-	*/
-	return false;
+    	return false;
     }
 
+    protected boolean onPressEnter()
+	{
+    	if (isEmpty() || isBusy())
+    	    return false;
+    	Run run=this.getCurrentRun();
+    	if(run instanceof TextRun)
+    	{
+    		Object t=((TextRun)run).getAssociatedObject();
+    		if(t==null) return false;
+    		if(t instanceof ElementAction)
+    		{
+				ElementAction action=(ElementAction)t;
+				return emulateSubmit(action.element);
+    		}
+    	}
+		return false;
+	}
+
+    
     /**Asks the browser core to emulate the action which looks like the user
      * clicks on the given element. This operation may be performed only if
      * the browser is free (meaning, not empty and not busy).
@@ -235,6 +326,14 @@ class BrowserArea extends DoctreeArea
 	if (isEmpty() || isBusy())
 	    return false;
 	el.clickEmulate();
+	return true;
+    }
+    protected boolean emulateSubmit(ElementIterator el)
+    {
+	NullCheck.notNull(el, "el");
+	if (isEmpty() || isBusy())
+	    return false;
+	el.submitEmulate();
 	return true;
     }
 
@@ -280,6 +379,7 @@ class BrowserArea extends DoctreeArea
 	    return;
 	case SUCCEEDED:
 	    refresh();
+	    goToStartPage();
 	    callback.onBrowserSuccess(page.getTitle());
 	    return;
 	case FAILED:
@@ -293,6 +393,18 @@ class BrowserArea extends DoctreeArea
 	    Log.warning("browser", "unexpected new page state:" + state);
 	}
     }
+
+    private void goToStartPage()
+	{
+    	this.onMoveHotPoint(new MoveHotPointEvent(0,0,false));
+	}
+
+	protected void onContentChanged()
+    {
+    	refresh();
+		callback.onBrowserContentChanged(page.getLastTimeChanged());
+    }
+
 
     protected boolean onThreadSyncEvent(EnvironmentEvent event)
     {
@@ -370,13 +482,20 @@ class BrowserArea extends DoctreeArea
 	}
 	return false;
     }
-
+    
     interface Callback
     {
-	void onBrowserRunning();
+   	void onBrowserRunning();
 	void onBrowserSuccess(String title);
 	void onBrowserFailed();
+	void onBrowserContentChanged(long lastTimeChanged);
 	String askFormTextValue(String currentValue);
 	String askFormListValue(String[] items, boolean fromListOnly);
     }
+
+	public boolean onChangeBrowserVisibility()
+	{
+		page.setVisibility(!page.getVisibility());
+		return true;
+	}
 }
