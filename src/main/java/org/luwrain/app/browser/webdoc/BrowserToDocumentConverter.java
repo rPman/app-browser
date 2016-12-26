@@ -24,6 +24,9 @@ import org.luwrain.doctree.TextRun;
  * - some groups of nodes, grouped to addition tables row by row by onscreen position */
 public class BrowserToDocumentConverter
 {
+	/** maximum number of cols in table to awoid too small cols FIXME: make fix in DocumentArea to work with cell content does not fit in */
+	static final int TABLE_MAXIMUM_COLUMN_COUNT=4;
+	
 	private Browser browser;
 
 	private final LinkedList<Run> curParaRuns = new LinkedList<Run>();
@@ -395,6 +398,9 @@ public class BrowserToDocumentConverter
 
 					}
 					// add empty cells to make table balanced by equal numbers of colls each row
+					// move multiple colls to section inside of it
+					// [col1,col2,col3,col4,col5,col6] -> [{col1,col2},{col3,col4},{col5,col6}]
+					//
 					// TODO:
 					// call setSubnodes each one row
 					Node tableNode=NodeFactory.newNode(Node.Type.TABLE);

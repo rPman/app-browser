@@ -65,8 +65,8 @@ class BrowserApp implements Application
 	}
 	*/
 	try {
-	area.open(new URL("http://rpserver/a.htm"));
-	//area.open(new URL("http://google.ru"));
+	//area.open(new URL("http://rpserver/a.htm"));
+	area.open(new URL("http://google.ru"));
 	}
 	catch(MalformedURLException e)
 	{
