@@ -145,7 +145,7 @@ public class BrowserToDocumentConverter
 		while(cleanup(tempRoot)!=0){};
 		splitSingleChildrenNodes(tempRoot);
 		// now we have compact NodeInfo's tree
-		/**/tempRoot.debug(1,true);
+		//**/tempRoot.debug(1,true);
 		// make document
 		Document doc = makeDocument();
 		return doc;
@@ -202,6 +202,11 @@ public class BrowserToDocumentConverter
 		{
 			if(r.isNode())
 			{
+				node.runs=subruns.toArray(new Run[subruns.size()]);
+				subruns.clear();
+				subnodes.add(node);
+				node=NodeFactory.newPara();
+				//
 				subnodes.add(r.node);
 				continue;
 			}
@@ -244,6 +249,9 @@ public class BrowserToDocumentConverter
 			String txt = "";
 			switch(tagName)
 			{
+				case "img":
+					txt="Image: "+n.getText();
+				break;
 				case "input":
 					String type=n.getAttributeProperty("type");
 					if(type==null) type="";
@@ -307,6 +315,8 @@ public class BrowserToDocumentConverter
 			{
 				action=new ElementAction(ElementAction.Type.UNKNOWN,node.element);
 			}
+			txt=cleanupText(txt);
+			txt+=" "+cleanupText(n.getAltText());
 			final TextRun run = new TextRun(txt.trim()+" ");
 			if(action!=null) run.setAssociatedObject(action);
 			runList.add(new RunInfo(run,node));
@@ -319,7 +329,7 @@ public class BrowserToDocumentConverter
 				// list
 				case "ol":
 				case "ul": // li element can be mixed with contents, but each child of node is a li
-					System.out.println("Found list: "+node.children.size());
+					//System.out.println("Found list: "+node.children.size());
 					Node listNode=NodeFactory.newNode(tagName.equals("ol")?Node.Type.ORDERED_LIST:Node.Type.UNORDERED_LIST);
 					LinkedList<Node> listItems=new LinkedList<Node>();
 					for(NodeInfo child:node.children)
@@ -331,12 +341,12 @@ public class BrowserToDocumentConverter
 					}
 					listNode.setSubnodes(listItems.toArray(new Node[listItems.size()]));
 					runList.add(new RunInfo(listNode,node));
-					System.out.println("List end");
+					//System.out.println("List end");
 				break;
 				// table
 				case "table": // table can be mixed with any other element, for example parent form
 				case "tbody": // but if tbody not exist, table would exist as single, because tr/td/th can't be mixed
-					System.out.println("Found table: "+node.children.size()+" rows");
+					//System.out.println("Found table: "+node.children.size()+" rows");
 					LinkedList<LinkedList<Node>> table=new LinkedList<LinkedList<Node>>();
 					// any child is a rows! we can do not check it
 					for(NodeInfo child:node.children)
@@ -423,6 +433,11 @@ public class BrowserToDocumentConverter
 			}
 		}
 		return runList;
+	}
+
+	private String cleanupText(String txt)
+	{
+		return txt.replace("/\\s+/g"," ").trim();
 	}
 
 	void fillTemporaryTree()
@@ -663,7 +678,9 @@ public class BrowserToDocumentConverter
 						}
 					}
 				}
-				final Run run = new TextRun(txt);
+				txt=cleanupText(txt);
+				txt+=" "+cleanupText(n.getAltText());
+				final Run run = new TextRun(txt.trim()+" ");
 				curParaRuns.add(run);
 			} else
 			//if (!child.children.isEmpty())
