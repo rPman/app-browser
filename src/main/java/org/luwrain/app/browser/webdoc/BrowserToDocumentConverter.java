@@ -1,10 +1,7 @@
 package org.luwrain.app.browser.webdoc;
 
 import java.awt.Rectangle;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.Vector;
+import java.util.*;
 
 import org.luwrain.app.browser.selector.SelectorAll;
 import org.luwrain.app.browser.selector.SelectorAllImpl;
@@ -26,78 +23,80 @@ public class BrowserToDocumentConverter
 {
 	/** maximum number of cols in table to awoid too small cols FIXME: make fix in DocumentArea to work with cell content does not fit in */
 	static final int TABLE_MAXIMUM_COLUMN_COUNT=4;
-	
-	private Browser browser;
 
-	private final LinkedList<Run> curParaRuns = new LinkedList<Run>();
+    private Browser browser;
 
-	/** private temporary structure to story node tree for cleaning up before make document */
-	public class NodeInfo
+    private final LinkedList<Run> curParaRuns = new LinkedList<Run>();
+
+    /** private temporary structure to story node tree for cleaning up before make document */
+    public class NodeInfo
+    {
+	/** create root node */
+	NodeInfo()
 	{
-		/** create root node */
-		public NodeInfo()
-		{
-			this.parent=null;
-			this.element=null;
-			// root node does not exist in index
-		}
-		public NodeInfo(NodeInfo parent,ElementIterator element)
-		{
-			this.parent=parent;
-			this.element=element.clone();
-			parent.children.add(this);
-			//
-			index.put(element.getPos(),this);
-		}
-		public NodeInfo parent;
-		public ElementIterator element;
-		public Vector<NodeInfo> children = new Vector<NodeInfo>();
-		/** list of nodes, mixed with this node for cleanup */
-		public Vector<ElementIterator> mixed = new Vector<ElementIterator>();
-		public boolean toDelete=false;
-		
-		/** return element and reversed mixed in list */
-		public Vector<ElementIterator> getMixedinfo()
-		{
-			Vector<ElementIterator> res=new Vector<ElementIterator>();
-			res.add(element);
-			// we already add mixed in reversed mode
-			if(!mixed.isEmpty())
-				res.addAll(mixed);
-			return res;
-		}
-		
-		// debug
-		public void debug(int lvl,boolean printChildren)
-		{
-			System.out.print(new String(new char[lvl]).replace("\0", "."));
-			if(element==null)
-			{
-				System.out.println("ROOT");
-			} else
-			{
-				System.out.print(element.getPos()+": ");
-				//if(toDelete) System.out.print("DELETE ");
-				if(!mixed.isEmpty())
-				{
-					System.out.print("[");
-					for(ElementIterator e:mixed)
-					{
-						System.out.print((e==null?"ROOT":e.getHtmlTagName())+" ");
-					}
-					System.out.print("] ");
-				}
-				System.out.print(element.getHtmlTagName()+" ");
-				String str=element.getText().replace('\n',' ');
-				System.out.print(element.getType()+": '"+str.substring(0,Math.min(160,str.length()))+"'");
-				System.out.println();
-			}
-			if(printChildren)
-				for(NodeInfo e:children)
-					e.debug(lvl+1,true);
-		};
+	    this.parent=null;
+	    this.element=null;
+	    // root node does not exist in index
 	}
-	
+
+	NodeInfo(NodeInfo parent,ElementIterator element)
+	{
+	    this.parent=parent;
+	    this.element=element.clone();
+	    parent.children.add(this);
+	    //
+	    index.put(element.getPos(),this);
+	}
+
+	final NodeInfo parent;
+	ElementIterator element;
+	Vector<NodeInfo> children = new Vector<NodeInfo>();
+	/** list of nodes, mixed with this node for cleanup */
+	final Vector<ElementIterator> mixed = new Vector<ElementIterator>();
+	boolean toDelete=false;
+
+	/** return element and reversed mixed in list */
+	Vector<ElementIterator> getMixedinfo()
+	{
+	    Vector<ElementIterator> res=new Vector<ElementIterator>();
+	    res.add(element);
+	    // we already add mixed in reversed mode
+	    if(!mixed.isEmpty())
+		res.addAll(mixed);
+	    return res;
+	}
+
+	// debug
+	void debug(int lvl,boolean printChildren)
+	{
+	    System.out.print(new String(new char[lvl]).replace("\0", "."));
+	    if(element==null)
+	    {
+		System.out.println("ROOT");
+	    } else
+	    {
+		System.out.print(element.getPos()+": ");
+		//if(toDelete) System.out.print("DELETE ");
+		if(!mixed.isEmpty())
+		{
+		    System.out.print("[");
+		    for(ElementIterator e:mixed)
+		    {
+			System.out.print((e==null?"ROOT":e.getHtmlTagName())+" ");
+		    }
+		    System.out.print("] ");
+		}
+		System.out.print(element.getHtmlTagName()+" ");
+		String str=element.getText().replace('\n',' ');
+		System.out.print(element.getType()+": '"+str.substring(0,Math.min(160,str.length()))+"'");
+		System.out.println();
+	    }
+	    if(printChildren)
+		for(NodeInfo e:children)
+		    e.debug(lvl+1,true);
+	};
+    }
+
 	/** structure for temporary lists of prepared doctree Run's and linked info about each */
 	public class RunInfo
 	{
