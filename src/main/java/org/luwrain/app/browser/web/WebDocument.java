@@ -10,7 +10,7 @@ import org.luwrain.app.browser.selector.SelectorChildrenImpl;
 import org.luwrain.browser.Browser;
 import org.luwrain.browser.ElementIterator;
 
-public class WebDocument
+class WebDocument
 {
     // make WebDocument structure for web page, more simple than html document, i.e.  only visible elements and without element with single child
     // only visible elements
@@ -68,6 +68,7 @@ public class WebDocument
 	    {
 		switch(nodeIt.getType())
 		{
+		    /*
 		case "input checkbox":
 		    element = new WebCheckbox(parent,nodeIt.clone());
 		    break;
@@ -80,12 +81,14 @@ public class WebDocument
 		case "select":
 		    element = new WebSelect(parent,nodeIt.clone());
 		    break;
+		*/
 		default:
 		    element=new WebEdit(parent,nodeIt.clone());
 		}
 	    } else
 		switch(nodeIt.getType())
 		{
+		    /*
 		case "link":
 		    element=new WebText(parent,nodeIt.clone());
 		    element.setAttribute("href",nodeIt.getLink());
@@ -109,6 +112,7 @@ public class WebDocument
 		case "th":
 		    element = new WebTableCell(parent,nodeIt.clone());
 		break;
+		    */
 		default:
 		    element=new WebText(parent,nodeIt.clone());
 		    break;
