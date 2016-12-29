@@ -7,8 +7,8 @@ import org.luwrain.app.browser.selector.SelectorAll;
 import org.luwrain.app.browser.selector.SelectorAllImpl;
 import org.luwrain.browser.Browser;
 import org.luwrain.browser.ElementIterator;
-import org.luwrain.core.Log;
-import org.luwrain.core.NullCheck;
+import org.luwrain.core.*;
+//import org.luwrain.core.NullCheck;
 import org.luwrain.doctree.Document;
 import org.luwrain.doctree.Node;
 import org.luwrain.doctree.NodeFactory;
@@ -98,45 +98,49 @@ public class BrowserToDocumentConverter
     }
 
 	/** structure for temporary lists of prepared doctree Run's and linked info about each */
-	public class RunInfo
+	static public class RunInfo
 	{
-		public Run run=null;
+public Run run=null;
 		public Node node=null;
 		public NodeInfo info;
-		public RunInfo(Run run, NodeInfo info)
+
+RunInfo(Run run, NodeInfo info)
 		{
 			this.run=run;
 			this.info=info;
 		}
-		public RunInfo(Node node, NodeInfo info)
+
+RunInfo(Node node, NodeInfo info)
 		{
 			this.node=node;
 			this.info=info;
 		}
+
 		boolean isRun()
 		{
 			return run!=null;
 		}
+
 		boolean isNode()
 		{
 			return node!=null;
 		}
 	}
+
 	/** reverse index for accessing NodeInfo by its ElementIterator's pos */
-	public HashMap<Integer,NodeInfo> index;
-	public NodeInfo tempRoot;// = new NodeInfo();
+public HashMap<Integer,NodeInfo> index;
+NodeInfo tempRoot;// = new NodeInfo();
 	
 	/** list node position to watch it's content in Browser */
-	public LinkedList<Integer> watch=new LinkedList<Integer>();
+public LinkedList<Integer> watch=new LinkedList<Integer>();
 	
 	/** create new doctree Document from current state of Browser */
 	public Document go(Browser browser)
 	{
 		curParaRuns.clear();
-		index=new HashMap<Integer,NodeInfo>();
+		index = new HashMap<Integer,NodeInfo>();
 		tempRoot = new NodeInfo();
 		watch.clear();
-		//
 		this.browser = browser;
 		// fill temporary tree of Browser's nodes information
 		fillTemporaryTree();
@@ -146,14 +150,14 @@ public class BrowserToDocumentConverter
 		// now we have compact NodeInfo's tree
 		//**/tempRoot.debug(1,true);
 		// make document
-		Document doc = makeDocument();
+		final Document doc = makeDocument();
 		return doc;
 	}
-	
+
 	/** return first visible parent of element or null if root child */
 	ElementIterator checkVisibleParent(ElementIterator element)
 	{
-		while(element!=null)
+		while(element != null)
 		{
 			if(element.isVisible())
 				return element;
@@ -175,29 +179,29 @@ public class BrowserToDocumentConverter
 	{
 		// scan full tree for block detection, tables, lists and so on
 		// make planar list of Run's
-		Node root=NodeFactory.newNode(Node.Type.ROOT);
-		LinkedList<Node> subnodes = makeNodes(tempRoot);
+		final Node root=NodeFactory.newNode(Node.Type.ROOT);
+		final LinkedList<Node> subnodes = makeNodes(tempRoot);
 		root.setSubnodes(subnodes.toArray(new Node[subnodes.size()]));
-		Document doc = new Document(root);
+		final Document doc = new Document(root);
 		doc.commit();
 		return doc;
 	}
 	
 	/** make doctree Node list for node and children */
-	public LinkedList<Node> makeNodes(NodeInfo base)
+private LinkedList<Node> makeNodes(NodeInfo base)
 	{
 //**/System.out.print("makeNodes: ");base.debug(0,false);		
-		LinkedList<Node> subnodes=new LinkedList<Node>();
+		final LinkedList<Node> subnodes=new LinkedList<Node>();
 		final Vector<RunInfo> runList = makeRuns(base);
 		
 		// TODO: search elements with same X screen (equals for x pos) and different Y - same group
 		// TODO: search elements with different Y and same X (intersect intervals! not equal like for X)
 
-		Paragraph node=NodeFactory.newPara();
+Paragraph node=NodeFactory.newPara();
 		
-		LinkedList<Run> subruns=new LinkedList<Run>();
-		Rectangle rect=null;
-		for(RunInfo r:runList)
+		final LinkedList<Run> subruns=new LinkedList<Run>();
+		Rectangle rect = null;
+		for(RunInfo r: runList)
 		{
 			if(r.isNode())
 			{
@@ -210,9 +214,10 @@ public class BrowserToDocumentConverter
 				continue;
 			}
 			// first rect compare with itself
-			if(rect==null) rect=r.info.element.getRect();
+			if(rect == null)
+rect=r.info.element.getRect();
 			// check, if next r in the same Y interval like previous
-			Rectangle curRect=r.info.element.getRect();
+			final Rectangle curRect=r.info.element.getRect();
 			if((curRect.y>=rect.y&&curRect.y<rect.y+rect.height)
 			 ||(rect.y>=curRect.y&&rect.y<curRect.y+curRect.height))
 			{ // prev and current run in the same line on screen
@@ -227,22 +232,21 @@ public class BrowserToDocumentConverter
 			subruns.add(r.run);
 			rect=curRect;
 		}
-		node.runs=subruns.toArray(new Run[subruns.size()]);
+		node.runs = subruns.toArray(new Run[subruns.size()]);
 		subruns.clear();
 		subnodes.add(node);
-		node=NodeFactory.newPara();
-		
-		return subnodes;
+		node = NodeFactory.newPara();
+				return subnodes;
 	}
 
 	/** recursive method to collect Run's for each leaf element in NodeInfo tree */
-	public Vector<RunInfo> makeRuns(NodeInfo node)
+public Vector<RunInfo> makeRuns(NodeInfo node)
 	{
 //**/System.out.print("makeRuns: ");node.debug(0,false);
 		ElementAction action=null;
 		Vector<RunInfo> runList=new Vector<RunInfo>();
 		final ElementIterator n=node.element;
-		String tagName = n.getHtmlTagName().toLowerCase();;
+		final String tagName = n.getHtmlTagName().toLowerCase();;
 		if(node.children.isEmpty())
 		{
 			String txt = "";
