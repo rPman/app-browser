@@ -14,9 +14,7 @@ import org.luwrain.doctree.*;
 import org.luwrain.browser.*;
 import org.luwrain.browser.Events.WebState;
 //import org.luwrain.app.browser.web.*;
-import org.luwrain.app.browser.webdoc.BrowserToDocumentConverter;
-import org.luwrain.app.browser.webdoc.BrowserToDocumentConverter.RunInfo;
-import org.luwrain.app.browser.webdoc.ElementAction;
+import org.luwrain.app.browser.DocumentBuilder.RunInfo;
 
 class BrowserArea extends DoctreeArea
 {
@@ -27,7 +25,7 @@ class BrowserArea extends DoctreeArea
     protected final Browser page;
     protected Events events;
 
-    final BrowserToDocumentConverter builder = new BrowserToDocumentConverter();
+    final DocumentBuilder builder = new DocumentBuilder();
     Document doc=null;
 
     protected WebState state = WebState.READY;

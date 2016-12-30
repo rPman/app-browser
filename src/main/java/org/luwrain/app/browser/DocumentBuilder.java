@@ -1,4 +1,5 @@
-package org.luwrain.app.browser.webdoc;
+
+package org.luwrain.app.browser;
 
 import java.awt.Rectangle;
 import java.util.*;
@@ -19,7 +20,7 @@ import org.luwrain.doctree.TextRun;
 /** this class represent main method to create doctree Document from Browser
  * - any empty or invisible nodes cleaned up
  * - some groups of nodes, grouped to addition tables row by row by onscreen position */
-public class BrowserToDocumentConverter
+class DocumentBuilder
 {
 	/** maximum number of cols in table to awoid too small cols FIXME: make fix in DocumentArea to work with cell content does not fit in */
 	static final int TABLE_MAXIMUM_COLUMN_COUNT=4;

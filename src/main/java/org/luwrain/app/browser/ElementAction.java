@@ -1,4 +1,5 @@
-package org.luwrain.app.browser.webdoc;
+
+package org.luwrain.app.browser;
 
 import org.luwrain.browser.ElementIterator;
 
