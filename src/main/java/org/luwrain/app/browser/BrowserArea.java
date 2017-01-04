@@ -25,7 +25,7 @@ class BrowserArea extends DoctreeArea
     protected final Browser page;
     protected Events events;
 
-    final DocumentBuilder builder = new DocumentBuilder();
+    //    final DocumentBuilder builder = new DocumentBuilder();
     Document doc=null;
 
     protected WebState state = WebState.READY;
@@ -74,66 +74,13 @@ class BrowserArea extends DoctreeArea
 	return true;
     }
 
-    /** update only what needed, now unused*/
-    void updateView(Run run,ElementAction action)
-    {
-       	// store current position
-       	int x=getHotPointX(),y=getHotPointY();
-		// make new RunInfo for this node element
-		Vector<RunInfo> runs=builder.makeRuns(builder.index.get(action.element.getPos()));
-		if(runs.size()!=1)
-		{
-			Log.error("web=browser","can't found updated runs in regenerated list, count:"+runs.size());
-			return;
-		}
-		// get run as TextRun
-		RunInfo runinfo = runs.get(0);
-		if(!(runinfo.run instanceof TextRun))
-		{
-			Log.error("web=browser","can't found updated runs in regenerated list, count:"+runs.size());
-			return;
-		}
-		TextRun nrun=(TextRun)runinfo.run;
-		// get parent Node as Paragraph
-		Node node=run.getParentNode();
-		if(!(node instanceof Paragraph))
-		{
-			Log.error("web=browser","Run's node are not Paragraph, but:"+node.getClass().getName());
-			return;
-		}
-		// found run in pargraph
-		Paragraph par=(Paragraph)node;
-		int i=0;
-		boolean found=false;
-		for(Run r:par.runs)
-		{
-			if(r==run)
-			{
-				found=true;
-				break;
-			}
-			i++;
-		}
-		if(!found)
-		{
-			Log.error("web=browser","Run not found in parent node, it's bug");
-			return;
-		}
-		// i - index of replaced node
-		par.runs[i]=nrun;
-		// update document view
-		doc.commit();
-		setDocument(doc, luwrain.getAreaVisibleWidth(this));
-		// restore hot point
-		this.onMoveHotPoint(new MoveHotPointEvent(x,y,false));
-    }
-
     protected void updateView()
     {
    	// store current position
    	int x=getHotPointX(),y=getHotPointY();
    	// regenerate full document from 
-   	doc=builder.go(page);
+    final DocumentBuilder builder = new DocumentBuilder(page);
+    doc=builder.build();
    	page.setWatchNodes(builder.watch);
     // recreate view
 	doc.commit();

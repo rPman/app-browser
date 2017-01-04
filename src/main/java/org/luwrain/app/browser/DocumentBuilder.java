@@ -4,18 +4,12 @@ package org.luwrain.app.browser;
 import java.awt.Rectangle;
 import java.util.*;
 
+import org.luwrain.core.*;
+import org.luwrain.doctree.*;
+import org.luwrain.browser.*;
+
 import org.luwrain.app.browser.selector.SelectorAll;
 import org.luwrain.app.browser.selector.SelectorAllImpl;
-import org.luwrain.browser.Browser;
-import org.luwrain.browser.ElementIterator;
-import org.luwrain.core.*;
-//import org.luwrain.core.NullCheck;
-import org.luwrain.doctree.Document;
-import org.luwrain.doctree.Node;
-import org.luwrain.doctree.NodeFactory;
-import org.luwrain.doctree.Paragraph;
-import org.luwrain.doctree.Run;
-import org.luwrain.doctree.TextRun;
 
 /** this class represent main method to create doctree Document from Browser
  * - any empty or invisible nodes cleaned up
@@ -29,114 +23,21 @@ class DocumentBuilder
 
     private final LinkedList<Run> curParaRuns = new LinkedList<Run>();
 
-    /** private temporary structure to story node tree for cleaning up before make document */
-    public class NodeInfo
+	/** reverse index for accessing NodeInfo by its ElementIterator's pos */
+    HashMap<Integer,NodeInfo> index;
+private NodeInfo tempRoot;
+
+	/** list node position to watch it's content in Browser */
+LinkedList<Integer> watch = new LinkedList<Integer>();
+
+    DocumentBuilder(Browser browser)
     {
-	/** create root node */
-	NodeInfo()
-	{
-	    this.parent=null;
-	    this.element=null;
-	    // root node does not exist in index
-	}
-
-	NodeInfo(NodeInfo parent,ElementIterator element)
-	{
-	    this.parent=parent;
-	    this.element=element.clone();
-	    parent.children.add(this);
-	    //
-	    index.put(element.getPos(),this);
-	}
-
-	final NodeInfo parent;
-	ElementIterator element;
-	Vector<NodeInfo> children = new Vector<NodeInfo>();
-	/** list of nodes, mixed with this node for cleanup */
-	final Vector<ElementIterator> mixed = new Vector<ElementIterator>();
-	boolean toDelete=false;
-
-	/** return element and reversed mixed in list */
-	Vector<ElementIterator> getMixedinfo()
-	{
-	    Vector<ElementIterator> res=new Vector<ElementIterator>();
-	    res.add(element);
-	    // we already add mixed in reversed mode
-	    if(!mixed.isEmpty())
-		res.addAll(mixed);
-	    return res;
-	}
-
-	// debug
-	void debug(int lvl,boolean printChildren)
-	{
-	    System.out.print(new String(new char[lvl]).replace("\0", "."));
-	    if(element==null)
-	    {
-		System.out.println("ROOT");
-	    } else
-	    {
-		System.out.print(element.getPos()+": ");
-		//if(toDelete) System.out.print("DELETE ");
-		if(!mixed.isEmpty())
-		{
-		    System.out.print("[");
-		    for(ElementIterator e:mixed)
-		    {
-			System.out.print((e==null?"ROOT":e.getHtmlTagName())+" ");
-		    }
-		    System.out.print("] ");
-		}
-		System.out.print(element.getHtmlTagName()+" ");
-		String str=element.getText().replace('\n',' ');
-		System.out.print(element.getType()+": '"+str.substring(0,Math.min(160,str.length()))+"'");
-		System.out.println();
-	    }
-	    if(printChildren)
-		for(NodeInfo e:children)
-		    e.debug(lvl+1,true);
-	};
+	NullCheck.notNull(browser, "browser");
+	this.browser = browser;
     }
 
-	/** structure for temporary lists of prepared doctree Run's and linked info about each */
-	static public class RunInfo
-	{
-public Run run=null;
-		public Node node=null;
-		public NodeInfo info;
-
-RunInfo(Run run, NodeInfo info)
-		{
-			this.run=run;
-			this.info=info;
-		}
-
-RunInfo(Node node, NodeInfo info)
-		{
-			this.node=node;
-			this.info=info;
-		}
-
-		boolean isRun()
-		{
-			return run!=null;
-		}
-
-		boolean isNode()
-		{
-			return node!=null;
-		}
-	}
-
-	/** reverse index for accessing NodeInfo by its ElementIterator's pos */
-public HashMap<Integer,NodeInfo> index;
-NodeInfo tempRoot;// = new NodeInfo();
-	
-	/** list node position to watch it's content in Browser */
-public LinkedList<Integer> watch=new LinkedList<Integer>();
-	
 	/** create new doctree Document from current state of Browser */
-	public Document go(Browser browser)
+    Document build()
 	{
 		curParaRuns.clear();
 		index = new HashMap<Integer,NodeInfo>();
@@ -749,4 +650,104 @@ public Vector<RunInfo> makeRuns(NodeInfo node)
 	}
 	return null;
 	}
+
+    /** private temporary structure to story node tree for cleaning up before make document */
+    public class NodeInfo
+    {
+	/** create root node */
+	NodeInfo()
+	{
+	    this.parent=null;
+	    this.element=null;
+	    // root node does not exist in index
+	}
+
+	NodeInfo(NodeInfo parent,ElementIterator element)
+	{
+	    this.parent=parent;
+	    this.element=element.clone();
+	    parent.children.add(this);
+	    //
+	    index.put(element.getPos(),this);
+	}
+
+	final NodeInfo parent;
+	ElementIterator element;
+	Vector<NodeInfo> children = new Vector<NodeInfo>();
+	/** list of nodes, mixed with this node for cleanup */
+	final Vector<ElementIterator> mixed = new Vector<ElementIterator>();
+	boolean toDelete=false;
+
+	/** return element and reversed mixed in list */
+	Vector<ElementIterator> getMixedinfo()
+	{
+	    Vector<ElementIterator> res=new Vector<ElementIterator>();
+	    res.add(element);
+	    // we already add mixed in reversed mode
+	    if(!mixed.isEmpty())
+		res.addAll(mixed);
+	    return res;
+	}
+
+	// debug
+	void debug(int lvl,boolean printChildren)
+	{
+	    System.out.print(new String(new char[lvl]).replace("\0", "."));
+	    if(element==null)
+	    {
+		System.out.println("ROOT");
+	    } else
+	    {
+		System.out.print(element.getPos()+": ");
+		//if(toDelete) System.out.print("DELETE ");
+		if(!mixed.isEmpty())
+		{
+		    System.out.print("[");
+		    for(ElementIterator e:mixed)
+		    {
+			System.out.print((e==null?"ROOT":e.getHtmlTagName())+" ");
+		    }
+		    System.out.print("] ");
+		}
+		System.out.print(element.getHtmlTagName()+" ");
+		String str=element.getText().replace('\n',' ');
+		System.out.print(element.getType()+": '"+str.substring(0,Math.min(160,str.length()))+"'");
+		System.out.println();
+	    }
+	    if(printChildren)
+		for(NodeInfo e:children)
+		    e.debug(lvl+1,true);
+	};
+    }
+
+	/** structure for temporary lists of prepared doctree Run's and linked info about each */
+	static public class RunInfo
+	{
+public Run run=null;
+		public Node node=null;
+		public NodeInfo info;
+
+RunInfo(Run run, NodeInfo info)
+		{
+			this.run=run;
+			this.info=info;
+		}
+
+RunInfo(Node node, NodeInfo info)
+		{
+			this.node=node;
+			this.info=info;
+		}
+
+		boolean isRun()
+		{
+			return run!=null;
+		}
+
+		boolean isNode()
+		{
+			return node!=null;
+		}
+	}
+
 }
