@@ -14,7 +14,7 @@ import org.luwrain.doctree.*;
 import org.luwrain.browser.*;
 import org.luwrain.browser.Events.WebState;
 //import org.luwrain.app.browser.web.*;
-import org.luwrain.app.browser.DocumentBuilder.RunInfo;
+//import org.luwrain.app.browser.DocumentBuilder.RunInfo;
 
 class BrowserArea extends DoctreeArea
 {
