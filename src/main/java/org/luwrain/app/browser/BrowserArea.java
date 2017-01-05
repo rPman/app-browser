@@ -79,21 +79,12 @@ class BrowserArea extends DoctreeArea
    	// store current position
    	int x=getHotPointX(),y=getHotPointY();
    	// regenerate full document from 
-    final DocumentBuilder builder = new DocumentBuilder(page);
-    doc=builder.build();
+	final DocumentBuilder builder = new DocumentBuilder(page);
+	doc = builder.build();
    	page.setWatchNodes(builder.watch);
-    // recreate view
 	doc.commit();
-	
 	setDocument(doc, luwrain.getAreaVisibleWidth(this));
-	// restore pos
-	/*
-	this.setHotPointX(x);
-	this.setHotPointY(y);
-	*/
 	this.onMoveHotPoint(new MoveHotPointEvent(x,y,false));
-	
-	//luwrain.onAreaNewHotPoint(this);
     }
 
     /**Checks if the browser has valid loaded page

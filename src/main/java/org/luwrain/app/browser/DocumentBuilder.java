@@ -19,21 +19,22 @@ class DocumentBuilder
 	/** maximum number of cols in table to awoid too small cols FIXME: make fix in DocumentArea to work with cell content does not fit in */
 	static final int TABLE_MAXIMUM_COLUMN_COUNT=4;
 
-    private Browser browser;
+    private final Browser browser;
 
     private final LinkedList<Run> curParaRuns = new LinkedList<Run>();
 
 	/** reverse index for accessing NodeInfo by its ElementIterator's pos */
-    HashMap<Integer,NodeInfo> index;
-private NodeInfo tempRoot;
+    private HashMap<Integer,NodeInfo> index;
+private final NodeInfo tempRoot;
 
 	/** list node position to watch it's content in Browser */
-LinkedList<Integer> watch = new LinkedList<Integer>();
+    LinkedList<Integer> watch = new LinkedList<Integer>();
 
     DocumentBuilder(Browser browser)
     {
 	NullCheck.notNull(browser, "browser");
 	this.browser = browser;
+	this.tempRoot = new NodeInfo();
     }
 
 	/** create new doctree Document from current state of Browser */
@@ -41,29 +42,29 @@ LinkedList<Integer> watch = new LinkedList<Integer>();
 	{
 		curParaRuns.clear();
 		index = new HashMap<Integer,NodeInfo>();
-		tempRoot = new NodeInfo();
+		//		tempRoot = new NodeInfo();
 		watch.clear();
-		this.browser = browser;
+		//		this.browser = browser;
 		// fill temporary tree of Browser's nodes information
 		fillTemporaryTree();
 		// clean up temporary tree
-		while(cleanup(tempRoot)!=0){};
+		while(cleanup(tempRoot) != 0){};
 		splitSingleChildrenNodes(tempRoot);
 		// now we have compact NodeInfo's tree
 		//**/tempRoot.debug(1,true);
-		// make document
-		final Document doc = makeDocument();
-		return doc;
+return makeDocument();
 	}
 
-	/** return first visible parent of element or null if root child */
-	ElementIterator checkVisibleParent(ElementIterator element)
+    /** Returns the first visible parent element*/
+private ElementIterator checkVisibleParent(ElementIterator element)
 	{
-		while(element != null)
+	    NullCheck.notNull(element, "element");
+	    ElementIterator el = element;
+		while(el != null)
 		{
-			if(element.isVisible())
-				return element;
-			element=element.getParent();
+			if(el.isVisible())
+				return el;
+el = el.getParent();
 		}
 		return null;
 	}
@@ -84,16 +85,15 @@ LinkedList<Integer> watch = new LinkedList<Integer>();
 		final Node root=NodeFactory.newNode(Node.Type.ROOT);
 		final LinkedList<Node> subnodes = makeNodes(tempRoot);
 		root.setSubnodes(subnodes.toArray(new Node[subnodes.size()]));
-		final Document doc = new Document(root);
-		doc.commit();
-		return doc;
+return new Document(root);
 	}
 	
 	/** make doctree Node list for node and children */
 private LinkedList<Node> makeNodes(NodeInfo base)
 	{
+	    NullCheck.notNull(base, "base");
 //**/System.out.print("makeNodes: ");base.debug(0,false);		
-		final LinkedList<Node> subnodes=new LinkedList<Node>();
+		final LinkedList<Node> subnodes = new LinkedList<Node>();
 		final Vector<RunInfo> runList = makeRuns(base);
 		
 		// TODO: search elements with same X screen (equals for x pos) and different Y - same group
@@ -111,7 +111,6 @@ Paragraph node=NodeFactory.newPara();
 				subruns.clear();
 				subnodes.add(node);
 				node=NodeFactory.newPara();
-				//
 				subnodes.add(r.node);
 				continue;
 			}
