@@ -141,11 +141,12 @@ rect=r.info.element.getRect();
 	}
 
 	/** recursive method to collect Run's for each leaf element in NodeInfo tree */
-public Vector<RunInfo> makeRuns(NodeInfo node)
+private Vector<RunInfo> makeRuns(NodeInfo node)
 	{
+	    NullCheck.notNull(node, "node");
 //**/System.out.print("makeRuns: ");node.debug(0,false);
 		ElementAction action=null;
-		Vector<RunInfo> runList=new Vector<RunInfo>();
+		final Vector<RunInfo> runList=new Vector<RunInfo>();
 		final ElementIterator n=node.element;
 		final String tagName = n.getHtmlTagName().toLowerCase();;
 		if(node.children.isEmpty())
@@ -361,7 +362,7 @@ public Vector<RunInfo> makeRuns(NodeInfo node)
 		{ // check each Browser node for parent in index
 			if(e.getParent()==null)
 			{ // e - root child
-				new NodeInfo(tempRoot,e);
+			    new NodeInfo(tempRoot,e, index);
 			}
 			count++;
 		} while(allVisibleNodes.moveNext(e));
@@ -376,7 +377,7 @@ public Vector<RunInfo> makeRuns(NodeInfo node)
 				ElementIterator parent = checkVisibleParent(e.getParent());
 				if(parent!=null&&!index.containsKey(e.getPos())&&index.containsKey(parent.getPos()))
 				{ // we have parent node already in index, add this node e as child
-					new NodeInfo(index.get(parent.getPos()),e);
+				    new NodeInfo(index.get(parent.getPos()),e, index);
 				}
 			} while(allVisibleNodes.moveNext(e));
 			else
@@ -496,9 +497,7 @@ public Vector<RunInfo> makeRuns(NodeInfo node)
 	LinkedList<Node> makeRecursive(NodeInfo node)
 	{
 		final LinkedList<Node> subnodes = new LinkedList<Node>();
-		
-		
-		return subnodes;
+						return subnodes;
 	}
 	
 	LinkedList<Node> make_(NodeInfo node)
@@ -634,7 +633,7 @@ public Vector<RunInfo> makeRuns(NodeInfo node)
 	return null;
 	*/
 	
-	String tagName = node.element.getHtmlTagName().toLowerCase();
+	final String tagName = node.element.getHtmlTagName().toLowerCase();
 	switch(tagName)
 	{
 		case "table":
@@ -651,73 +650,6 @@ public Vector<RunInfo> makeRuns(NodeInfo node)
 	}
 
     /** private temporary structure to story node tree for cleaning up before make document */
-    public class NodeInfo
-    {
-	/** create root node */
-	NodeInfo()
-	{
-	    this.parent=null;
-	    this.element=null;
-	    // root node does not exist in index
-	}
-
-	NodeInfo(NodeInfo parent,ElementIterator element)
-	{
-	    this.parent=parent;
-	    this.element=element.clone();
-	    parent.children.add(this);
-	    //
-	    index.put(element.getPos(),this);
-	}
-
-	final NodeInfo parent;
-	ElementIterator element;
-	Vector<NodeInfo> children = new Vector<NodeInfo>();
-	/** list of nodes, mixed with this node for cleanup */
-	final Vector<ElementIterator> mixed = new Vector<ElementIterator>();
-	boolean toDelete=false;
-
-	/** return element and reversed mixed in list */
-	Vector<ElementIterator> getMixedinfo()
-	{
-	    Vector<ElementIterator> res=new Vector<ElementIterator>();
-	    res.add(element);
-	    // we already add mixed in reversed mode
-	    if(!mixed.isEmpty())
-		res.addAll(mixed);
-	    return res;
-	}
-
-	// debug
-	void debug(int lvl,boolean printChildren)
-	{
-	    System.out.print(new String(new char[lvl]).replace("\0", "."));
-	    if(element==null)
-	    {
-		System.out.println("ROOT");
-	    } else
-	    {
-		System.out.print(element.getPos()+": ");
-		//if(toDelete) System.out.print("DELETE ");
-		if(!mixed.isEmpty())
-		{
-		    System.out.print("[");
-		    for(ElementIterator e:mixed)
-		    {
-			System.out.print((e==null?"ROOT":e.getHtmlTagName())+" ");
-		    }
-		    System.out.print("] ");
-		}
-		System.out.print(element.getHtmlTagName()+" ");
-		String str=element.getText().replace('\n',' ');
-		System.out.print(element.getType()+": '"+str.substring(0,Math.min(160,str.length()))+"'");
-		System.out.println();
-	    }
-	    if(printChildren)
-		for(NodeInfo e:children)
-		    e.debug(lvl+1,true);
-	};
-    }
 
 	/** structure for temporary lists of prepared doctree Run's and linked info about each */
 	static public class RunInfo
