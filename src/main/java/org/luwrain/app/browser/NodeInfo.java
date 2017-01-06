@@ -22,14 +22,12 @@ ElementIterator element;
 	    this.element = null;
 	}
 
-	NodeInfo(NodeInfo parent, ElementIterator element, HashMap<Integer,NodeInfo> index)
+	NodeInfo(NodeInfo parent, ElementIterator element)
 	{
 	    NullCheck.notNull(parent, "parent");
 	    NullCheck.notNull(element, "element");
 	    this.parent = parent;
 	    this.element = element.clone();
-	    parent.children.add(this);
-	    index.put(element.getPos(),this);
 	}
 
 	/** return element and reversed mixed in list */

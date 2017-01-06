@@ -45,7 +45,6 @@ private final NodeInfo tempRoot;
 		//		tempRoot = new NodeInfo();
 		watch.clear();
 		//		this.browser = browser;
-		// fill temporary tree of Browser's nodes information
 		fillTemporaryTree();
 		// clean up temporary tree
 		while(cleanup(tempRoot) != 0){};
@@ -345,39 +344,35 @@ private Vector<RunInfo> makeRuns(NodeInfo node)
 		return txt.replace("/\\s+/g"," ").trim();
 	}
 
-	void fillTemporaryTree()
+	private void fillTemporaryTree()
 	{
-		// make new temporary node tree
-		index = new HashMap<Integer, NodeInfo>();
+	    index = new HashMap<Integer, NodeInfo>();
 		// fill temporary tree from current Browser structure as fast as possible
 		// selector all for any visible nodes, include non text images and so on
-		SelectorAll allVisibleNodes = new SelectorAllImpl(true);
-		ElementIterator e = browser.iterator();
+		final SelectorAll allVisibleNodes = new SelectorAllImpl(true);
+		final ElementIterator e = browser.iterator();
 		// node count without root node (it not exist in SelectorAll enumerator)
 		int count = 0;
 		// we will scan allVisibleNodes many times, while count != index.size(), except for first scan, while count calculated 
 		// first scan (calculate element count and root children)
 		if(allVisibleNodes.moveFirst(e))
-		do
-		{ // check each Browser node for parent in index
-			if(e.getParent()==null)
-			{ // e - root child
-			    new NodeInfo(tempRoot,e, index);
-			}
+		do { // check each Browser node for parent in index
+		    if(e.getParent() == null)//a child of the root
+registerNodeInfo(tempRoot, e);
 			count++;
 		} while(allVisibleNodes.moveNext(e));
+
 		// check for Browser bug, if we found nodes not connected to root (multiple tree root's- it impossible but we must check it)
 		int lastCount = 0;
 		// infinite loop, while found all nodes
 		while(count!=index.size())
 		{
 			if(allVisibleNodes.moveFirst(e))
-			do
-			{ // check each Browser node for parent in index
-				ElementIterator parent = checkVisibleParent(e.getParent());
+			do { // check each Browser node for parent in index
+				final ElementIterator parent = checkVisibleParent(e.getParent());
 				if(parent!=null&&!index.containsKey(e.getPos())&&index.containsKey(parent.getPos()))
 				{ // we have parent node already in index, add this node e as child
-				    new NodeInfo(index.get(parent.getPos()),e, index);
+registerNodeInfo(index.get(parent.getPos()), e);
 				}
 			} while(allVisibleNodes.moveNext(e));
 			else
@@ -388,15 +383,14 @@ private Vector<RunInfo> makeRuns(NodeInfo node)
 			if(lastCount==index.size())
 			{
 				Log.error("web-browser","Browser contains nodes not connected to root, it is a bug of Browser.RescanDOM implementation. count="+count+", index.size="+index.size());
-				if(allVisibleNodes.moveFirst(e))
-				do
-				{
+				if(allVisibleNodes.moveFirst(e)) 
+				do {
 					if(!index.containsKey(e.getPos()))
 					{
 					System.out.print("# "+e.getPos()+": ");
 					System.out.print("p:"+(e.getParent()==null?"null":e.getParent().getPos())+" ");
 					System.out.print(e.getHtmlTagName()+" ");
-					String str=e.getText().replace('\n',' ');
+					final String str = e.getText().replace('\n',' ');
 					System.out.print(e.getType()+": '"+str.substring(0,Math.min(160,str.length()))+"'");
 					System.out.println();
 					}
@@ -407,14 +401,25 @@ private Vector<RunInfo> makeRuns(NodeInfo node)
 		}
 	}
 
+    private void registerNodeInfo(NodeInfo parent, ElementIterator it)
+    {
+	NullCheck.notNull(parent, "parent");
+	NullCheck.notNull(it, "it");
+	final NodeInfo newNodeInfo = new NodeInfo(parent, it);
+	parent.children.add(newNodeInfo);
+index.put(it.getPos(), newNodeInfo);
+
+    }
+
 	/** recursive split single child container to one for node and his children*/
 	private void splitSingleChildrenNodes(NodeInfo node)
 	{
-		if(node.children.size()==0) return;
-		if(node.children.size()==1)
+		if(node.children.size()==0)
+return;
+		if(node.children.size() == 1)
 		{ // we found node with single child, replace parent for this child but not for all
-			NodeInfo child=node.children.firstElement();
-			String tagName = child.element.getHtmlTagName().toLowerCase();
+			final NodeInfo child=node.children.firstElement();
+			final String tagName = child.element.getHtmlTagName().toLowerCase();
 			switch(tagName)
 			{
 				// skip this nodes
@@ -437,9 +442,7 @@ private Vector<RunInfo> makeRuns(NodeInfo node)
 			}
 		} else
 		for(NodeInfo child:node.children)
-		{
 			splitSingleChildrenNodes(child);
-		}
 	}
 
 	/** remove empty elements FIXME: make it more wisely, do not remove interactive elements with onclick and soon */
@@ -483,8 +486,7 @@ private Vector<RunInfo> makeRuns(NodeInfo node)
 		} else
 		for(NodeInfo child:node.children)
 			count+=cleanup(child);
-		
-		Iterator<NodeInfo> i=node.children.iterator();
+				Iterator<NodeInfo> i=node.children.iterator();
 		while (i.hasNext())
 		{
 			NodeInfo child=i.next();
@@ -494,17 +496,10 @@ private Vector<RunInfo> makeRuns(NodeInfo node)
 		return count;
 	}
 
-	LinkedList<Node> makeRecursive(NodeInfo node)
-	{
-		final LinkedList<Node> subnodes = new LinkedList<Node>();
-						return subnodes;
-	}
-	
 	LinkedList<Node> make_(NodeInfo node)
 	{
-		final LinkedList<Node> subnodes = new LinkedList<Node>();
-
 		NullCheck.notNull(node, "node");
+		final LinkedList<Node> subnodes = new LinkedList<Node>();
 		Log.debug("browser", "transforming " + node.element.getType() + " (" + node.element.getClass().getName() + ")");
 		Log.debug("browser", "element has " + node.children.size() + " children");
     	for(NodeInfo child: node.children)
@@ -632,8 +627,7 @@ private Vector<RunInfo> makeRuns(NodeInfo node)
 	    return NodeFactory.newNode(el.getNode().getType().equals("ol")?Node.Type.ORDERED_LIST:Node.Type.UNORDERED_LIST);
 	return null;
 	*/
-	
-	final String tagName = node.element.getHtmlTagName().toLowerCase();
+		final String tagName = node.element.getHtmlTagName().toLowerCase();
 	switch(tagName)
 	{
 		case "table":
@@ -648,5 +642,4 @@ private Vector<RunInfo> makeRuns(NodeInfo node)
 	}
 	return null;
 	}
-
 }
