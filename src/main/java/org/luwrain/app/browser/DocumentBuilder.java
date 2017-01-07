@@ -8,8 +8,8 @@ import org.luwrain.core.*;
 import org.luwrain.doctree.*;
 import org.luwrain.browser.*;
 
-import org.luwrain.app.browser.selector.SelectorAll;
-import org.luwrain.app.browser.selector.SelectorAllImpl;
+//import org.luwrain.app.browser.selector.SelectorAll;
+//import org.luwrain.app.browser.selector.SelectorAllImpl;
 
 /** this class represent main method to create doctree Document from Browser
  * - any empty or invisible nodes cleaned up
@@ -347,9 +347,7 @@ private Vector<RunInfo> makeRuns(NodeInfo node)
 	private void fillTemporaryTree()
 	{
 	    index = new HashMap<Integer, NodeInfo>();
-		// fill temporary tree from current Browser structure as fast as possible
-		// selector all for any visible nodes, include non text images and so on
-		final SelectorAll allVisibleNodes = new SelectorAllImpl(true);
+		final AllNodesSelector allVisibleNodes = new AllNodesSelector(true);
 		final ElementIterator e = browser.iterator();
 		// node count without root node (it not exist in SelectorAll enumerator)
 		int count = 0;

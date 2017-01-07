@@ -4,11 +4,12 @@ package org.luwrain.app.browser.weight;
 import java.util.*;
 
 import org.luwrain.core.*;
-import org.luwrain.app.browser.selector.Selector;
-import org.luwrain.app.browser.selector.SelectorChildren;
-import org.luwrain.app.browser.selector.SelectorChildrenImpl;
+//import org.luwrain.app.browser.selector.Selector;
+//import org.luwrain.app.browser.selector.SelectorChildren;
+//import org.luwrain.app.browser.selector.SelectorChildrenImpl;
 import org.luwrain.browser.Browser;
 import org.luwrain.browser.ElementIterator;
+import org.luwrain.app.browser.*;
 
 class WebDocument
 {
@@ -29,13 +30,13 @@ class WebDocument
     {
 	NullCheck.notNull(page, "page");
 	// get all children without parent, there should be only one like this
-	final SelectorChildren selector = new SelectorChildrenImpl(page,false);//page.rootChildren(false);
+	final ChildrenSelector selector = new ChildrenSelector(page,false);//page.rootChildren(false);
 	final ElementIterator it = page.iterator();
 	selector.moveFirst(it);
 	root = new WebText(null, it.clone());
 	//Enumerating all children
 	do {
-	    make_(page, root, new SelectorChildrenImpl(it,false));
+	    make_(page, root, new ChildrenSelector(it,false));
 	} while(selector.moveNext(it));
 	cleanup(root);
 	/*
@@ -118,7 +119,7 @@ class WebDocument
 		    break;
 		}
 	    if(!nodeIt.forTEXT())
-		make_(page,element, new SelectorChildrenImpl(nodeIt,false));
+		make_(page,element, new ChildrenSelector(nodeIt,false));
 	    parent.getChildren().add(element);
 	} while(selector.moveNext(nodeIt));
     }
