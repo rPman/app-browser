@@ -1,16 +1,17 @@
 
-package org.luwrain.app.browser.web;
+package org.luwrain.app.browser.weight;
 
 import java.util.*;
 
 import org.luwrain.core.*;
-import org.luwrain.app.browser.selector.Selector;
-import org.luwrain.app.browser.selector.SelectorChildren;
-import org.luwrain.app.browser.selector.SelectorChildrenImpl;
+//import org.luwrain.app.browser.selector.Selector;
+//import org.luwrain.app.browser.selector.SelectorChildren;
+//import org.luwrain.app.browser.selector.SelectorChildrenImpl;
 import org.luwrain.browser.Browser;
 import org.luwrain.browser.ElementIterator;
+import org.luwrain.app.browser.*;
 
-public class WebDocument
+class WebDocument
 {
     // make WebDocument structure for web page, more simple than html document, i.e.  only visible elements and without element with single child
     // only visible elements
@@ -29,13 +30,13 @@ public class WebDocument
     {
 	NullCheck.notNull(page, "page");
 	// get all children without parent, there should be only one like this
-	final SelectorChildren selector = new SelectorChildrenImpl(page,false);//page.rootChildren(false);
+	final ChildrenSelector selector = new ChildrenSelector(page,false);//page.rootChildren(false);
 	final ElementIterator it = page.iterator();
 	selector.moveFirst(it);
 	root = new WebText(null, it.clone());
 	//Enumerating all children
 	do {
-	    make_(page, root, new SelectorChildrenImpl(it,false));
+	    make_(page, root, new ChildrenSelector(it,false));
 	} while(selector.moveNext(it));
 	cleanup(root);
 	/*
@@ -68,6 +69,7 @@ public class WebDocument
 	    {
 		switch(nodeIt.getType())
 		{
+		    /*
 		case "input checkbox":
 		    element = new WebCheckbox(parent,nodeIt.clone());
 		    break;
@@ -80,12 +82,14 @@ public class WebDocument
 		case "select":
 		    element = new WebSelect(parent,nodeIt.clone());
 		    break;
+		*/
 		default:
 		    element=new WebEdit(parent,nodeIt.clone());
 		}
 	    } else
 		switch(nodeIt.getType())
 		{
+		    /*
 		case "link":
 		    element=new WebText(parent,nodeIt.clone());
 		    element.setAttribute("href",nodeIt.getLink());
@@ -109,12 +113,13 @@ public class WebDocument
 		case "th":
 		    element = new WebTableCell(parent,nodeIt.clone());
 		break;
+		    */
 		default:
 		    element=new WebText(parent,nodeIt.clone());
 		    break;
 		}
 	    if(!nodeIt.forTEXT())
-		make_(page,element, new SelectorChildrenImpl(nodeIt,false));
+		make_(page,element, new ChildrenSelector(nodeIt,false));
 	    parent.getChildren().add(element);
 	} while(selector.moveNext(nodeIt));
     }

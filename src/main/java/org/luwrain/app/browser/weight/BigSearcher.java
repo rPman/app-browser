@@ -1,4 +1,5 @@
-package org.luwrain.app.browser.web;
+
+package org.luwrain.app.browser.weight;
 
 public interface BigSearcher
 {

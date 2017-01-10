@@ -1,7 +1,7 @@
 
 package org.luwrain.app.browser;
 
-import org.luwrain.app.browser.web.*;
+import org.luwrain.app.browser.weight.*;
 import org.luwrain.core.*;
 
 class HistoryElement

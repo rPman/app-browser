@@ -1,165 +1,70 @@
-package org.luwrain.app.browser.webdoc;
+
+package org.luwrain.app.browser;
 
 import java.awt.Rectangle;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.Vector;
+import java.util.*;
 
-import org.luwrain.app.browser.selector.SelectorAll;
-import org.luwrain.app.browser.selector.SelectorAllImpl;
-import org.luwrain.browser.Browser;
-import org.luwrain.browser.ElementIterator;
-import org.luwrain.core.Log;
-import org.luwrain.core.NullCheck;
-import org.luwrain.doctree.Document;
-import org.luwrain.doctree.Node;
-import org.luwrain.doctree.NodeFactory;
-import org.luwrain.doctree.Paragraph;
-import org.luwrain.doctree.Run;
-import org.luwrain.doctree.TextRun;
+import org.luwrain.core.*;
+import org.luwrain.doctree.*;
+import org.luwrain.browser.*;
+
+//import org.luwrain.app.browser.selector.SelectorAll;
+//import org.luwrain.app.browser.selector.SelectorAllImpl;
 
 /** this class represent main method to create doctree Document from Browser
  * - any empty or invisible nodes cleaned up
  * - some groups of nodes, grouped to addition tables row by row by onscreen position */
-public class BrowserToDocumentConverter
+class DocumentBuilder
 {
 	/** maximum number of cols in table to awoid too small cols FIXME: make fix in DocumentArea to work with cell content does not fit in */
 	static final int TABLE_MAXIMUM_COLUMN_COUNT=4;
-	
-	private Browser browser;
 
-	private final LinkedList<Run> curParaRuns = new LinkedList<Run>();
+    private final Browser browser;
 
-	/** private temporary structure to story node tree for cleaning up before make document */
-	public class NodeInfo
-	{
-		/** create root node */
-		public NodeInfo()
-		{
-			this.parent=null;
-			this.element=null;
-			// root node does not exist in index
-		}
-		public NodeInfo(NodeInfo parent,ElementIterator element)
-		{
-			this.parent=parent;
-			this.element=element.clone();
-			parent.children.add(this);
-			//
-			index.put(element.getPos(),this);
-		}
-		public NodeInfo parent;
-		public ElementIterator element;
-		public Vector<NodeInfo> children = new Vector<NodeInfo>();
-		/** list of nodes, mixed with this node for cleanup */
-		public Vector<ElementIterator> mixed = new Vector<ElementIterator>();
-		public boolean toDelete=false;
-		
-		/** return element and reversed mixed in list */
-		public Vector<ElementIterator> getMixedinfo()
-		{
-			Vector<ElementIterator> res=new Vector<ElementIterator>();
-			res.add(element);
-			// we already add mixed in reversed mode
-			if(!mixed.isEmpty())
-				res.addAll(mixed);
-			return res;
-		}
-		
-		// debug
-		public void debug(int lvl,boolean printChildren)
-		{
-			System.out.print(new String(new char[lvl]).replace("\0", "."));
-			if(element==null)
-			{
-				System.out.println("ROOT");
-			} else
-			{
-				System.out.print(element.getPos()+": ");
-				//if(toDelete) System.out.print("DELETE ");
-				if(!mixed.isEmpty())
-				{
-					System.out.print("[");
-					for(ElementIterator e:mixed)
-					{
-						System.out.print((e==null?"ROOT":e.getHtmlTagName())+" ");
-					}
-					System.out.print("] ");
-				}
-				System.out.print(element.getHtmlTagName()+" ");
-				String str=element.getText().replace('\n',' ');
-				System.out.print(element.getType()+": '"+str.substring(0,Math.min(160,str.length()))+"'");
-				System.out.println();
-			}
-			if(printChildren)
-				for(NodeInfo e:children)
-					e.debug(lvl+1,true);
-		};
-	}
-	
-	/** structure for temporary lists of prepared doctree Run's and linked info about each */
-	public class RunInfo
-	{
-		public Run run=null;
-		public Node node=null;
-		public NodeInfo info;
-		public RunInfo(Run run, NodeInfo info)
-		{
-			this.run=run;
-			this.info=info;
-		}
-		public RunInfo(Node node, NodeInfo info)
-		{
-			this.node=node;
-			this.info=info;
-		}
-		boolean isRun()
-		{
-			return run!=null;
-		}
-		boolean isNode()
-		{
-			return node!=null;
-		}
-	}
+    private final LinkedList<Run> curParaRuns = new LinkedList<Run>();
+
 	/** reverse index for accessing NodeInfo by its ElementIterator's pos */
-	public HashMap<Integer,NodeInfo> index;
-	public NodeInfo tempRoot;// = new NodeInfo();
-	
+    private HashMap<Integer,NodeInfo> index;
+private final NodeInfo tempRoot;
+
 	/** list node position to watch it's content in Browser */
-	public LinkedList<Integer> watch=new LinkedList<Integer>();
-	
+    LinkedList<Integer> watch = new LinkedList<Integer>();
+
+    DocumentBuilder(Browser browser)
+    {
+	NullCheck.notNull(browser, "browser");
+	this.browser = browser;
+	this.tempRoot = new NodeInfo();
+    }
+
 	/** create new doctree Document from current state of Browser */
-	public Document go(Browser browser)
+    Document build()
 	{
 		curParaRuns.clear();
-		index=new HashMap<Integer,NodeInfo>();
-		tempRoot = new NodeInfo();
+		index = new HashMap<Integer,NodeInfo>();
+		//		tempRoot = new NodeInfo();
 		watch.clear();
-		//
-		this.browser = browser;
-		// fill temporary tree of Browser's nodes information
+		//		this.browser = browser;
 		fillTemporaryTree();
 		//**/tempRoot.debug(1,true);
 		// clean up temporary tree
-		while(cleanup(tempRoot)!=0){};
+		while(cleanup(tempRoot) != 0){};
 		splitSingleChildrenNodes(tempRoot);
 		// now we have compact NodeInfo's tree
 		/**/tempRoot.debug(1,true);
-		// make document
-		Document doc = makeDocument();
-		return doc;
+		return makeDocument();
 	}
-	
-	/** return first visible parent of element or null if root child */
-	ElementIterator checkVisibleParent(ElementIterator element)
+
+    /** Returns the first visible parent element 
+     * @param element this element checked for parent, can be null */
+    private ElementIterator checkVisibleParent(ElementIterator element)
 	{
-		while(element!=null)
+	    ElementIterator el = element;
+		while(el != null)
 		{
-			if(element.isVisible())
-				return element;
-			element=element.getParent();
+			if(el.isVisible())
+				return el;
+			el = el.getParent();
 		}
 		return null;
 	}
@@ -177,19 +82,18 @@ public class BrowserToDocumentConverter
 	{
 		// scan full tree for block detection, tables, lists and so on
 		// make planar list of Run's
-		Node root=NodeFactory.newNode(Node.Type.ROOT);
-		LinkedList<Node> subnodes = makeNodes(tempRoot);
+		final Node root=NodeFactory.newNode(Node.Type.ROOT);
+		final LinkedList<Node> subnodes = makeNodes(tempRoot);
 		root.setSubnodes(subnodes.toArray(new Node[subnodes.size()]));
-		Document doc = new Document(root);
-		doc.commit();
-		return doc;
+		return new Document(root);
 	}
 	
 	/** make doctree Node list for node and children */
-	public LinkedList<Node> makeNodes(NodeInfo base)
+	private LinkedList<Node> makeNodes(NodeInfo base)
 	{
+	    NullCheck.notNull(base, "base");
 //**/System.out.print("makeNodes: ");base.debug(0,false);		
-		LinkedList<Node> subnodes=new LinkedList<Node>();
+		final LinkedList<Node> subnodes = new LinkedList<Node>();
 		final Vector<RunInfo> runList = makeRuns(base);
 		
 		// TODO: search elements with same X screen (equals for x pos) and different Y - same group
@@ -197,9 +101,9 @@ public class BrowserToDocumentConverter
 
 		Paragraph node=NodeFactory.newPara();
 		
-		LinkedList<Run> subruns=new LinkedList<Run>();
-		Rectangle rect=null;
-		for(RunInfo r:runList)
+		final LinkedList<Run> subruns=new LinkedList<Run>();
+		Rectangle rect = null;
+		for(RunInfo r: runList)
 		{
 			if(r.isNode())
 			{
@@ -207,14 +111,14 @@ public class BrowserToDocumentConverter
 				subruns.clear();
 				subnodes.add(node);
 				node=NodeFactory.newPara();
-				//
 				subnodes.add(r.node);
 				continue;
 			}
 			// first rect compare with itself
-			if(rect==null) rect=r.info.element.getRect();
+			if(rect == null)
+				rect=r.info.element.getRect();
 			// check, if next r in the same Y interval like previous
-			Rectangle curRect=r.info.element.getRect();
+			final Rectangle curRect=r.info.element.getRect();
 			if((curRect.y>=rect.y&&curRect.y<rect.y+rect.height)
 			 ||(rect.y>=curRect.y&&rect.y<curRect.y+curRect.height))
 			{ // prev and current run in the same line on screen
@@ -229,23 +133,23 @@ public class BrowserToDocumentConverter
 			subruns.add(r.run);
 			rect=curRect;
 		}
-		node.runs=subruns.toArray(new Run[subruns.size()]);
+		node.runs = subruns.toArray(new Run[subruns.size()]);
 		subruns.clear();
 		subnodes.add(node);
-		node=NodeFactory.newPara();
-		
-		return subnodes;
+		node = NodeFactory.newPara();
+				return subnodes;
 	}
 
 	/** recursive method to collect Run's for each leaf element in NodeInfo tree */
-	public Vector<RunInfo> makeRuns(NodeInfo node)
+private Vector<RunInfo> makeRuns(NodeInfo node)
 	{
+	    NullCheck.notNull(node, "node");
 //**/System.out.print("makeRuns: ");node.debug(0,false);
 		ElementAction action=null;
-		Vector<RunInfo> runList=new Vector<RunInfo>();
+		final Vector<RunInfo> runList=new Vector<RunInfo>();
 		final ElementIterator n=node.element;
 		if(n==null) return runList; 
-		String tagName = n.getHtmlTagName().toLowerCase();
+		final String tagName = n.getHtmlTagName().toLowerCase();
 		if(node.children.isEmpty())
 		{
 			String txt = "";
@@ -448,14 +352,11 @@ public class BrowserToDocumentConverter
 		return txt.replace("/\\s+/g"," ").trim();
 	}
 
-	void fillTemporaryTree()
+	private void fillTemporaryTree()
 	{
-		// make new temporary node tree
-		index = new HashMap<Integer, NodeInfo>();
-		// fill temporary tree from current Browser structure as fast as possible
-		// selector all for any visible nodes, include non text images and so on
-		SelectorAll allVisibleNodes = new SelectorAllImpl(true);
-		ElementIterator e = browser.iterator();
+	    index = new HashMap<Integer, NodeInfo>();
+		final AllNodesSelector allVisibleNodes = new AllNodesSelector(true);
+		final ElementIterator e = browser.iterator();
 		// node count without root node (it not exist in SelectorAll enumerator)
 		int count = 0;
 		// we will scan allVisibleNodes many times, while count != index.size(), except for first scan, while count calculated 
@@ -466,26 +367,22 @@ public class BrowserToDocumentConverter
 			ElementIterator parent = checkVisibleParent(e.getParent());
 			if(parent==null)
 			{ // e - root child
-				new NodeInfo(tempRoot,e);
+		    	registerNodeInfo(tempRoot, e);
 			}
 			count++;
 		} while(allVisibleNodes.moveNext(e));
+
 		// check for Browser bug, if we found nodes not connected to root (multiple tree root's- it impossible but we must check it)
 		int lastCount = 0;
 		// infinite loop, while found all nodes
 		while(count!=index.size())
 		{
 			if(allVisibleNodes.moveFirst(e))
-			do
-			{ // check each Browser node for parent in index
-				ElementIterator parent = checkVisibleParent(e.getParent());
-				if(parent==null)
-				{
-					//new NodeInfo(tempRoot,e);
-				} else
-				if(!index.containsKey(e.getPos())&&index.containsKey(parent.getPos()))
+			do { // check each Browser node for parent in index
+				final ElementIterator parent = checkVisibleParent(e.getParent());
+				if(parent!=null&&!index.containsKey(e.getPos())&&index.containsKey(parent.getPos()))
 				{ // we have parent node already in index, add this node e as child
-					new NodeInfo(index.get(parent.getPos()),e);
+					registerNodeInfo(index.get(parent.getPos()), e);
 				}
 			} while(allVisibleNodes.moveNext(e));
 			else
@@ -496,15 +393,14 @@ public class BrowserToDocumentConverter
 			if(lastCount==index.size())
 			{
 				Log.error("web-browser","Browser contains nodes not connected to root, it is a bug of Browser.RescanDOM implementation. count="+count+", index.size="+index.size());
-				if(allVisibleNodes.moveFirst(e))
-				do
-				{
+				if(allVisibleNodes.moveFirst(e)) 
+				do {
 					if(!index.containsKey(e.getPos()))
 					{
 					System.out.print("# "+e.getPos()+": ");
 					System.out.print("p:"+(e.getParent()==null?"null":e.getParent().getPos())+" ");
 					System.out.print(e.getHtmlTagName()+" ");
-					String str=e.getText().replace('\n',' ');
+					final String str = e.getText().replace('\n',' ');
 					System.out.print(e.getType()+": '"+str.substring(0,Math.min(160,str.length()))+"'");
 					System.out.println();
 					}
@@ -515,14 +411,25 @@ public class BrowserToDocumentConverter
 		}
 	}
 
+    private void registerNodeInfo(NodeInfo parent, ElementIterator it)
+    {
+	NullCheck.notNull(parent, "parent");
+	NullCheck.notNull(it, "it");
+	final NodeInfo newNodeInfo = new NodeInfo(parent, it);
+	parent.children.add(newNodeInfo);
+index.put(it.getPos(), newNodeInfo);
+
+    }
+
 	/** recursive split single child container to one for node and his children*/
 	private void splitSingleChildrenNodes(NodeInfo node)
 	{
-		if(node.children.size()==0) return;
-		if(node.children.size()==1)
+		if(node.children.size()==0)
+return;
+		if(node.children.size() == 1)
 		{ // we found node with single child, replace parent for this child but not for all
-			NodeInfo child=node.children.firstElement();
-			String tagName = child.element.getHtmlTagName().toLowerCase();
+			final NodeInfo child=node.children.firstElement();
+			final String tagName = child.element.getHtmlTagName().toLowerCase();
 			switch(tagName)
 			{
 				// skip this nodes
@@ -545,9 +452,7 @@ public class BrowserToDocumentConverter
 			}
 		} else
 		for(NodeInfo child:node.children)
-		{
 			splitSingleChildrenNodes(child);
-		}
 	}
 
 	/** remove empty elements FIXME: make it more wisely, do not remove interactive elements with onclick and soon */
@@ -592,8 +497,7 @@ public class BrowserToDocumentConverter
 		} else
 		for(NodeInfo child:node.children)
 			count+=cleanup(child);
-		
-		Iterator<NodeInfo> i=node.children.iterator();
+				Iterator<NodeInfo> i=node.children.iterator();
 		while (i.hasNext())
 		{
 			NodeInfo child=i.next();
@@ -603,19 +507,10 @@ public class BrowserToDocumentConverter
 		return count;
 	}
 
-	LinkedList<Node> makeRecursive(NodeInfo node)
-	{
-		final LinkedList<Node> subnodes = new LinkedList<Node>();
-		
-		
-		return subnodes;
-	}
-	
 	LinkedList<Node> make_(NodeInfo node)
 	{
-		final LinkedList<Node> subnodes = new LinkedList<Node>();
-
 		NullCheck.notNull(node, "node");
+		final LinkedList<Node> subnodes = new LinkedList<Node>();
 		Log.debug("browser", "transforming " + node.element.getType() + " (" + node.element.getClass().getName() + ")");
 		Log.debug("browser", "element has " + node.children.size() + " children");
     	for(NodeInfo child: node.children)
@@ -743,8 +638,7 @@ public class BrowserToDocumentConverter
 	    return NodeFactory.newNode(el.getNode().getType().equals("ol")?Node.Type.ORDERED_LIST:Node.Type.UNORDERED_LIST);
 	return null;
 	*/
-	
-	String tagName = node.element.getHtmlTagName().toLowerCase();
+		final String tagName = node.element.getHtmlTagName().toLowerCase();
 	switch(tagName)
 	{
 		case "table":
