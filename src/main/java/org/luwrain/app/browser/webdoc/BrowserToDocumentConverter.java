@@ -141,11 +141,12 @@ public class BrowserToDocumentConverter
 		this.browser = browser;
 		// fill temporary tree of Browser's nodes information
 		fillTemporaryTree();
+		//**/tempRoot.debug(1,true);
 		// clean up temporary tree
 		while(cleanup(tempRoot)!=0){};
 		splitSingleChildrenNodes(tempRoot);
 		// now we have compact NodeInfo's tree
-		//**/tempRoot.debug(1,true);
+		/**/tempRoot.debug(1,true);
 		// make document
 		Document doc = makeDocument();
 		return doc;
@@ -243,7 +244,8 @@ public class BrowserToDocumentConverter
 		ElementAction action=null;
 		Vector<RunInfo> runList=new Vector<RunInfo>();
 		final ElementIterator n=node.element;
-		String tagName = n.getHtmlTagName().toLowerCase();;
+		if(n==null) return runList; 
+		String tagName = n.getHtmlTagName().toLowerCase();
 		if(node.children.isEmpty())
 		{
 			String txt = "";
@@ -286,6 +288,10 @@ public class BrowserToDocumentConverter
 					txt="Select: "+n.getText();
 					action=new ElementAction(ElementAction.Type.SELECT,node.element);
 				break;
+				case "iframe":
+					txt="iframe: "+n.getAltText();
+					action=new ElementAction(ElementAction.Type.IFRAME,node.element);
+				break;
 				default:
 					txt=n.getText();
 				break;
@@ -294,7 +300,9 @@ public class BrowserToDocumentConverter
 			{ // check for A tag inside mixed
 				for(ElementIterator e:node.getMixedinfo())
 				{
-					String etag = e.getHtmlTagName().toLowerCase();;
+					// if root mixed with single element
+					if(e==null) continue;
+					String etag = e.getHtmlTagName().toLowerCase();
 					if(etag.equals("a"))
 					{
 						// FIXME: here we have href attribute
@@ -455,7 +463,8 @@ public class BrowserToDocumentConverter
 		if(allVisibleNodes.moveFirst(e))
 		do
 		{ // check each Browser node for parent in index
-			if(e.getParent()==null)
+			ElementIterator parent = checkVisibleParent(e.getParent());
+			if(parent==null)
 			{ // e - root child
 				new NodeInfo(tempRoot,e);
 			}
@@ -470,7 +479,11 @@ public class BrowserToDocumentConverter
 			do
 			{ // check each Browser node for parent in index
 				ElementIterator parent = checkVisibleParent(e.getParent());
-				if(parent!=null&&!index.containsKey(e.getPos())&&index.containsKey(parent.getPos()))
+				if(parent==null)
+				{
+					//new NodeInfo(tempRoot,e);
+				} else
+				if(!index.containsKey(e.getPos())&&index.containsKey(parent.getPos()))
 				{ // we have parent node already in index, add this node e as child
 					new NodeInfo(index.get(parent.getPos()),e);
 				}
@@ -543,6 +556,7 @@ public class BrowserToDocumentConverter
 		int count=0;
 		if(node.children.isEmpty())
 		{
+			if(node.element==null) return count;
 			String text=node.element.getText();
 			if(text.isEmpty())
 			{ // remove empty text element without child

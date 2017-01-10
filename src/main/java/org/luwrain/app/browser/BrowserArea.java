@@ -279,6 +279,9 @@ class BrowserArea extends DoctreeArea
 					case SELECT:
 						result = onFormSelectFromList(action.element);
 						break;
+					case IFRAME:
+						result = onIFrameOpen(action.element);
+						break;
 					default:
 						Log.error("web-browser","unknown action type: "+action.type.name());
 						return false;
@@ -365,6 +368,20 @@ class BrowserArea extends DoctreeArea
 	el.setText(res);
 	updateView();
 	return true;
+    }
+    
+    protected boolean onIFrameOpen(ElementIterator el)
+    {
+    	NullCheck.notNull(el, "el");
+    	if (isEmpty() || isBusy())
+    	    return false;
+    	String src=el.getAttributeProperty("src");
+    	if(src!=null&&!src.isEmpty())
+    	{
+    		page.load(src);
+    		return true;
+    	}
+    	return false;
     }
 
     protected void onPageChangeState(WebState state)
